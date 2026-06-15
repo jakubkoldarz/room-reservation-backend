@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/RoomReservation.Api/RoomReservation.Api.csproj" />
+    <Project Path="src/RoomReservation.Core/RoomReservation.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RoomReservation.Core.Tests/RoomReservation.Core.Tests.csproj" />
+  </Folder>
+</Solution>
