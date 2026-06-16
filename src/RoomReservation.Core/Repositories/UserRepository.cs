@@ -22,5 +22,11 @@ namespace RoomReservation.Core.Repositories
             var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
             return user;
         }
+
+        public async Task<User?> GetUserByIdAsync(Guid userId)
+        {
+            var user = await _db.Users.FindAsync(userId);
+            return user;
+        }
     }
 }

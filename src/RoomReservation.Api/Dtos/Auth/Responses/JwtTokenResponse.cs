@@ -1,4 +1,4 @@
-﻿namespace RoomReservation.Api.Dtos.Users.Responses
+﻿namespace RoomReservation.Api.Dtos.Auth.Responses
 {
     public record JwtTokenResponse
     (

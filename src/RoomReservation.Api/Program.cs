@@ -1,13 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using RoomReservation.Api.Extensions;
 using RoomReservation.Core.Data;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
-builder.Services.AddOpenApi();
-builder.Services.AddDbContext<AppDbContext>(options =>
-{
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
-});
+
+builder.Services.AddCore(builder.Configuration);
 
 var app = builder.Build();
 
@@ -29,6 +27,12 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference(options =>
+    {
+        options.Title = "Room Reservation API";
+        options.Theme = ScalarTheme.Default;
+        options.DefaultHttpClient = new(ScalarTarget.CSharp, ScalarClient.HttpClient);
+    });
 }
 
 app.Run();

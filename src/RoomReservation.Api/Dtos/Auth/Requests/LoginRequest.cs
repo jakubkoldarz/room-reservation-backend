@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace RoomReservation.Api.Dtos.Users.Responses
+namespace RoomReservation.Api.Dtos.Auth.Requests
 {
     public record LoginRequest
     (

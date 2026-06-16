@@ -6,6 +6,9 @@ services:
       dockerfile: src/RoomReservation.Api/Dockerfile
     environment:
       - ConnectionStrings__DefaultConnection=Host=postgres-db;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}
+      - Jwt__Secret=${JWT_SECRET}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
     depends_on:
       - postgres-db
 
