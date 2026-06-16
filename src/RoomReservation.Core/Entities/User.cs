@@ -10,16 +10,17 @@ namespace RoomReservation.Core.Entities
         [Key]
         public Guid Id { get; set; } = Guid.CreateVersion7();
 
-        [Required]
         [MaxLength(50)]
-        public string Firstname { get; set; } = string.Empty;
+        public required string Firstname { get; set; } 
 
-        [Required]
         [MaxLength(100)]
-        public string Lastname { get; set; } = string.Empty;
+        public required string Lastname { get; set; } 
 
-        [Required]
         [EmailAddress]
-        public string Email { get; set; } = string.Empty;
+        public required string Email { get; set; } 
+
+        public required string PasswordHash { get; set; }
+
+        public IEnumerable<RefreshToken> RefreshTokens { get; set; } = [];
     }
 }

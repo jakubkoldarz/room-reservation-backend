@@ -23,4 +23,9 @@
     <ProjectReference Include="..\RoomReservation.Core\RoomReservation.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Dtos\RefreshTokens\Requests\" />
+    <Folder Include="Dtos\Users\Requests\" />
+  </ItemGroup>
+
 </Project>

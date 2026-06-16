@@ -4,7 +4,7 @@ using System.Text;
 
 namespace RoomReservation.Core.Interfaces
 {
-    internal interface ITokenProvider
+    public interface ITokenProvider
     {
         string GenerateRefreshToken();
         string GenerateJwtToken();

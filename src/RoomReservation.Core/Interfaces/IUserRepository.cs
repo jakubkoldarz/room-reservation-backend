@@ -1,11 +1,13 @@
-﻿using System;
+﻿using RoomReservation.Core.Entities;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace RoomReservation.Core.Interfaces
 {
-    internal interface IUserRepository
+    public interface IUserRepository
     {
-        Task GetUserByEmail(string email);
+        Task<User?> GetUserByEmailAsync(string email);
+        Task<User> CreateAsync(User user);
     }
 }
