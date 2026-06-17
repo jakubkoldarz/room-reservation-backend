@@ -25,16 +25,14 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-if (args.Contains("--seed"))
-{
-    using var scope = app.Services.CreateScope();
-    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await new DatabaseSeeder(context).SeedAsync();
-    return;
-}
-
 if (app.Environment.IsDevelopment())
 {
+    using(var scope = app.Services.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await new DatabaseSeeder(context).SeedAsync();
+    }
+
     app.MapOpenApi();
     app.MapScalarApiReference(options =>
     {

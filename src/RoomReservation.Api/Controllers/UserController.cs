@@ -25,9 +25,7 @@ namespace RoomReservation.Api.Controllers
         public async Task<ActionResult<IEnumerable<BasicUserResponse>>> GetAll([FromQuery] UserFilter filters)
         {
             var result = await _userService.GetUsersAsync(filters);
-            var users = result.Value;
-
-            return Ok(users);
+            return Ok(result.ToDto(u => u.ToBasicDto()));
         }
     }
 }

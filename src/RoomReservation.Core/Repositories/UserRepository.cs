@@ -34,14 +34,19 @@ namespace RoomReservation.Core.Repositories
         {
             var users = _db.Users.AsQueryable();
 
-            if (!string.IsNullOrEmpty(filters.Firstname)) users = users.Where(u => u.Firstname.Contains(filters.Firstname));
-            if (!string.IsNullOrEmpty(filters.Lastname)) users = users.Where(u => u.Lastname.Contains(filters.Lastname));
-            if (!string.IsNullOrEmpty(filters.Email)) users = users.Where(u => u.Email.Contains(filters.Email));
+            if (!string.IsNullOrEmpty(filters.Firstname)) 
+                users = users.Where(u => u.Firstname.Contains(filters.Firstname.ToLower()));
+
+            if (!string.IsNullOrEmpty(filters.Lastname)) 
+                users = users.Where(u => u.Lastname.Contains(filters.Lastname.ToLower()));
+
+            if (!string.IsNullOrEmpty(filters.Email)) 
+                users = users.Where(u => u.Email.Contains(filters.Email.ToLower()));
 
             var totalCount = await users.CountAsync();
 
             var filteredUsers = await users
-                .Skip((filters.PageSize - 1) * filters.Page)
+                .Skip((filters.Page - 1) * filters.PageSize)
                 .Take(filters.PageSize)
                 .ToListAsync();
 

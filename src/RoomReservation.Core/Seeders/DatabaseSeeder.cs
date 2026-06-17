@@ -1,4 +1,5 @@
-﻿using RoomReservation.Core.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using RoomReservation.Core.Data;
 using RoomReservation.Core.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -14,12 +15,14 @@ namespace RoomReservation.Core.Seeders
         public DatabaseSeeder(AppDbContext context)
         {
             this.context = context;
-
             seeders.Add(new UserSeeder(context));
         }
 
         public async Task SeedAsync()
         {
+            context.Database.EnsureDeleted();
+            context.Database.Migrate();
+
             foreach (var seeder in seeders)
             {
                 await seeder.SeedAsync();   

@@ -1,4 +1,5 @@
-﻿using RoomReservation.Core.Data;
+﻿using Microsoft.AspNetCore.Identity;
+using RoomReservation.Core.Data;
 using RoomReservation.Core.Entities;
 using RoomReservation.Core.Interfaces;
 using System;
@@ -13,7 +14,8 @@ namespace RoomReservation.Core.Seeders
         {
             List<User> users = new List<User>()
             {
-                new() { Firstname = "Marek", Lastname = "Kowalski", Email = "marek.kowalski@gmail.com", PasswordHash = "password" },
+                new() { Firstname = "Admin", Lastname = "Admin", Email = "admin@rooms.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("password") },
+                new() { Firstname = "Jan", Lastname = "Kowalski", Email = "user@rooms.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("password") },
                 new() { Firstname = "Anna", Lastname = "Nowak", Email = "anna.nowak@wp.pl", PasswordHash = "password" },
                 new() { Firstname = "Piotr", Lastname = "Wiśniewski", Email = "piotr.wisniewski@onet.pl", PasswordHash = "password" },
                 new() { Firstname = "Katarzyna", Lastname = "Wójcik", Email = "k.wojcik@interia.pl", PasswordHash = "password" },

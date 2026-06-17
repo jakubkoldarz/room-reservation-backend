@@ -1,9 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.EntityFrameworkCore;
 using RoomReservation.Core.Data;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Providers;
 using RoomReservation.Core.Repositories;
 using RoomReservation.Core.Services;
+using System.Text.Json;
 
 namespace RoomReservation.Api.Extensions
 {
@@ -27,7 +29,13 @@ namespace RoomReservation.Api.Extensions
             });
 
             services.AddJwtConfiguration(config);
-            services.AddControllers();
+            services.AddControllers(options =>
+            {
+                options.ValueProviderFactories.Add(new FormValueProviderFactory());
+            }).AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            });
 
             return services;
         }
