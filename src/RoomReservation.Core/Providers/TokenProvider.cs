@@ -35,7 +35,7 @@ namespace RoomReservation.Core.Providers
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDescriptor);
 
-            return tokenHandler.WriteToken(token)
+            return tokenHandler.WriteToken(token);
         }
 
         public string GenerateRefreshToken()

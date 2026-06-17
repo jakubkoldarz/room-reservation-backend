@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RoomReservation.Core.Data;
 using RoomReservation.Core.Entities;
+using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -27,6 +28,24 @@ namespace RoomReservation.Core.Repositories
         {
             var user = await _db.Users.FindAsync(userId);
             return user;
+        }
+
+        public async Task<(IEnumerable<User> users, int totalCount)> GetFilteredAsync(UserFilter filters)
+        {
+            var users = _db.Users.AsQueryable();
+
+            if (!string.IsNullOrEmpty(filters.Firstname)) users = users.Where(u => u.Firstname.Contains(filters.Firstname));
+            if (!string.IsNullOrEmpty(filters.Lastname)) users = users.Where(u => u.Lastname.Contains(filters.Lastname));
+            if (!string.IsNullOrEmpty(filters.Email)) users = users.Where(u => u.Email.Contains(filters.Email));
+
+            var totalCount = await users.CountAsync();
+
+            var filteredUsers = await users
+                .Skip((filters.PageSize - 1) * filters.Page)
+                .Take(filters.PageSize)
+                .ToListAsync();
+
+            return (filteredUsers, totalCount);
         }
     }
 }

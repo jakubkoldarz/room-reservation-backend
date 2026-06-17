@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RoomReservation.Core.Results;
+using System;
 using System.Collections.Generic;
 using System.Text;
 

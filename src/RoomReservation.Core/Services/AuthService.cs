@@ -1,5 +1,6 @@
 ﻿using RoomReservation.Core.Entities;
 using RoomReservation.Core.Interfaces;
+using RoomReservation.Core.Results;
 
 namespace RoomReservation.Core.Services
 {

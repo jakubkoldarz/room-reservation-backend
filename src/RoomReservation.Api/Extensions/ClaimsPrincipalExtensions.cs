@@ -1,4 +1,4 @@
-﻿using RoomReservation.Core;
+﻿using RoomReservation.Core.Results;
 using System.Security.Claims;
 
 namespace RoomReservation.Api.Extensions
