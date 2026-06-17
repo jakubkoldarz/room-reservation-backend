@@ -31,9 +31,18 @@ if (app.Environment.IsDevelopment())
     {
         options.Title = "Room Reservation API";
         options.Theme = ScalarTheme.Default;
-        options.DefaultHttpClient = new(ScalarTarget.CSharp, ScalarClient.HttpClient);
+        options.DefaultHttpClient = new(ScalarTarget.Shell, ScalarClient.Laravel);
+        options.AddPreferredSecuritySchemes("Bearer")
+            .AddHttpAuthentication("Bearer", auth =>
+            {
+                auth.Token = ""; 
+            });
     });
 }
+
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
 
 app.Run();
 

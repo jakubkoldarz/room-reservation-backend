@@ -12,6 +12,7 @@ namespace RoomReservation.Api.Extensions
         public static IServiceCollection AddCore(this IServiceCollection services, IConfiguration config) 
         {
             services.AddOpenApi();
+            services.AddSwagger();
             services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 
             services.AddScoped<IAuthService, AuthService>();

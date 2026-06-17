@@ -10,7 +10,9 @@ namespace RoomReservation.Api.Extensions
             var stringUUID = claims.FindFirstValue(ClaimTypes.NameIdentifier);
             var parseResult = Guid.TryParse(stringUUID, out Guid id);
 
-            if(parseResult == false) return Result<Guid>.Failure("Invalid identificator");
+            if(parseResult == false || string.IsNullOrEmpty(stringUUID)) 
+                return Result<Guid>.Failure("Invalid identificator");
+
             return Result<Guid>.Success(id);
         }
     }

@@ -1,9 +1,5 @@
-﻿using RoomReservation.Core.Data;
-using RoomReservation.Core.Entities;
+﻿using RoomReservation.Core.Entities;
 using RoomReservation.Core.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace RoomReservation.Core.Services
 {
@@ -12,9 +8,12 @@ namespace RoomReservation.Core.Services
         public async Task<Result<string>> LoginAsync(string email, string password)
         {
             var user = await _users.GetUserByEmailAsync(email);
-            if (user is null) return Result<string>.Failure("User was not found");
+            if (user is null) return Result<string>.Failure("Invalid credentials");
 
-            var jwtToken = _tokenProvider.GenerateJwtToken();
+            var passwordMatch = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
+            if (!passwordMatch) return Result<string>.Failure("Invalid Credentials");
+
+            var jwtToken = _tokenProvider.GenerateJwtToken(user);
             return Result<string>.Success(jwtToken);
         }
 
@@ -28,12 +27,12 @@ namespace RoomReservation.Core.Services
                 Firstname = firstname,
                 Lastname = lastname,
                 Email = email,
-                PasswordHash = password
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password)
             };
 
-            await _users.CreateAsync(userToCreate);
+            var createdUser = await _users.CreateAsync(userToCreate);
 
-            var jwtToken = _tokenProvider.GenerateJwtToken();
+            var jwtToken = _tokenProvider.GenerateJwtToken(createdUser);
             return Result<string>.Success(jwtToken);
         }
     }

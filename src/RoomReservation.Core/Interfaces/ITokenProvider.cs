@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RoomReservation.Core.Entities;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -7,6 +8,6 @@ namespace RoomReservation.Core.Interfaces
     public interface ITokenProvider
     {
         string GenerateRefreshToken();
-        string GenerateJwtToken();
+        string GenerateJwtToken(User user);
     }
 }
