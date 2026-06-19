@@ -17,18 +17,24 @@ namespace RoomReservation.Api.Controllers
         public async Task<ActionResult<JwtTokenResponse>> Register(RegisterRequest request)
         {
             var result = await _authService.RegisterAsync(request.Email, request.Password, request.Firstname, request.Lastname);
-            if (!result.IsSuccess) return BadRequest(result.ErrorMessage);
 
-            return Ok(new JwtTokenResponse(result.Value!));
+            if (!result.IsSuccess)
+                return result.Error.ToActionResult();
+
+            Response.Cookies.AppendRefreshToken(result.Value.refreshToken);
+            return Ok(new JwtTokenResponse(result.Value.jwtToken));
         }
 
         [HttpPost("login")]
         public async Task<ActionResult<JwtTokenResponse>> Login(LoginRequest request)
         {
             var result = await _authService.LoginAsync(request.Email, request.Password);
-            if (!result.IsSuccess) return BadRequest(result.ErrorMessage);
 
-            return Ok(new JwtTokenResponse(result.Value!));
+            if (!result.IsSuccess)
+                return result.Error.ToActionResult();
+
+            Response.Cookies.AppendRefreshToken(result.Value.refreshToken);
+            return Ok(new JwtTokenResponse(result.Value.jwtToken));
         }
 
         [Authorize]
@@ -36,13 +42,23 @@ namespace RoomReservation.Api.Controllers
         public async Task<ActionResult<UserDetailsResponse>> Index()
         {
             var idResult = User.GetId();
-            if (!idResult.IsSuccess) return Unauthorized(idResult.ErrorMessage);
+            if (!idResult.IsSuccess)
+                return idResult.Error.ToActionResult();
 
             var userResult = await _userService.GetUserDetailsAsync(idResult.Value);
-            if(!userResult.IsSuccess) return BadRequest(userResult.ErrorMessage);
+            if (!userResult.IsSuccess)
+                return userResult.Error.ToActionResult();
 
             var user = userResult.Value!;
             return Ok(user.ToDetailsDto());
+        }
+
+        [Authorize]
+        [HttpGet("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            Response.Cookies.DeleteRefreshToken();
+            return Ok();
         }
     }
 }

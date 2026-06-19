@@ -11,7 +11,7 @@ namespace RoomReservation.Api.Extensions
             var parseResult = Guid.TryParse(stringUUID, out Guid id);
 
             if(parseResult == false || string.IsNullOrEmpty(stringUUID)) 
-                return Result<Guid>.Failure("Invalid identificator");
+                return Result<Guid>.Failure("Invalid identificator", ErrorType.Unauthorized);
 
             return Result<Guid>.Success(id);
         }

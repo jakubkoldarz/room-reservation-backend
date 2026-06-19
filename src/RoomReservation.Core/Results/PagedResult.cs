@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace RoomReservation.Core.Results
 {
     public class PagedResult<T> : IResult<IEnumerable<T>>
     {
+        [MemberNotNullWhen(true, nameof(Value))]
+        [MemberNotNullWhen(false, nameof(Error))]
         public bool IsSuccess { get; init; }
         public IEnumerable<T>? Value { get; init; }
-        public string? ErrorMessage { get; init; }
+        public Error? Error { get; init; }
 
         public int TotalCount { get; init; }
         public int Page { get; init; }
@@ -28,11 +31,11 @@ namespace RoomReservation.Core.Results
             };
         }
 
-        public static PagedResult<T> Failure(string errorMessage)
+        public static PagedResult<T> Failure(string errorMessage, ErrorType errorType)
         {
             return new PagedResult<T>
             {
-                ErrorMessage = errorMessage,
+                Error = new(errorMessage, errorType),
                 IsSuccess = false
             };
         }

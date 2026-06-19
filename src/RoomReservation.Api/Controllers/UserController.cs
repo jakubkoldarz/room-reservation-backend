@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RoomReservation.Api.Dtos.Users.Responses;
+using RoomReservation.Api.Extensions;
 using RoomReservation.Api.Extensions.Mappers;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
@@ -16,7 +17,8 @@ namespace RoomReservation.Api.Controllers
         public async Task<ActionResult<UserDetailsResponse>> GetSingle(Guid userId)
         {
             var result = await _userService.GetUserDetailsAsync(userId);
-            if(!result.IsSuccess) return BadRequest(result.ErrorMessage);
+            if (!result.IsSuccess)
+                return result.Error.ToActionResult();
             
             return Ok(result.Value!.ToDetailsDto());    
         }

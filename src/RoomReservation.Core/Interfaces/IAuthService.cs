@@ -7,7 +7,7 @@ namespace RoomReservation.Core.Interfaces
 {
     public interface IAuthService
     {
-        Task<Result<string>> LoginAsync(string email, string password);
-        Task<Result<string>> RegisterAsync(string email, string password, string firstname, string lastname);
+        Task<Result<(string jwtToken, string refreshToken)>> LoginAsync(string email, string password);
+        Task<Result<(string jwtToken, string refreshToken)>> RegisterAsync(string email, string password, string firstname, string lastname);
     }
 }

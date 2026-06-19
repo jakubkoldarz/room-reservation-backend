@@ -13,7 +13,7 @@ namespace RoomReservation.Core.Services
         public async Task<Result<User>> GetUserDetailsAsync(Guid userId)
         {
             var user = await _users.GetUserByIdAsync(userId);
-            if (user == null) return Result<User>.Failure("User was not found");
+            if (user == null) return Result<User>.Failure("User was not found", ErrorType.NotFound);
             return Result<User>.Success(user);
         }
 
