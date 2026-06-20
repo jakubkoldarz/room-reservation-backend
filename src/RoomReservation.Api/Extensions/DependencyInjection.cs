@@ -14,7 +14,7 @@ namespace RoomReservation.Api.Extensions
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddCore(this IServiceCollection services, IConfiguration config) 
+        public static IServiceCollection AddCore(this IServiceCollection services, IConfiguration config)
         {
             services.AddOpenApi();
             services.AddSwagger();
@@ -42,14 +42,14 @@ namespace RoomReservation.Api.Extensions
             {
                 options.InvalidModelStateResponseFactory = (context) =>
                 {
-                    var errors = context.ModelState
+                    var error = context.ModelState
                         .Where(x => x.Value?.Errors.Count > 0)
                         .SelectMany(x => x.Value!.Errors)
                         .Select(x => x.ErrorMessage)
-                        .ToList();
+                        .FirstOrDefault() ?? "Validation error";
 
                     var response = new ErrorResponse(
-                        string.Join(", ", errors),
+                        error,
                         HttpStatusCode.BadRequest
                     );
 

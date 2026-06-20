@@ -18,5 +18,7 @@ namespace RoomReservation.Core.Results
             => new() { Value = value, IsSuccess = true };
         public static Result<T> Failure(string errorMessage, ErrorType errorType) 
             => new() { Error = new(errorMessage, errorType), IsSuccess = false };
+        public static Result<T> Failure(Error error)
+            => new() { Error = error };
     }
 }

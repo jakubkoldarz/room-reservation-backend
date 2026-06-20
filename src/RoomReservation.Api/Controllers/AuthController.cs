@@ -1,17 +1,19 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RoomReservation.Api.Dtos;
 using RoomReservation.Api.Dtos.Auth.Requests;
 using RoomReservation.Api.Dtos.Auth.Responses;
 using RoomReservation.Api.Dtos.Users.Responses;
 using RoomReservation.Api.Extensions;
 using RoomReservation.Api.Extensions.Mappers;
 using RoomReservation.Core.Interfaces;
+using System.Net;
 
 namespace RoomReservation.Api.Controllers
 {
     [Route("[controller]")]
     [ApiController]
-    public class AuthController(IAuthService _authService, IUserService _userService) : ControllerBase
+    public class AuthController(IAuthService _authService, IUserService _userService, IRefreshTokenService _refreshTokenService) : ControllerBase
     {
         [HttpPost("register")]
         public async Task<ActionResult<JwtTokenResponse>> Register(RegisterRequest request)
@@ -28,7 +30,9 @@ namespace RoomReservation.Api.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<JwtTokenResponse>> Login(LoginRequest request)
         {
-            var result = await _authService.LoginAsync(request.Email, request.Password);
+            var userAgent = Request.Headers["User-Agent"].ToString();
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var result = await _authService.LoginAsync(request.Email, request.Password, ipAddress, userAgent);
 
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
@@ -57,8 +61,37 @@ namespace RoomReservation.Api.Controllers
         [HttpGet("logout")]
         public async Task<IActionResult> Logout()
         {
+            var cookieExist = Request.Cookies.TryGetValue("refreshToken", out var refreshToken);
+            if (!cookieExist || string.IsNullOrEmpty(refreshToken)) 
+                return BadRequest(new ErrorResponse("You are not logged in", HttpStatusCode.BadRequest));
+
+            var idResult = User.GetId();
+            if (!idResult.IsSuccess) 
+                return idResult.Error.ToActionResult();
+
+            await _refreshTokenService.RevokeTokenAsync(idResult.Value, refreshToken);
+
             Response.Cookies.DeleteRefreshToken();
             return Ok();
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh()
+        {
+            var cookieExist = Request.Cookies.TryGetValue("refreshToken", out var refreshToken);
+            if (!cookieExist || string.IsNullOrEmpty(refreshToken))
+                return BadRequest(new ErrorResponse("You are not logged in", HttpStatusCode.BadRequest));
+
+            var idResult = User.GetId();
+            if (!idResult.IsSuccess)
+                return idResult.Error.ToActionResult();
+
+            var tokensResponse = await _refreshTokenService.RotateTokenAsync(idResult.Value, refreshToken);
+            if (!tokensResponse.IsSuccess)
+                return tokensResponse.Error.ToActionResult();
+            Response.Cookies.AppendRefreshToken(tokensResponse.Value.refreshToken);
+            
+            return Ok(new JwtTokenResponse(tokensResponse.Value.jwtToken));
         }
     }
 }

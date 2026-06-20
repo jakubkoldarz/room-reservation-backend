@@ -11,30 +11,26 @@ namespace RoomReservation.Core.Entities
         [Key]
         public Guid Id { get; set; } = Guid.CreateVersion7();
 
-        [Required]
         [MaxLength(100)]
-        public string Token { get; set; } = string.Empty;
+        public required string TokenHash { get; set; } = string.Empty;
+        public required DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public required DateTime ExpiresAt { get; set; }
+        public DateTime? RevokedAt { get; set; }
 
-        [Required]
-        public DateTime Created { get; set; } = DateTime.UtcNow;
-
-        [Required]
-        public DateTime Expires { get; set; }
-
-        public DateTime? Revoked { get; set; }
-
-        [NotMapped]
-        public bool IsExpired => DateTime.UtcNow >= Expires;
+        [MaxLength(30)]
+        public string? IpAddress { get; set; }
+        [MaxLength(500)]
+        public string? UserAgent { get; set; }
 
         [NotMapped]
-        public bool IsActive => Revoked == null && !IsExpired;
-
+        public bool IsExpired => DateTime.UtcNow >= ExpiresAt;
         [NotMapped]
-        public bool IsRevoked => Revoked != null;
+        public bool IsActive => RevokedAt == null && !IsExpired;
+        [NotMapped]
+        public bool IsRevoked => RevokedAt != null;
 
-        [Required]
         [ForeignKey(nameof(User))]
-        public Guid UserId { get; set; }
+        public required Guid UserId { get; set; }
         public User User { get; set; } = null!;
     }
 }

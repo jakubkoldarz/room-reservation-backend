@@ -4,9 +4,9 @@ using RoomReservation.Core.Results;
 
 namespace RoomReservation.Core.Services
 {
-    public class AuthService(IUserRepository _users, ITokenProvider _tokenProvider) : IAuthService
+    public class AuthService(IUserRepository _users, ITokenProvider _tokenProvider, IRefreshTokenService _refreshTokenService) : IAuthService
     {
-        public async Task<Result<(string jwtToken, string refreshToken)>> LoginAsync(string email, string password)
+        public async Task<Result<(string jwtToken, string refreshToken)>> LoginAsync(string email, string password, string? ipAddress, string? userAgent)
         {
             var user = await _users.GetUserByEmailAsync(email);
             if (user is null) 
@@ -16,10 +16,12 @@ namespace RoomReservation.Core.Services
             if (!passwordMatch)
                 return Result<(string jwtToken, string refreshToken)>.Failure("Invalid credentials", ErrorType.BadRequest);
 
-            var refreshToken = _tokenProvider.GenerateRefreshToken();
+            var tokenResult = await _refreshTokenService.CreateTokenAsync(user.Id, ipAddress, userAgent);
+            if(!tokenResult.IsSuccess) 
+                return Result<(string jwtToken, string refreshToken)>.Failure(tokenResult.Error);
 
             var jwtToken = _tokenProvider.GenerateJwtToken(user);
-            return Result<(string jwtToken, string refreshToken)>.Success((jwtToken, refreshToken));
+            return Result<(string jwtToken, string refreshToken)>.Success((jwtToken, tokenResult.Value));
         }
 
         public async Task<Result<(string jwtToken, string refreshToken)>> RegisterAsync(string email, string password, string firstname, string lastname)
