@@ -6,7 +6,11 @@ namespace RoomReservation.Core.Services
 {
     public class AuthService(IUserRepository _users, ITokenProvider _tokenProvider, IRefreshTokenService _refreshTokenService) : IAuthService
     {
-        public async Task<ResultT<(string jwtToken, string refreshToken)>> LoginAsync(string email, string password, string? ipAddress, string? userAgent)
+        public async Task<ResultT<(string jwtToken, string refreshToken)>> LoginAsync(
+            string email,
+            string password,
+            string? ipAddress = null,
+            string? userAgent = null)
         {
             var user = await _users.GetUserByEmailAsync(email);
             if (user is null) 
@@ -26,7 +30,13 @@ namespace RoomReservation.Core.Services
             return ResultT<(string, string)>.Success((jwtToken, tokenResult.Value));
         }
 
-        public async Task<ResultT<(string jwtToken, string refreshToken)>> RegisterAsync(string email, string password, string firstname, string lastname)
+        public async Task<ResultT<(string jwtToken, string refreshToken)>> RegisterAsync(
+            string email,
+            string password,
+            string firstname,
+            string lastname,
+            string? ipAddress = null,
+            string? userAgent = null)
         {
             var user = await _users.GetUserByEmailAsync(email);
             if (user is not null) 
@@ -41,10 +51,13 @@ namespace RoomReservation.Core.Services
             };
 
             var createdUser = await _users.CreateAsync(userToCreate);
-            (var refreshToken, _) = _tokenProvider.GenerateRefreshToken();
+            var refreshTokenResult = await _refreshTokenService.CreateTokenAsync(createdUser.Id, ipAddress, userAgent);
+
+            if (!refreshTokenResult.IsSuccess)
+                return ResultT<(string, string)>.Failure("Token cannot be created", ErrorType.Internal);
 
             var jwtToken = _tokenProvider.GenerateJwtToken(createdUser);
-            return ResultT<(string, string)>.Success((jwtToken, refreshToken));
+            return ResultT<(string, string)>.Success((jwtToken, refreshTokenResult.Value));
         }
     }
 }

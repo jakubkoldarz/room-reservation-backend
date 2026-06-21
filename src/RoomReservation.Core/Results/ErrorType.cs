@@ -5,6 +5,7 @@
         BadRequest,
         NotFound,
         Unauthorized,
-        Forbidden
+        Forbidden,
+        Internal,
     }
 }

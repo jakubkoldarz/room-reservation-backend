@@ -12,7 +12,10 @@ namespace RoomReservation.Core.Services
 {
     public class RefreshTokenService(ITokenProvider _tokenProvider, IRefreshTokenRepository _tokens) : IRefreshTokenService
     {
-        public async Task<ResultT<string>> CreateTokenAsync(Guid userId, string? ipAddress, string? userAgent)
+        public async Task<ResultT<string>> CreateTokenAsync(
+            Guid userId,
+            string? ipAddress = null,
+            string? userAgent = null)
         {
             (string tokenValue, string hash) = _tokenProvider.GenerateRefreshToken();
 
@@ -48,7 +51,10 @@ namespace RoomReservation.Core.Services
             return Result.Success();
         }
 
-        public async Task<ResultT<(string jwtToken, string refreshToken)>> RotateTokenAsync(string refreshToken, string? ipAddress, string? userAgent)
+        public async Task<ResultT<(string jwtToken, string refreshToken)>> RotateTokenAsync(
+            string refreshToken,
+            string? ipAddress = null,
+            string? userAgent = null)
         {
             var existingToken = await _tokens.GetByHashAsync(TokenProvider.HashRefreshToken(refreshToken));
             if (existingToken == null)
