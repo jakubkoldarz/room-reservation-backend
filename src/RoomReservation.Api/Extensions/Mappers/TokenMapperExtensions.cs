@@ -9,8 +9,10 @@ namespace RoomReservation.Api.Extensions.Mappers
         {
             return new RefreshTokenResponse(
                 refreshToken.Id,
-                refreshToken.Created,
-                refreshToken.Expires
+                refreshToken.CreatedAt,
+                refreshToken.ExpiresAt,
+                refreshToken.IpAddress,
+                refreshToken.UserAgent
             );
         }
     }

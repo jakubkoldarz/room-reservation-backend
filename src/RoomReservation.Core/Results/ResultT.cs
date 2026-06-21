@@ -5,17 +5,20 @@ using System.Text;
 
 namespace RoomReservation.Core.Results
 {
-    public class Result : IResult
+    public class ResultT<T> : IResultT<T>
     {
+        public T? Value { get; init; }
         public Error? Error { get; init; }
         
+        [MemberNotNullWhen(true, nameof(Value))]
         [MemberNotNullWhen(false, nameof(Error))]
         public bool IsSuccess { get; init; }
 
-        public static Result Success() => new() { IsSuccess = true };
-        public static Result Failure(string errorMessage, ErrorType errorType) 
+        public static ResultT<T> Success(T value) 
+            => new() { Value = value, IsSuccess = true };
+        public static ResultT<T> Failure(string errorMessage, ErrorType errorType) 
             => new() { Error = new(errorMessage, errorType), IsSuccess = false };
-        public static Result Failure(Error error)
+        public static ResultT<T> Failure(Error error)
             => new() { Error = error };
     }
 }

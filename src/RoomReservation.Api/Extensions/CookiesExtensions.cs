@@ -9,7 +9,8 @@
                 Expires = DateTime.UtcNow.AddDays(7),
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict
+                SameSite = SameSiteMode.Strict,
+                Path = "/auth/refresh"
             });
         }
 
@@ -19,7 +20,8 @@
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict
+                SameSite = SameSiteMode.Strict,
+                Path = "/auth/refresh"
             });
         }
     }

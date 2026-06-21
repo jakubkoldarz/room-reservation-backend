@@ -4,10 +4,11 @@ namespace RoomReservation.Core.Interfaces
 {
     public interface IRefreshTokenRepository
     {
+        Task<RefreshToken?> GetByHashAsync(string tokenHash);
         Task<RefreshToken> CreateAsync(RefreshToken token);
-        Task RevokeAsync(Guid tokenId);
-        Task RevokeAllAsync(Guid userId);
-        Task<RefreshToken?> GetTokenByIdAsync(Guid tokenId);
-        Task<RefreshToken?> GetTokenByHashAsync(string hash);
+        Task UpdateAsync(RefreshToken token);
+        Task RevokeAllForUserAsync(Guid userId);
+        Task DeleteExpiredOlderThanAsync(TimeSpan age);
+        Task DeleteExpiredForUserAsync(Guid userId);
     }
 }

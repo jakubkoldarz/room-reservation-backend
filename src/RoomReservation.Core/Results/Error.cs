@@ -15,12 +15,4 @@ namespace RoomReservation.Core.Results
             ErrorType = errorType;
         }
     }
-
-    public enum ErrorType
-    {
-        BadRequest,
-        NotFound,
-        Unauthorized,
-        Forbidden
-    }
 }

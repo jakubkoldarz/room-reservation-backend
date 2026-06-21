@@ -5,7 +5,7 @@ using System.Text;
 
 namespace RoomReservation.Core.Results
 {
-    public class PagedResult<T> : IResult<IEnumerable<T>>
+    public class PagedResult<T> : IResultT<IEnumerable<T>>
     {
         [MemberNotNullWhen(true, nameof(Value))]
         [MemberNotNullWhen(false, nameof(Error))]

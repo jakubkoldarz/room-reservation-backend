@@ -10,11 +10,11 @@ namespace RoomReservation.Core.Services
 {
     public class UserService(IUserRepository _users) : IUserService
     {
-        public async Task<Result<User>> GetUserDetailsAsync(Guid userId)
+        public async Task<ResultT<User>> GetUserDetailsAsync(Guid userId)
         {
             var user = await _users.GetUserByIdAsync(userId);
-            if (user == null) return Result<User>.Failure("User was not found", ErrorType.NotFound);
-            return Result<User>.Success(user);
+            if (user == null) return ResultT<User>.Failure("User was not found", ErrorType.NotFound);
+            return ResultT<User>.Success(user);
         }
 
         public async Task<PagedResult<User>> GetUsersAsync(UserFilter filters)

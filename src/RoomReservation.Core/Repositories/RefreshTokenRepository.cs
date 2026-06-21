@@ -17,21 +17,32 @@ namespace RoomReservation.Core.Repositories
             return token;
         }
 
-        public async Task<RefreshToken?> GetTokenByHashAsync(string hash)
-            => await _db.RefreshTokens
-                .FirstOrDefaultAsync(rt => rt.TokenHash == hash);
+        public async Task DeleteExpiredForUserAsync(Guid userId)
+        {
+            await _db.RefreshTokens
+                .Where(rt => rt.UserId == userId && rt.ExpiresAt <= DateTime.UtcNow)
+                .ExecuteDeleteAsync();
+        }
 
-        public async Task<RefreshToken?> GetTokenByIdAsync(Guid tokenId)
-            => await _db.RefreshTokens.FindAsync(tokenId);
+        public async Task DeleteExpiredOlderThanAsync(TimeSpan age)
+        {
+            var cutoff = DateTime.Now - age;
+            await _db.RefreshTokens.Where(rt => rt.ExpiresAt < cutoff).ExecuteDeleteAsync();
+        }
 
-        public async Task RevokeAsync(Guid tokenId)
-            => await _db.RefreshTokens
-                .Where(rt => rt.Id == tokenId)
-                .ExecuteUpdateAsync(x => x.SetProperty(t => t.RevokedAt, DateTime.UtcNow));
+        public async Task<RefreshToken?> GetByHashAsync(string tokenHash) 
+            => await _db.RefreshTokens.Include(rt => rt.User)
+                .FirstOrDefaultAsync(rt => rt.TokenHash == tokenHash);
 
-        public async Task RevokeAllAsync(Guid userId)
+        public async Task RevokeAllForUserAsync(Guid userId)
             => await _db.RefreshTokens
                 .Where(rt => rt.UserId == userId)
-                .ExecuteUpdateAsync(x => x.SetProperty(t => t.RevokedAt, DateTime.UtcNow));
+                .ExecuteUpdateAsync(x => x.SetProperty(r => r.RevokedAt, DateTime.UtcNow));
+
+        public async Task UpdateAsync(RefreshToken token)
+        {
+            _db.RefreshTokens.Update(token);
+            await _db.SaveChangesAsync();
+        }
     }
 }

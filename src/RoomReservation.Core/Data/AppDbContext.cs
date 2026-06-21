@@ -2,6 +2,7 @@
 using RoomReservation.Core.Entities;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 
 namespace RoomReservation.Core.Data
@@ -16,14 +17,7 @@ namespace RoomReservation.Core.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            modelBuilder.Entity<User>()
-                .HasIndex(u => u.Email)
-                .IsUnique();
-
-            modelBuilder.Entity<RefreshToken>()
-                .HasIndex(rt => rt.Token)
-                .IsUnique();
+            modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         }
     }
 }

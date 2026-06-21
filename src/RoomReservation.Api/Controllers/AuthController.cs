@@ -30,7 +30,7 @@ namespace RoomReservation.Api.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<JwtTokenResponse>> Login(LoginRequest request)
         {
-            var userAgent = Request.Headers["User-Agent"].ToString();
+            var userAgent = Request.Headers.UserAgent.ToString();
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
             var result = await _authService.LoginAsync(request.Email, request.Password, ipAddress, userAgent);
 
@@ -69,7 +69,7 @@ namespace RoomReservation.Api.Controllers
             if (!idResult.IsSuccess) 
                 return idResult.Error.ToActionResult();
 
-            await _refreshTokenService.RevokeTokenAsync(idResult.Value, refreshToken);
+            await _refreshTokenService.RevokeAsync(idResult.Value, refreshToken);
 
             Response.Cookies.DeleteRefreshToken();
             return Ok();
@@ -80,13 +80,12 @@ namespace RoomReservation.Api.Controllers
         {
             var cookieExist = Request.Cookies.TryGetValue("refreshToken", out var refreshToken);
             if (!cookieExist || string.IsNullOrEmpty(refreshToken))
-                return BadRequest(new ErrorResponse("You are not logged in", HttpStatusCode.BadRequest));
+                return BadRequest(new ErrorResponse("You are not logged in", HttpStatusCode.Unauthorized));
 
-            var idResult = User.GetId();
-            if (!idResult.IsSuccess)
-                return idResult.Error.ToActionResult();
+            var userAgent = Request.Headers.UserAgent.ToString();
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
 
-            var tokensResponse = await _refreshTokenService.RotateTokenAsync(idResult.Value, refreshToken);
+            var tokensResponse = await _refreshTokenService.RotateTokenAsync(refreshToken, ipAddress, userAgent);
             if (!tokensResponse.IsSuccess)
                 return tokensResponse.Error.ToActionResult();
             Response.Cookies.AppendRefreshToken(tokensResponse.Value.refreshToken);

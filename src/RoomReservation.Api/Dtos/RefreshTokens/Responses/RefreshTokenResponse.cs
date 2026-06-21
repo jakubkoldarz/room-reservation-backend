@@ -4,6 +4,8 @@
     (
         Guid Id,
         DateTime Created,
-        DateTime Expires
+        DateTime Expires,
+        string? IpAddress = null,
+        string? UserAgent = null
     );
 }

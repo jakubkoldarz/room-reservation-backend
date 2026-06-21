@@ -7,7 +7,7 @@ namespace RoomReservation.Core.Interfaces
 {
     public interface ITokenProvider
     {
-        string GenerateRefreshToken();
+        (string token, string hash) GenerateRefreshToken();
         string GenerateJwtToken(User user);
     }
 }

@@ -9,7 +9,7 @@ namespace RoomReservation.Core.Interfaces
 {
     public interface IUserService
     {
-        Task<Result<User>> GetUserDetailsAsync(Guid userId);
+        Task<ResultT<User>> GetUserDetailsAsync(Guid userId);
         Task<PagedResult<User>> GetUsersAsync(UserFilter filters);
     }
 }

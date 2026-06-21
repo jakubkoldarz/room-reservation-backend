@@ -21,8 +21,12 @@ namespace RoomReservation.Api.Extensions
             services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 
             services.AddScoped<IAuthService, AuthService>();
+
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IUserRepository, UserRepository>();
+
+            services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+            services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 
             services.AddScoped<ITokenProvider, TokenProvider>();
 

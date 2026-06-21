@@ -21,6 +21,6 @@ namespace RoomReservation.Core.Entities
 
         public required string PasswordHash { get; set; }
 
-        public IEnumerable<RefreshToken> RefreshTokens { get; set; } = [];
+        public ICollection<RefreshToken> RefreshTokens { get; set; } = new HashSet<RefreshToken>();
     }
 }

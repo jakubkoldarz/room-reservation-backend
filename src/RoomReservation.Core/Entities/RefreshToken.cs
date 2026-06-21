@@ -32,5 +32,6 @@ namespace RoomReservation.Core.Entities
         [ForeignKey(nameof(User))]
         public required Guid UserId { get; set; }
         public User User { get; set; } = null!;
+        public Guid? ReplacedByTokenId { get; set; }
     }
 }

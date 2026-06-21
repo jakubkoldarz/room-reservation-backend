@@ -40,12 +40,21 @@ namespace RoomReservation.Core.Providers
             return tokenHandler.WriteToken(token);
         }
 
-        public string GenerateRefreshToken()
+        public static string HashRefreshToken(string token)
+        {
+            var hash = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+            return Convert.ToBase64String(hash);
+        }
+
+        public (string token, string hash) GenerateRefreshToken()
         {
             var randomNumber = new byte[64];
             using var rng = RandomNumberGenerator.Create();
             rng.GetBytes(randomNumber);
-            return Convert.ToBase64String(randomNumber);
+            var refreshToken = Convert.ToBase64String(randomNumber);
+            var hash = HashRefreshToken(refreshToken);
+
+            return (refreshToken, hash);
         }
     }
 }
