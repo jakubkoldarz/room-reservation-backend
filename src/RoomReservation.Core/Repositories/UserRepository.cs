@@ -18,7 +18,7 @@ namespace RoomReservation.Core.Repositories
             return user;
         }
 
-        public async Task<User?> GetUserByEmailAsync(string email)
+        public async Task<User?> GetByEmailAsync(string email)
         {
             var user = await _db.Users
                 .Include(u => u.RefreshTokens)
@@ -26,7 +26,7 @@ namespace RoomReservation.Core.Repositories
             return user;
         }
 
-        public async Task<User?> GetUserByIdAsync(Guid userId)
+        public async Task<User?> GetByIdAsync(Guid userId)
         {
             var user = await _db.Users
                 .Include(u => u.RefreshTokens)
@@ -55,6 +55,12 @@ namespace RoomReservation.Core.Repositories
                 .ToListAsync();
 
             return (filteredUsers, totalCount);
+        }
+        
+        public async Task UpdateAsync(User user)
+        {
+            _db.Users.Update(user);
+            await _db.SaveChangesAsync();
         }
     }
 }

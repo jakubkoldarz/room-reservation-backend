@@ -29,6 +29,7 @@ namespace RoomReservation.Api.Extensions
             services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 
             services.AddScoped<ITokenProvider, TokenProvider>();
+            services.AddScoped<IEmailService, EmailService>();
 
             services.AddDbContext<AppDbContext>(options =>
             {

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RoomReservation.Api.Dtos;
-using RoomReservation.Core.Results;
+using RoomReservation.Core.Enums;
+using RoomReservation.Core.Results.Common;
 using System.Net;
 
 namespace RoomReservation.Api.Extensions

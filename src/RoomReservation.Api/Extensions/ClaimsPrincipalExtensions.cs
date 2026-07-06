@@ -1,4 +1,5 @@
-﻿using RoomReservation.Core.Results;
+﻿using RoomReservation.Core.Enums;
+using RoomReservation.Core.Results.Common;
 using System.Security.Claims;
 
 namespace RoomReservation.Api.Extensions

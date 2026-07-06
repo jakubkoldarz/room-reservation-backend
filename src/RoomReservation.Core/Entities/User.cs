@@ -11,15 +11,18 @@ namespace RoomReservation.Core.Entities
         public Guid Id { get; set; } = Guid.CreateVersion7();
 
         [MaxLength(50)]
-        public required string Firstname { get; set; } 
+        public string? Firstname { get; set; }
 
         [MaxLength(100)]
-        public required string Lastname { get; set; } 
+        public string? Lastname { get; set; }
 
         [EmailAddress]
         public required string Email { get; set; } 
 
         public required string PasswordHash { get; set; }
+        public bool IsProfileComplete { get; set; } = false;
+        public bool IsEmailVerified { get; set; } = false;
+        public bool Is2faEnabled { get; set; } = false;
 
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new HashSet<RefreshToken>();
     }

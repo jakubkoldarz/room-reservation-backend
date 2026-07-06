@@ -1,9 +1,10 @@
-﻿using System;
+﻿using RoomReservation.Core.Enums;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
-namespace RoomReservation.Core.Results
+namespace RoomReservation.Core.Results.Common
 {
     public class PagedResult<T> : IResultT<IEnumerable<T>>
     {

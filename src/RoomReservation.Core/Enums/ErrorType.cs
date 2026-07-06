@@ -1,4 +1,4 @@
-﻿namespace RoomReservation.Core.Results
+﻿namespace RoomReservation.Core.Enums
 {
     public enum ErrorType
     {

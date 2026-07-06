@@ -1,8 +1,9 @@
 ﻿using RoomReservation.Core.Data;
 using RoomReservation.Core.Entities;
+using RoomReservation.Core.Enums;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Providers;
-using RoomReservation.Core.Results;
+using RoomReservation.Core.Results.Common;
 using System;
 using System.Collections.Generic;
 using System.Net;

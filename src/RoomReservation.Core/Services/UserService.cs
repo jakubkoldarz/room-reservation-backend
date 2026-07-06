@@ -1,7 +1,8 @@
 ﻿using RoomReservation.Core.Entities;
+using RoomReservation.Core.Enums;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
-using RoomReservation.Core.Results;
+using RoomReservation.Core.Results.Common;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,7 +13,7 @@ namespace RoomReservation.Core.Services
     {
         public async Task<ResultT<User>> GetUserDetailsAsync(Guid userId)
         {
-            var user = await _users.GetUserByIdAsync(userId);
+            var user = await _users.GetByIdAsync(userId);
             if (user == null) return ResultT<User>.Failure("User was not found", ErrorType.NotFound);
             return ResultT<User>.Success(user);
         }

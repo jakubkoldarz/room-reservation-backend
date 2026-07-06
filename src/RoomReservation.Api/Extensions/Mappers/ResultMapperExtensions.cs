@@ -1,4 +1,4 @@
-﻿using RoomReservation.Core.Results;
+﻿using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Api.Extensions.Mappers
 {

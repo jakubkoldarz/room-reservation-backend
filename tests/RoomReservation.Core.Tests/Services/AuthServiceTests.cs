@@ -2,7 +2,7 @@
 using Moq;
 using RoomReservation.Core.Entities;
 using RoomReservation.Core.Interfaces;
-using RoomReservation.Core.Results;
+using RoomReservation.Core.Results.Common;
 using RoomReservation.Core.Services;
 using RoomReservation.Core.Tests.TestHelpers;
 using System;
