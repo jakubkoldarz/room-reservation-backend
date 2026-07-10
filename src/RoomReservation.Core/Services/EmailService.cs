@@ -37,10 +37,13 @@ namespace RoomReservation.Core.Services
 
         public async Task<ResultT<string>> GetMessageAsync(string template, Dictionary<string, string> replacements)
         {
-            var path = Path.Combine(_templatesPath, template);
+            var path = Path.Combine(_templatesPath, $"{template}.html");
 
             if (!File.Exists(path))
+            {
+                _logger.LogError("Failed to open template file: File does not exist");
                 return new Error("Template file does not exist", ErrorType.Internal);
+            }
 
             var html = await File.ReadAllTextAsync(path);
 
@@ -55,7 +58,7 @@ namespace RoomReservation.Core.Services
         public async Task<Result> SendEmailAsync(EmailMessage message)
         {
             var mimeMessage = new MimeMessage();
-            mimeMessage.From.Add(new MailboxAddress("Sender", _smtpEmail));
+            mimeMessage.From.Add(new MailboxAddress("RoomReservation", _smtpEmail));
             mimeMessage.To.Add(new MailboxAddress("Sender", message.To));
             mimeMessage.Subject = message.Subject;
             mimeMessage.Body = new TextPart("html") { Text = message.HtmlMessage };

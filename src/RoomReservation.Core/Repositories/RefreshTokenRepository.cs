@@ -34,6 +34,9 @@ namespace RoomReservation.Core.Repositories
             => await _db.RefreshTokens.Include(rt => rt.User)
                 .FirstOrDefaultAsync(rt => rt.TokenHash == tokenHash);
 
+        public async Task<RefreshToken?> GetById(Guid refreshTokenId)
+            => await _db.RefreshTokens.FindAsync(refreshTokenId);
+
         public async Task RevokeAllForUserAsync(Guid userId)
             => await _db.RefreshTokens
                 .Where(rt => rt.UserId == userId)

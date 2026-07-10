@@ -14,7 +14,7 @@ namespace RoomReservation.Core.Services
         public async Task<ResultT<User>> GetUserDetailsAsync(Guid userId)
         {
             var user = await _users.GetByIdAsync(userId);
-            if (user == null) return ResultT<User>.Failure("User was not found", ErrorType.NotFound);
+            if (user == null) return ResultT<User>.Failure("User not found", ErrorType.NotFound);
             return ResultT<User>.Success(user);
         }
 
@@ -22,6 +22,20 @@ namespace RoomReservation.Core.Services
         {
             var filteredUsers = await _users.GetFilteredAsync(filters);
             return PagedResult<User>.Success(filteredUsers.users, filteredUsers.totalCount, filters.Page, filters.PageSize);
+        }
+
+        public async Task<ResultT<User>> UpdateUserAsync(Guid userId, string firstname, string lastname)
+        {
+            var userToUpdate = await _users.GetByIdAsync(userId);
+            if (userToUpdate is null)
+                return new Error("User not found", ErrorType.NotFound);
+
+            userToUpdate.Firstname = firstname;
+            userToUpdate.Lastname = lastname;
+            userToUpdate.IsProfileComplete = true;
+
+            await _users.UpdateAsync(userToUpdate);
+            return ResultT<User>.Success(userToUpdate);
         }
     }
 }

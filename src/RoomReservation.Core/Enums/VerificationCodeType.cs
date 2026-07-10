@@ -8,5 +8,6 @@ namespace RoomReservation.Core.Enums
     {
         EmailActivation,
         TwoFactorLogin,
+        ChangeEmail
     }
 }

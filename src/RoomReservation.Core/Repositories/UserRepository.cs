@@ -20,16 +20,14 @@ namespace RoomReservation.Core.Repositories
 
         public async Task<User?> GetByEmailAsync(string email)
         {
-            var user = await _db.Users
-                .Include(u => u.RefreshTokens)
-                .FirstOrDefaultAsync(u => u.Email == email);
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
             return user;
         }
 
         public async Task<User?> GetByIdAsync(Guid userId)
         {
             var user = await _db.Users
-                .Include(u => u.RefreshTokens)
+                .Include(u => u.RefreshTokens.Where(rt => (rt.RevokedAt == null) && !(DateTime.UtcNow >= rt.ExpiresAt)))
                 .FirstOrDefaultAsync(u => u.Id == userId);
             return user;
         }
@@ -38,11 +36,11 @@ namespace RoomReservation.Core.Repositories
         {
             var users = _db.Users.AsQueryable();
 
-            if (!string.IsNullOrEmpty(filters.Firstname)) 
-                users = users.Where(u => u.Firstname.Contains(filters.Firstname.ToLower()));
+            if (!string.IsNullOrEmpty(filters.Firstname))
+                users = users.Where(u => !string.IsNullOrEmpty(u.Firstname) && u.Firstname.Contains(filters.Firstname.ToLower()));
 
             if (!string.IsNullOrEmpty(filters.Lastname)) 
-                users = users.Where(u => u.Lastname.Contains(filters.Lastname.ToLower()));
+                users = users.Where(u => !string.IsNullOrEmpty(u.Lastname) && u.Lastname.Contains(filters.Lastname.ToLower()));
 
             if (!string.IsNullOrEmpty(filters.Email)) 
                 users = users.Where(u => u.Email.Contains(filters.Email.ToLower()));

@@ -8,7 +8,6 @@ namespace RoomReservation.Core.Entities
 {
     public class RefreshToken
     {
-        [Key]
         public Guid Id { get; set; } = Guid.CreateVersion7();
 
         [MaxLength(100)]
@@ -17,9 +16,7 @@ namespace RoomReservation.Core.Entities
         public required DateTime ExpiresAt { get; set; }
         public DateTime? RevokedAt { get; set; }
 
-        [MaxLength(30)]
         public string? IpAddress { get; set; }
-        [MaxLength(500)]
         public string? UserAgent { get; set; }
 
         [NotMapped]
@@ -29,7 +26,6 @@ namespace RoomReservation.Core.Entities
         [NotMapped]
         public bool IsRevoked => RevokedAt != null;
 
-        [ForeignKey(nameof(User))]
         public required Guid UserId { get; set; }
         public User User { get; set; } = null!;
         public Guid? ReplacedByTokenId { get; set; }

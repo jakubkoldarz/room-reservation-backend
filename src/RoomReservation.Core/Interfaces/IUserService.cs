@@ -11,5 +11,6 @@ namespace RoomReservation.Core.Interfaces
     {
         Task<ResultT<User>> GetUserDetailsAsync(Guid userId);
         Task<PagedResult<User>> GetUsersAsync(UserFilter filters);
+        Task<ResultT<User>> UpdateUserAsync(Guid userId, string firstname, string lastname);
     }
 }

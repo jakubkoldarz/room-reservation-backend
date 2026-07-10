@@ -15,6 +15,26 @@ namespace RoomReservation.Core.Services
         IVerificationCodeService _verificationCodeService,
         IEmailService _emailService) : IAuthService
     {
+        public async Task<Result> ChangePasswordAsync(Guid userId, string oldPassword, string newPassword)
+        {
+            var user = await _users.GetByIdAsync(userId);
+            if (user is null)
+                return new Error("User not found", ErrorType.NotFound);
+
+            var passwordMatch = BCrypt.Net.BCrypt.Verify(oldPassword, user.PasswordHash);
+            if (!passwordMatch)
+                return new Error("Invalid credentials", ErrorType.BadRequest);
+
+            await _refreshTokenService.RevokeAllAsync(userId);  
+            var sendResult = await SendPasswordNotification(user);
+            if (!sendResult.IsSuccess)
+                return sendResult.Error;
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            await _users.UpdateAsync(user);
+            return Result.Success();
+        }
+
         public async Task<Result> Disable2faAsync(Guid userId)
         {
             var user = await _users.GetByIdAsync(userId);
@@ -35,6 +55,30 @@ namespace RoomReservation.Core.Services
             await _users.UpdateAsync(user);
 
             return Result.Success();
+        }
+
+        public async Task<ResultT<VerificationCode>> IssueChangeEmailAsync(Guid userId, string newEmail)
+        {
+            var user = await _users.GetByIdAsync(userId);
+            if (user is null)
+                return new Error("User not found", ErrorType.NotFound);
+
+            var emailExists = await _users.GetByEmailAsync(newEmail);
+            if (emailExists is not null)
+                return new Error("Email is already taken", ErrorType.BadRequest);
+
+            var codeResult = await _verificationCodeService.GenerateCodeAsync(userId, VerificationCodeType.ChangeEmail);
+            if (!codeResult.IsSuccess)
+                return codeResult.Error;
+
+            user.PendingEmail = newEmail;
+            await _users.UpdateAsync(user);
+
+            var sendResult = await SendVerificationCodeAsync(codeResult.Value, user.PendingEmail);
+            if (!sendResult.IsSuccess)
+                return sendResult.Error;
+
+            return ResultT<VerificationCode>.Success(codeResult.Value);
         }
 
         public async Task<ResultT<LoginResult>> LoginAsync(
@@ -122,7 +166,7 @@ namespace RoomReservation.Core.Services
                 VerificationCodeType.EmailActivation);
 
             if (!codeResult.IsSuccess)
-                return new Error($"Verification code failed to generate: ${codeResult.Error.ErrorMessage}", ErrorType.Internal);
+                return new Error($"Verification code failed to generate: {codeResult.Error.ErrorMessage}", ErrorType.Internal);
 
             var sendResult = await SendVerificationCodeAsync(codeResult.Value);
             if (!sendResult.IsSuccess)
@@ -131,7 +175,37 @@ namespace RoomReservation.Core.Services
             return ResultT<Guid>.Success(codeResult.Value.Id);
         }
 
-        public async Task<ResultT<(string jwtToken, string refreshToken)>> VerifyEmailAsync(Guid verificationId, string code)
+        public async Task<Result> VerifyChangedEmailAsync(Guid verificationId, string code)
+        {
+            var validationResult = await _verificationCodeService.ValidateCodeAsync(
+                verificationId,
+                code,
+                VerificationCodeType.ChangeEmail);
+
+            if (!validationResult.IsSuccess)
+                return validationResult.Error;
+
+            var user = validationResult.Value.User;
+            
+            if (user.PendingEmail is null)
+                return new Error("Pending email is null", ErrorType.BadRequest);
+
+            var emailExists = await _users.GetByEmailAsync(user.PendingEmail);
+            if (emailExists is not null)
+                return new Error("Email is already taken", ErrorType.BadRequest);
+
+            user.Email = user.PendingEmail;
+            user.PendingEmail = null;
+            await _users.UpdateAsync(user);
+
+            return Result.Success();
+        }
+
+        public async Task<ResultT<(string jwtToken, string refreshToken)>> VerifyEmailAsync(
+            Guid verificationId,
+            string code,
+            string? ipAddress = null,
+            string? userAgent = null)
         {
             var validationResult = await _verificationCodeService.ValidateCodeAsync(
                 verificationId,
@@ -139,13 +213,13 @@ namespace RoomReservation.Core.Services
                 VerificationCodeType.EmailActivation);
 
             if (!validationResult.IsSuccess)
-                return new Error($"Verification failed: ${validationResult.Error}", ErrorType.BadRequest);
+                return new Error($"Verification failed: {validationResult.Error}", ErrorType.BadRequest);
 
             var validatedUser = validationResult.Value.User;
             validatedUser.IsEmailVerified = true;
             await _users.UpdateAsync(validatedUser);
 
-            var refreshTokenResult = await _refreshTokenService.CreateTokenAsync(validatedUser.Id);
+            var refreshTokenResult = await _refreshTokenService.CreateTokenAsync(validatedUser.Id, ipAddress, userAgent);
             if (!refreshTokenResult.IsSuccess)
                 return new Error($"Token cannot be created: {refreshTokenResult.Error}", ErrorType.Internal);
 
@@ -178,7 +252,7 @@ namespace RoomReservation.Core.Services
 
             var user = await _users.GetByIdAsync(userId);
             if(user is null)
-                return new Error("User was not found", ErrorType.NotFound);
+                return new Error("User not found", ErrorType.NotFound);
 
             await _refreshTokenService.DeleteExpiredAsync(userId);
             var jwtToken = _tokenProvider.GenerateJwtToken(user);
@@ -186,7 +260,7 @@ namespace RoomReservation.Core.Services
             return ResultT<(string, string)>.Success((jwtToken, tokenResult.Value));
         }
 
-        private async Task<Result> SendVerificationCodeAsync(VerificationCode verificationCode)
+        private async Task<Result> SendVerificationCodeAsync(VerificationCode verificationCode, string? to = null)
         {
             TimeSpan expirationMinutes = verificationCode.ExpiresAt - DateTime.UtcNow;
 
@@ -194,6 +268,7 @@ namespace RoomReservation.Core.Services
             {
                 VerificationCodeType.EmailActivation => ("Aktywacja konta RoomReservation", "Potwierdzenie rejestracji", "Aby zakończyć rejestrację, potwierdź swój adres email"),
                 VerificationCodeType.TwoFactorLogin => ("Kod logowania RoomReservation", "Logowanie", "Wpisz poniższy kod, aby dokończyć logowanie"),
+                VerificationCodeType.ChangeEmail => ("Zmiana adresu email", "Potwierdzenie zmiany adresu email", "Wpisz poniższy kod, aby dokończyć zmianę adresu email"),
                 _ => throw new ArgumentOutOfRangeException(nameof(verificationCode.Type))
             };
 
@@ -210,7 +285,30 @@ namespace RoomReservation.Core.Services
 
             var sendResult = await _emailService.SendEmailAsync(new EmailMessage
             {
-                To = verificationCode.User.Email,
+                To = to ?? verificationCode.User.Email,
+                Subject = subject,
+                HtmlMessage = messageResult.Value,
+            });
+
+            return sendResult;
+        }
+
+        private async Task<Result> SendPasswordNotification(User user)
+        {
+            var subject = "Hasło zostało zmienione";
+            var title = "Alert bezpieczeństa - Zmiana hasła";
+
+            var messageResult = await _emailService.GetMessageAsync("PasswordChange", new Dictionary<string, string>
+            {
+                ["Title"] = title,
+            });
+
+            if (!messageResult.IsSuccess)
+                return messageResult.Error;
+
+            var sendResult = await _emailService.SendEmailAsync(new EmailMessage
+            {
+                To = user.Email,
                 Subject = subject,
                 HtmlMessage = messageResult.Value,
             });

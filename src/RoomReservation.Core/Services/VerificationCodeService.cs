@@ -62,6 +62,7 @@ namespace RoomReservation.Core.Services
             {
                 VerificationCodeType.EmailActivation => 15,
                 VerificationCodeType.TwoFactorLogin => 5,
+                VerificationCodeType.ChangeEmail => 10,
                 _ => throw new ArgumentOutOfRangeException(nameof(type))
             };
         }

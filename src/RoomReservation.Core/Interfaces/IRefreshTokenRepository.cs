@@ -10,5 +10,6 @@ namespace RoomReservation.Core.Interfaces
         Task RevokeAllForUserAsync(Guid userId);
         Task DeleteExpiredOlderThanAsync(TimeSpan age);
         Task DeleteExpiredForUserAsync(Guid userId);
+        Task<RefreshToken?> GetById(Guid refreshTokenId);
     }
 }

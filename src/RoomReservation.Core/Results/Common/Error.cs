@@ -15,5 +15,7 @@ namespace RoomReservation.Core.Results.Common
             ErrorMessage = errorMessage;
             ErrorType = errorType;
         }
+        public override string ToString()
+            => ErrorMessage;
     }
 }

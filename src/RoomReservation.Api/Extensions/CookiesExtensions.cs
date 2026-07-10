@@ -10,7 +10,7 @@
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.Strict,
-                Path = "/auth/refresh"
+                Path = "/auth/"
             });
         }
 
@@ -21,7 +21,7 @@
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.Strict,
-                Path = "/auth/refresh"
+                Path = "/auth/"
             });
         }
     }

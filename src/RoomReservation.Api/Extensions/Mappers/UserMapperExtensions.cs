@@ -10,18 +10,17 @@ namespace RoomReservation.Api.Extensions.Mappers
             return new BasicUserResponse(
                 user.Id,
                 user.Firstname,
-                user.Lastname
+                user.Lastname,
+                user.IsProfileComplete,
+                user.IsEmailVerified,
+                user.Is2faEnabled
             );
         }
 
         public static UserDetailsResponse ToDetailsDto(this User user)
         {
             return new UserDetailsResponse(
-                new BasicUserResponse(
-                    user.Id,
-                    user.Firstname,
-                    user.Lastname
-                ),
+                user.ToBasicDto(),
                 user.RefreshTokens.Select(rf => rf.ToDto())
             );
         }

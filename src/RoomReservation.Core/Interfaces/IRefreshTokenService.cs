@@ -16,6 +16,8 @@ namespace RoomReservation.Core.Interfaces
             string? ipAddress = null,
             string? userAgent = null); 
         Task<Result> RevokeAsync(Guid userId, string refreshToken);  
+        Task<Result> RevokeAsync(Guid userId, Guid refreshTokenId);
+        Task<Result> RevokeAllAsync(Guid userId);
         Task<Result> DeleteExpiredAsync(Guid userId);
     }
 }

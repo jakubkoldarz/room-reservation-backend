@@ -11,7 +11,7 @@ using System.Text;
 
 namespace RoomReservation.Core.Services
 {
-    public class RefreshTokenService(ITokenProvider _tokenProvider, IRefreshTokenRepository _tokens) : IRefreshTokenService
+    public class RefreshTokenService(ITokenProvider _tokenProvider, IRefreshTokenRepository _refreshTokens) : IRefreshTokenService
     {
         public async Task<ResultT<string>> CreateTokenAsync(
             Guid userId,
@@ -30,25 +30,43 @@ namespace RoomReservation.Core.Services
                 UserAgent = userAgent
             };
 
-            await _tokens.CreateAsync(tokenToCreate);
+            await _refreshTokens.CreateAsync(tokenToCreate);
             return ResultT<string>.Success(tokenValue);
         }
 
         public async Task<Result> DeleteExpiredAsync(Guid userId)
         {
-            await _tokens.DeleteExpiredForUserAsync(userId);
+            await _refreshTokens.DeleteExpiredForUserAsync(userId);
+            return Result.Success();
+        }
+
+        public async Task<Result> RevokeAllAsync(Guid userId)
+        {
+            await _refreshTokens.RevokeAllForUserAsync(userId);
             return Result.Success();
         }
 
         public async Task<Result> RevokeAsync(Guid userId, string refreshToken)
         {
-            var token = await _tokens.GetByHashAsync(TokenProvider.HashRefreshToken(refreshToken));
+            var token = await _refreshTokens.GetByHashAsync(TokenProvider.HashRefreshToken(refreshToken));
             if (token == null || token.UserId != userId)
-                return Result.Failure("Token was not found", ErrorType.NotFound);
+                return Result.Failure("Refresh token was not found", ErrorType.NotFound);
 
             token.RevokedAt = DateTime.UtcNow;
-            await _tokens.UpdateAsync(token);
+            await _refreshTokens.UpdateAsync(token);
             
+            return Result.Success();
+        }
+
+        public async Task<Result> RevokeAsync(Guid userId, Guid refreshTokenId)
+        {
+            var token = await _refreshTokens.GetById(refreshTokenId);
+            if (token == null || token.UserId != userId)
+                return Result.Failure("Refresh token was not found", ErrorType.NotFound);
+
+            token.RevokedAt = DateTime.UtcNow;
+            await _refreshTokens.UpdateAsync(token);
+
             return Result.Success();
         }
 
@@ -57,14 +75,14 @@ namespace RoomReservation.Core.Services
             string? ipAddress = null,
             string? userAgent = null)
         {
-            var existingToken = await _tokens.GetByHashAsync(TokenProvider.HashRefreshToken(refreshToken));
+            var existingToken = await _refreshTokens.GetByHashAsync(TokenProvider.HashRefreshToken(refreshToken));
             if (existingToken == null)
-                return ResultT<(string, string)>.Failure("Token was not found", ErrorType.Unauthorized);
+                return ResultT<(string, string)>.Failure("Refresh token was not found", ErrorType.Unauthorized);
 
             if(existingToken.IsRevoked)
             {
-                await _tokens.RevokeAllForUserAsync(existingToken.UserId);
-                return ResultT<(string, string)>.Failure("Token reuse detected, please login again", ErrorType.Unauthorized);
+                await _refreshTokens.RevokeAllForUserAsync(existingToken.UserId);
+                return ResultT<(string, string)>.Failure("Refresh token reuse detected, please login again", ErrorType.Unauthorized);
             }
 
             if (existingToken.ExpiresAt < DateTime.UtcNow)
@@ -81,10 +99,10 @@ namespace RoomReservation.Core.Services
                 UserAgent = userAgent,
             };
 
-            var createdToken = await _tokens.CreateAsync(tokenToCreate);
+            var createdToken = await _refreshTokens.CreateAsync(tokenToCreate);
             existingToken.RevokedAt = DateTime.UtcNow;
             existingToken.ReplacedByTokenId = createdToken.Id;
-            await _tokens.UpdateAsync(existingToken);
+            await _refreshTokens.UpdateAsync(existingToken);
 
             var jwtToken = _tokenProvider.GenerateJwtToken(existingToken.User);
 

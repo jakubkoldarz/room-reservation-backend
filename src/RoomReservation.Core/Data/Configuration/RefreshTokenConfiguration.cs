@@ -11,13 +11,18 @@ namespace RoomReservation.Core.Data.Configuration
     {
         public void Configure(EntityTypeBuilder<RefreshToken> builder)
         {
+            builder.HasKey(rt => rt.Id);
+
             builder.HasIndex(rt => rt.ExpiresAt);
             builder.HasIndex(rt => rt.UserId);
             builder.HasIndex(rt => rt.TokenHash).IsUnique();
 
-            builder.HasOne(rt => rt.User)
-                .WithMany(u => u.RefreshTokens)
-                .HasForeignKey(rt => rt.UserId);
+            builder.Property(rt => rt.TokenHash).IsRequired().HasMaxLength(100);
+            builder.Property(rt => rt.IpAddress).HasMaxLength(30);
+            builder.Property(rt => rt.UserAgent).HasMaxLength(500);
+
+            builder.Property(rt => rt.CreatedAt).IsRequired();
+            builder.Property(rt => rt.ExpiresAt).IsRequired();
         }
     }
 }

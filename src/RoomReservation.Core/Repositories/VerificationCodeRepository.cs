@@ -18,7 +18,9 @@ namespace RoomReservation.Core.Repositories
         }
 
         public async Task<VerificationCode?> GetByIdAsync(Guid verificationId)
-            => await _db.VerificationCodes.FindAsync(verificationId);
+            => await _db.VerificationCodes
+            .Include(vc => vc.User)
+            .FirstOrDefaultAsync(vc => vc.Id == verificationId);
 
         public async Task InvalidateActiveCodesAsync(Guid userId, VerificationCodeType type)
         {
