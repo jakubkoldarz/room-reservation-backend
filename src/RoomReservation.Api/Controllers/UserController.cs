@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RoomReservation.Api.Attributes;
 using RoomReservation.Api.Dtos.Users.Requests;
 using RoomReservation.Api.Dtos.Users.Responses;
 using RoomReservation.Api.Extensions;
@@ -22,7 +23,7 @@ namespace RoomReservation.Api.Controllers
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
             
-            return Ok(result.Value!.ToDetailsDto());    
+            return Ok(result.Value!.ToBasicDto());    
         }
 
         [HttpGet]
@@ -33,13 +34,9 @@ namespace RoomReservation.Api.Controllers
         }
 
         [HttpPut("profile")]
-        public async Task<ActionResult<IEnumerable<BasicUserResponse>>> UpdateProfile(UpdateProfileRequest request)
+        public async Task<ActionResult<IEnumerable<BasicUserResponse>>> UpdateProfile([UserId] Guid userId, UpdateProfileRequest request)
         {
-            var userIdResult = User.GetId();
-            if (!userIdResult.IsSuccess)
-                return userIdResult.Error.ToActionResult();
-
-            var result = await _userService.UpdateUserAsync(userIdResult.Value, request.Firstname, request.Lastname);
+            var result = await _userService.UpdateUserAsync(userId, request.Firstname, request.Lastname);
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 

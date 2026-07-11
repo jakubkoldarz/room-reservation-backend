@@ -26,7 +26,6 @@ namespace RoomReservation.Core.Services
 
             return ResultT<VerificationCode>.Success(codeToCreate);
         }
-
         public async Task<ResultT<VerificationCode>> GetByIdAsync(Guid verificationId)
         {
             var verificationCode = await _verificationCodes.GetByIdAsync(verificationId);
@@ -35,7 +34,14 @@ namespace RoomReservation.Core.Services
 
             return ResultT<VerificationCode>.Success(verificationCode);
         }
+        public async Task<ResultT<VerificationCode>> GetActiveByUserIdAsync(Guid userId, VerificationCodeType type)
+        {
+            var code = await _verificationCodes.GetByUserId(userId, type);
+            if (code is null)
+                return new Error("Verification failed", ErrorType.BadRequest);
 
+            return ResultT<VerificationCode>.Success(code);
+        }
         public async Task<ResultT<VerificationCode>> ValidateCodeAsync(Guid verificationId, string code, VerificationCodeType type)
         {
             var codeResult = await GetByIdAsync(verificationId);
@@ -51,6 +57,7 @@ namespace RoomReservation.Core.Services
 
             return ResultT<VerificationCode>.Success(verificationCode);
         }
+
 
         private string GenerateCodeValue()
         {

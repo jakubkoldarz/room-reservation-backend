@@ -16,22 +16,26 @@ namespace RoomReservation.Core.Repositories
             await _db.VerificationCodes.AddAsync(code);
             await _db.SaveChangesAsync();
         }
-
         public async Task<VerificationCode?> GetByIdAsync(Guid verificationId)
             => await _db.VerificationCodes
             .Include(vc => vc.User)
             .FirstOrDefaultAsync(vc => vc.Id == verificationId);
-
+        public async Task<VerificationCode?> GetByUserId(Guid userId, VerificationCodeType type)
+            => await _db.VerificationCodes
+            .Include(vc => vc.User)
+            .Where(vc => vc.UserId == userId 
+                      && vc.Type == type
+                      && vc.IsUsed == false
+                      && vc.ExpiresAt > DateTime.UtcNow).FirstOrDefaultAsync();
         public async Task InvalidateActiveCodesAsync(Guid userId, VerificationCodeType type)
         {
             await _db.VerificationCodes
-                .Where(v => v.UserId == userId
-                     && v.Type == type
-                     && v.IsUsed == false
-                     && v.ExpiresAt > DateTime.UtcNow)
-                .ExecuteUpdateAsync(v => v.SetProperty(x => x.IsUsed, true));
+                .Where(vc => vc.UserId == userId
+                     && vc.Type == type
+                     && vc.IsUsed == false
+                     && vc.ExpiresAt > DateTime.UtcNow)
+                .ExecuteUpdateAsync(vc => vc.SetProperty(x => x.IsUsed, true));
         }
-
         public async Task MarkAsUsedAsync(VerificationCode code)
         {
             code.IsUsed = true;

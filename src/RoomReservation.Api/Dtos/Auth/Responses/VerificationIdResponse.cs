@@ -2,6 +2,6 @@
 {
     public record VerificationIdResponse
     (
-        Guid VerificatioNId
+        Guid VerificationId
     );
 }

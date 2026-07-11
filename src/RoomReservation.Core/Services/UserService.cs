@@ -14,16 +14,16 @@ namespace RoomReservation.Core.Services
         public async Task<ResultT<User>> GetUserDetailsAsync(Guid userId)
         {
             var user = await _users.GetByIdAsync(userId);
-            if (user == null) return ResultT<User>.Failure("User not found", ErrorType.NotFound);
+            if (user is null) 
+                return new Error("User not found", ErrorType.NotFound);
+
             return ResultT<User>.Success(user);
         }
-
         public async Task<PagedResult<User>> GetUsersAsync(UserFilter filters)
         {
             var filteredUsers = await _users.GetFilteredAsync(filters);
             return PagedResult<User>.Success(filteredUsers.users, filteredUsers.totalCount, filters.Page, filters.PageSize);
         }
-
         public async Task<ResultT<User>> UpdateUserAsync(Guid userId, string firstname, string lastname)
         {
             var userToUpdate = await _users.GetByIdAsync(userId);

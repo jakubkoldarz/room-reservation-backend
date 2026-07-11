@@ -9,7 +9,7 @@ namespace RoomReservation.Core.Results
     {
         [MemberNotNullWhen(true, nameof(VerificationId))]
         [MemberNotNullWhen(false, nameof(JwtToken), nameof(RefreshToken))]
-        public bool Requires2FA { get; set; }
+        public required bool Requires2FA { get; set; }
 
         public Guid? VerificationId { get; set; }
         public string? JwtToken { get; set; }
