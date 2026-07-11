@@ -1,0 +1,60 @@
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
+using RoomReservation.Core.Entities;
+using RoomReservation.Core.Interfaces;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+
+namespace RoomReservation.Core.Providers
+{
+    public class TokenProvider(IConfiguration config) : ITokenProvider
+    {
+        public string GenerateJwtToken(User user)
+        {
+            var jwtSecret = config["Jwt:Secret"] ?? throw new InvalidOperationException("Missing config: Jwt:Secret");
+            var issuer = config["Jwt:Issuer"] ?? throw new InvalidOperationException("Missing config: Jwt:Issuer");
+            var audience = config["Jwt:Audience"] ?? throw new InvalidOperationException("Missing config: Jwt:Audience");
+
+            var jwtKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(JwtRegisteredClaimNames.Iss, issuer!),
+                new(JwtRegisteredClaimNames.Aud, audience!),
+            };
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(10),
+                SigningCredentials = new SigningCredentials(jwtKey, SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+
+            return tokenHandler.WriteToken(token);
+        }
+
+        public static string HashRefreshToken(string token)
+        {
+            var hash = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+            return Convert.ToBase64String(hash);
+        }
+
+        public (string token, string hash) GenerateRefreshToken()
+        {
+            var randomNumber = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+            var refreshToken = Convert.ToBase64String(randomNumber);
+            var hash = HashRefreshToken(refreshToken);
+
+            return (refreshToken, hash);
+        }
+    }
+}

@@ -1,0 +1,52 @@
+services:
+  roomreservation.api:
+    image: ${DOCKER_REGISTRY-}roomreservationapi
+    build:
+      context: .
+      dockerfile: src/RoomReservation.Api/Dockerfile
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres-db;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}
+      - Jwt__Secret=${JWT_SECRET}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+      - SMTP__Host=${SMTP_HOST}
+      - SMTP__Port=${SMTP_PORT}
+      - SMTP__Email=${SMTP_EMAIL}
+      - SMTP__Password=${SMTP_PASSWORD}
+    ports:
+      - "5000:8080"
+    depends_on:
+      - postgres-db
+
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: roomreservation.db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - room_data:/var/lib/postgresql/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
+
+  pgadmin:
+    image: dpage/pgadmin4:8.5
+    container_name: roomreservation.pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "${PGADMIN_PORT}:80" 
+    depends_on:
+      - postgres-db
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+ 
+volumes:
+  room_data:
+  pgadmin_data:

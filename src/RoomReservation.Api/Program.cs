@@ -1,41 +1,55 @@
+using Microsoft.EntityFrameworkCore;
+using RoomReservation.Api.Extensions;
+using RoomReservation.Core.Data;
+using RoomReservation.Core.Seeders;
+using Scalar.AspNetCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddCore(builder.Configuration);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    app.MapOpenApi();
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        context.Database.Migrate();
+        Console.WriteLine("--> Migration executed successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"--> Migration error: {ex.Message}");
+    }
 }
 
-app.UseHttpsRedirection();
-
-var summaries = new[]
+if (app.Environment.IsDevelopment())
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    using(var scope = app.Services.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await new DatabaseSeeder(context).SeedAsync();
+    }
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+    app.MapOpenApi();
+    app.MapScalarApiReference(options =>
+    {
+        options.Title = "Room Reservation API";
+        options.Theme = ScalarTheme.Default;
+        options.DefaultHttpClient = new(ScalarTarget.Shell, ScalarClient.Laravel);
+        options.AddPreferredSecuritySchemes("Bearer")
+            .AddHttpAuthentication("Bearer", auth =>
+            {
+                auth.Token = ""; 
+            });
+    });
+}
+
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
