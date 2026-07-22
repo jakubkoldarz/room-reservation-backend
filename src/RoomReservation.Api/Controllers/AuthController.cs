@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Org.BouncyCastle.Utilities.Net;
 using RoomReservation.Api.Attributes;
 using RoomReservation.Api.Dtos;
 using RoomReservation.Api.Dtos.Auth.Requests;
@@ -8,7 +7,6 @@ using RoomReservation.Api.Dtos.Auth.Responses;
 using RoomReservation.Api.Dtos.Users.Responses;
 using RoomReservation.Api.Extensions;
 using RoomReservation.Api.Extensions.Mappers;
-using RoomReservation.Core.Entities;
 using RoomReservation.Core.Interfaces;
 using System.Net;
 
@@ -66,7 +64,7 @@ namespace RoomReservation.Api.Controllers
         [HttpPost("login/2fa")]
         public async Task<ActionResult<JwtTokenResponse>> Verify2fa(VerificationRequest request)
         {
-            var(ipAddress, userAgent) = GetUserInfo();
+            var (ipAddress, userAgent) = GetUserInfo();
             var result = await _authService.Verify2faAsync(
                 request.VerificationId,
                 request.VerificationCode,
@@ -146,6 +144,7 @@ namespace RoomReservation.Api.Controllers
         }
 
         [Authorize]
+        [RequireCompletedProfile]
         [HttpPost("password")]
         public async Task<IActionResult> ChangePassword([UserId] Guid userId, ChangePasswordRequest request)
         {
@@ -157,13 +156,14 @@ namespace RoomReservation.Api.Controllers
         }
 
         [Authorize]
+        [RequireCompletedProfile]
         [HttpPost("email")]
         public async Task<ActionResult<VerificationIdResponse>> ChangeEmail([UserId] Guid userId, EmailRequest request)
         {
             var result = await _authService.IssueChangeEmailAsync(userId, request.EmailAddress);
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
-         
+
             return Ok(new VerificationIdResponse(result.Value.Id));
         }
 

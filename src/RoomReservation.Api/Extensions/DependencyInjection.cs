@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
+using RoomReservation.Api.Authorization;
 using RoomReservation.Api.Dtos;
 using RoomReservation.Core.Data;
 using RoomReservation.Core.Interfaces;
@@ -20,6 +22,7 @@ namespace RoomReservation.Api.Extensions
             services.AddSwagger();
             services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 
+            services.AddSingleton<IAuthorizationPolicyProvider, CustomPolicyProvider>();
             services.AddScoped<IAuthService, AuthService>();
 
             services.AddScoped<IUserService, UserService>();
