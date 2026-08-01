@@ -7,5 +7,6 @@
         Unauthorized,
         Forbidden,
         Internal,
+        Conflict,
     }
 }

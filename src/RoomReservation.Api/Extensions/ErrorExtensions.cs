@@ -16,6 +16,7 @@ namespace RoomReservation.Api.Extensions
                 ErrorType.NotFound => (error.ErrorMessage, HttpStatusCode.NotFound),
                 ErrorType.Unauthorized => (error.ErrorMessage, HttpStatusCode.Unauthorized),
                 ErrorType.Forbidden => (error.ErrorMessage, HttpStatusCode.Forbidden),
+                ErrorType.Conflict => (error.ErrorMessage, HttpStatusCode.Conflict),
                 _ => ("Internal server error", HttpStatusCode.InternalServerError)
             };
 
