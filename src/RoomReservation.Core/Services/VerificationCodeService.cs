@@ -36,7 +36,7 @@ namespace RoomReservation.Core.Services
         }
         public async Task<ResultT<VerificationCode>> GetActiveByUserIdAsync(Guid userId, VerificationCodeType type)
         {
-            var code = await _verificationCodes.GetByUserId(userId, type);
+            var code = await _verificationCodes.GetByUserIdAsync(userId, type);
             if (code is null)
                 return new Error("Verification failed", ErrorType.BadRequest);
 

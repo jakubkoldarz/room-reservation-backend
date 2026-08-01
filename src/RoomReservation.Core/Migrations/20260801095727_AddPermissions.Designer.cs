@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RoomReservation.Core.Data;
@@ -11,9 +12,11 @@ using RoomReservation.Core.Data;
 namespace RoomReservation.Core.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260801095727_AddPermissions")]
+    partial class AddPermissions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -37,7 +40,7 @@ namespace RoomReservation.Core.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Permissions");
+                    b.ToTable("Permission");
 
                     b.HasData(
                         new
@@ -74,6 +77,11 @@ namespace RoomReservation.Core.Migrations
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000001"),
                             Name = "user.list"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000002"),
+                            Name = "user.block"
                         });
                 });
 
@@ -144,7 +152,7 @@ namespace RoomReservation.Core.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Roles");
+                    b.ToTable("Role");
 
                     b.HasData(
                         new
@@ -204,16 +212,6 @@ namespace RoomReservation.Core.Migrations
                         },
                         new
                         {
-                            RoleId = new Guid("10000000-0000-0000-0000-000000000000"),
-                            PermissionId = new Guid("20000000-0000-0000-0000-000000000000")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("10000000-0000-0000-0000-000000000000"),
-                            PermissionId = new Guid("20000000-0000-0000-0000-000000000001")
-                        },
-                        new
-                        {
                             RoleId = new Guid("10000000-0000-0000-0000-000000000001"),
                             PermissionId = new Guid("10000000-0000-0000-0000-000000000000")
                         },
@@ -221,16 +219,6 @@ namespace RoomReservation.Core.Migrations
                         {
                             RoleId = new Guid("10000000-0000-0000-0000-000000000001"),
                             PermissionId = new Guid("10000000-0000-0000-0000-000000000001")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("10000000-0000-0000-0000-000000000001"),
-                            PermissionId = new Guid("20000000-0000-0000-0000-000000000000")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("10000000-0000-0000-0000-000000000001"),
-                            PermissionId = new Guid("20000000-0000-0000-0000-000000000001")
                         },
                         new
                         {

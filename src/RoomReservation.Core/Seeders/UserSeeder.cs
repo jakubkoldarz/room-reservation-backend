@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using RoomReservation.Core.Constants;
 using RoomReservation.Core.Data;
 using RoomReservation.Core.Entities;
 using RoomReservation.Core.Interfaces;
@@ -14,8 +16,8 @@ namespace RoomReservation.Core.Seeders
         {
             List<User> users = new List<User>()
             {
-                new() { Firstname = "Admin", Lastname = "Admin", Email = "admin@rooms.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("password") },
-                new() { Firstname = "Jan", Lastname = "Kowalski", Email = "user@rooms.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("password") },
+                new() { Id=Guid.Parse("10000000-0000-0000-0000-000000000000"), Firstname = "Admin", Lastname = "Admin", Email = "admin@rooms.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("password"), RoleId = Roles.SuperAdmin.Id },
+                new() { Id=Guid.Parse("10000000-0000-0000-0000-000000000001"), Firstname = "Jan", Lastname = "Kowalski", Email = "user@rooms.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("password") },
                 new() { Firstname = "Anna", Lastname = "Nowak", Email = "anna.nowak@wp.pl", PasswordHash = "password" },
                 new() { Firstname = "Piotr", Lastname = "Wiśniewski", Email = "piotr.wisniewski@onet.pl", PasswordHash = "password" },
                 new() { Firstname = "Katarzyna", Lastname = "Wójcik", Email = "k.wojcik@interia.pl", PasswordHash = "password" },
@@ -47,8 +49,14 @@ namespace RoomReservation.Core.Seeders
                 new() { Firstname = "Weronika", Lastname = "Sikora", Email = "weronika.sikora@gmail.com", PasswordHash = "password" },
             };
 
+            var defaultRole = await _db.Roles.Where(r => r.IsDefault).Select(r => r.Id).FirstOrDefaultAsync();
+
             foreach (var user in users)
             {
+                if(user.RoleId == Guid.Empty)
+                {
+                    user.RoleId = defaultRole;
+                }
                 _db.Users.Add(user);
             }
 

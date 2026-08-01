@@ -20,8 +20,8 @@ namespace RoomReservation.Core.Seeders
 
         public async Task SeedAsync()
         {
-            context.Database.EnsureDeleted();
-            context.Database.Migrate();
+            await context.Database.EnsureDeletedAsync();
+            await context.Database.MigrateAsync();
 
             foreach (var seeder in seeders)
             {

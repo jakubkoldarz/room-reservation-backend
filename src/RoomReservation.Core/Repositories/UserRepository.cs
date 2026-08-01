@@ -17,21 +17,19 @@ namespace RoomReservation.Core.Repositories
             await _db.SaveChangesAsync();
             return user;
         }
-
         public async Task<User?> GetByEmailAsync(string email)
         {
             var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
             return user;
         }
-
         public async Task<User?> GetByIdAsync(Guid userId)
         {
             var user = await _db.Users
                 .Include(u => u.RefreshTokens.Where(rt => (rt.RevokedAt == null) && !(DateTime.UtcNow >= rt.ExpiresAt)))
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Id == userId);
             return user;
         }
-
         public async Task<(IEnumerable<User> users, int totalCount)> GetFilteredAsync(UserFilter filters)
         {
             var users = _db.Users.AsQueryable();
@@ -54,7 +52,13 @@ namespace RoomReservation.Core.Repositories
 
             return (filteredUsers, totalCount);
         }
-        
+        public async Task<bool> IsProfileCompletedAsync(Guid userId)
+        {
+            return await _db.Users
+                .Where(u => u.Id == userId)
+                .Select(u => u.IsProfileComplete)
+                .SingleOrDefaultAsync();
+        }
         public async Task UpdateAsync(User user)
         {
             _db.Users.Update(user);

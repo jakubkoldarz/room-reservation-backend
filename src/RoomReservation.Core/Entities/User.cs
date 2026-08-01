@@ -23,5 +23,8 @@ namespace RoomReservation.Core.Entities
         public bool Is2faEnabled { get; set; } = false;
 
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new HashSet<RefreshToken>();
+
+        public Guid RoleId { get; set; }
+        public Role Role { get; set; } = null!;
     }
 }
