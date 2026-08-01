@@ -10,15 +10,15 @@ namespace RoomReservation.Core.Data.Configuration
 {
     public class RolePermissionsConfiguration : IEntityTypeConfiguration<RolePermissions>
     {
-        public void Configure(EntityTypeBuilder<RolePermissions> builder)
+        public void Configure(EntityTypeBuilder<RolePermissions> rolePermissions)
         {
-            builder.HasKey(rp => new { rp.RoleId, rp.PermissionId });
-            builder.HasOne(rp => rp.Role)
+            rolePermissions.HasKey(rp => new { rp.RoleId, rp.PermissionId });
+            rolePermissions.HasOne(rp => rp.Role)
                 .WithMany(r => r.RolePermissions)
                 .HasForeignKey(rp => rp.RoleId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            builder.HasOne(rp => rp.Permission)
+            rolePermissions.HasOne(rp => rp.Permission)
                 .WithMany(p => p.RolePermissions)
                 .HasForeignKey(rp => rp.PermissionId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -27,7 +27,7 @@ namespace RoomReservation.Core.Data.Configuration
                 .SelectMany(kvp => kvp.Value
                     .Select(prm => new RolePermissions { RoleId = kvp.Key.Id, PermissionId = Permissions.Definitions[prm] }));
 
-            builder.HasData(allRolePermisions);
+            rolePermissions.HasData(allRolePermisions);
         }
     }
 }

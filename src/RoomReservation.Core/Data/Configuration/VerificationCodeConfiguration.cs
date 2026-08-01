@@ -9,35 +9,35 @@ namespace RoomReservation.Core.Data.Configuration
 {
     public class VerificationCodeConfiguration : IEntityTypeConfiguration<VerificationCode>
     {
-        public void Configure(EntityTypeBuilder<VerificationCode> builder)
+        public void Configure(EntityTypeBuilder<VerificationCode> code)
         {
-            builder.HasKey(v => v.Id);
+            code.HasKey(v => v.Id);
 
-            builder.Property(v => v.Code)
-                .IsRequired()
-                .HasMaxLength(6);
+            code.Property(v => v.Code)
+                            .IsRequired()
+                            .HasMaxLength(6);
 
-            builder.Property(v => v.Type)
+            code.Property(v => v.Type)
                 .IsRequired()
                 .HasConversion<string>()
                 .HasMaxLength(40);
 
-            builder.Property(v => v.CreatedAt)
+            code.Property(v => v.CreatedAt)
                 .IsRequired();
 
-            builder.Property(v => v.ExpiresAt)
+            code.Property(v => v.ExpiresAt)
                 .IsRequired();
 
-            builder.Property(v => v.IsUsed)
+            code.Property(v => v.IsUsed)
                 .IsRequired()
                 .HasDefaultValue(false);
 
-            builder.HasOne(v => v.User)
+            code.HasOne(v => v.User)
                 .WithMany()
                 .HasForeignKey(v => v.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            builder.HasIndex(v => new { v.UserId, v.Type, v.IsUsed });
+            code.HasIndex(v => new { v.UserId, v.Type, v.IsUsed });
         }
     }
 }

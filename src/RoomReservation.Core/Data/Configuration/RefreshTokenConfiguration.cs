@@ -9,20 +9,20 @@ namespace RoomReservation.Core.Data.Configuration
 {
     public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
     {
-        public void Configure(EntityTypeBuilder<RefreshToken> builder)
+        public void Configure(EntityTypeBuilder<RefreshToken> token)
         {
-            builder.HasKey(rt => rt.Id);
+            token.HasKey(rt => rt.Id);
 
-            builder.HasIndex(rt => rt.ExpiresAt);
-            builder.HasIndex(rt => rt.UserId);
-            builder.HasIndex(rt => rt.TokenHash).IsUnique();
+            token.HasIndex(rt => rt.ExpiresAt);
+            token.HasIndex(rt => rt.UserId);
+            token.HasIndex(rt => rt.TokenHash).IsUnique();
 
-            builder.Property(rt => rt.TokenHash).IsRequired().HasMaxLength(100);
-            builder.Property(rt => rt.IpAddress).HasMaxLength(30);
-            builder.Property(rt => rt.UserAgent).HasMaxLength(500);
+            token.Property(rt => rt.TokenHash).IsRequired().HasMaxLength(100);
+            token.Property(rt => rt.IpAddress).HasMaxLength(30);
+            token.Property(rt => rt.UserAgent).HasMaxLength(500);
 
-            builder.Property(rt => rt.CreatedAt).IsRequired();
-            builder.Property(rt => rt.ExpiresAt).IsRequired();
+            token.Property(rt => rt.CreatedAt).IsRequired();
+            token.Property(rt => rt.ExpiresAt).IsRequired();
         }
     }
 }
