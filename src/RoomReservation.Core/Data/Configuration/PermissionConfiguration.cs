@@ -13,10 +13,7 @@ namespace RoomReservation.Core.Data.Configuration
             builder.HasKey(p => p.Id);
             builder.HasIndex(p => p.Name).IsUnique();
 
-            var allPermissions = typeof(Permissions)
-                .GetFields(BindingFlags.Public | BindingFlags.Static)
-                .Select(p => (PermissionDefinition)p.GetValue(null)!);
-
+            var allPermissions = Permissions.Definitions.Select(p => new Permission{ Name = p.Key, Id = p.Value });
             builder.HasData(allPermissions.Select(p => new Permission { Id = p.Id, Name = p.Name }));
         }
     }

@@ -28,10 +28,11 @@ namespace RoomReservation.Api.Authorization
 
             if (policyName.StartsWith("Permission:"))
             {
-                var permission = policyName.Split(":")[1];
+                var permission = policyName.Split(":", 2)[1];
 
                 var policy = _permissionPolicies.GetOrAdd(permission, p =>
                     new AuthorizationPolicyBuilder()
+                        .AddRequirements(new ProfileCompletedRequirement())
                         .AddRequirements(new PermissionRequirement(p))
                         .Build());
 

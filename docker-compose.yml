@@ -13,6 +13,7 @@ services:
       - SMTP__Port=${SMTP_PORT}
       - SMTP__Email=${SMTP_EMAIL}
       - SMTP__Password=${SMTP_PASSWORD}
+      - ASPNETCORE_ENVIRONMENT=Development # Setting the environment to Development for local development
     ports:
       - "5000:8080"
     depends_on:

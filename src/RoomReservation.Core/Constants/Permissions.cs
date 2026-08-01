@@ -1,17 +1,29 @@
-﻿namespace RoomReservation.Core.Constants
-{
-    public record PermissionDefinition(string Name, Guid Id);
+﻿using System.Collections.ObjectModel;
 
+namespace RoomReservation.Core.Constants
+{
     public static class Permissions
     {
-        public static readonly PermissionDefinition RoomView = new("room.view", Guid.Parse("10000000-0000-0000-0000-000000000000"));
-        public static readonly PermissionDefinition RoomList = new("room.list", Guid.Parse("10000000-0000-0000-0000-000000000001"));
-        public static readonly PermissionDefinition RoomAdd = new("room.add", Guid.Parse("10000000-0000-0000-0000-000000000002"));
-        public static readonly PermissionDefinition RoomDelete = new("room.delete", Guid.Parse("10000000-0000-0000-0000-000000000003"));
-        public static readonly PermissionDefinition RoomEdit = new("room.edit", Guid.Parse("10000000-0000-0000-0000-000000000004"));
+        public const string RoomView = "room.view";
+        public const string RoomList = "room.list";
+        public const string RoomAdd = "room.add";
+        public const string RoomDelete = "room.delete";
+        public const string RoomEdit = "room.edit";
 
-        public static readonly PermissionDefinition UserView = new("user.view", Guid.Parse("20000000-0000-0000-0000-000000000000"));
-        public static readonly PermissionDefinition UserList = new("user.list", Guid.Parse("20000000-0000-0000-0000-000000000001"));
-        public static readonly PermissionDefinition UserBlock = new("user.block", Guid.Parse("20000000-0000-0000-0000-000000000002"));
+        public const string UserView = "user.view";
+        public const string UserList = "user.list";
+        public const string UserBlock = "user.block";
+
+        public static Dictionary<string, Guid> Definitions = new()
+        {
+            [RoomView] = Guid.Parse("10000000-0000-0000-0000-000000000000"),
+            [RoomList] = Guid.Parse("10000000-0000-0000-0000-000000000001"),
+            [RoomAdd] = Guid.Parse("10000000-0000-0000-0000-000000000002"),
+            [RoomDelete] = Guid.Parse("10000000-0000-0000-0000-000000000003"),
+            [RoomEdit] = Guid.Parse("10000000-0000-0000-0000-000000000004"),
+
+            [UserView] = Guid.Parse("20000000-0000-0000-0000-000000000000"),
+            [UserList] = Guid.Parse("20000000-0000-0000-0000-000000000001"),
+        };
     }
 }

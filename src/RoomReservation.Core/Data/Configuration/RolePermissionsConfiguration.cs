@@ -24,7 +24,8 @@ namespace RoomReservation.Core.Data.Configuration
                 .OnDelete(DeleteBehavior.Cascade);
 
             var allRolePermisions = RolesPermissions.All
-                .SelectMany(kvp => kvp.Value.Select(rp => new RolePermissions { RoleId = kvp.Key.Id, PermissionId = rp.Id }));
+                .SelectMany(kvp => kvp.Value
+                    .Select(prm => new RolePermissions { RoleId = kvp.Key.Id, PermissionId = Permissions.Definitions[prm] }));
 
             builder.HasData(allRolePermisions);
         }

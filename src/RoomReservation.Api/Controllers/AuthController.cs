@@ -17,6 +17,7 @@ namespace RoomReservation.Api.Controllers
     public class AuthController(
         IAuthService _authService,
         IUserService _userService,
+        IPermissionService _permissionService,
         IRefreshTokenService _refreshTokenService) : ControllerBase
     {
         [HttpPost("register")]
@@ -86,8 +87,12 @@ namespace RoomReservation.Api.Controllers
             if (!userResult.IsSuccess)
                 return userResult.Error.ToActionResult();
 
+            var permissionsResult = await _permissionService.GetUserPermissionsAsync(userId);
+            if(!permissionsResult.IsSuccess)
+                return permissionsResult.Error.ToActionResult();
+
             var user = userResult.Value!;
-            return Ok(user.ToDetailsDto());
+            return Ok(user.ToDetailsDto(permissionsResult.Value));
         }
 
         [Authorize]

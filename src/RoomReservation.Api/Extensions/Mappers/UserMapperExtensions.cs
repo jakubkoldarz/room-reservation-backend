@@ -1,4 +1,5 @@
-﻿using RoomReservation.Api.Dtos.Users.Responses;
+﻿using RoomReservation.Api.Dtos.Auth.Responses;
+using RoomReservation.Api.Dtos.Users.Responses;
 using RoomReservation.Core.Entities;
 
 namespace RoomReservation.Api.Extensions.Mappers
@@ -17,10 +18,11 @@ namespace RoomReservation.Api.Extensions.Mappers
             );
         }
 
-        public static UserDetailsResponse ToDetailsDto(this User user)
+        public static UserDetailsResponse ToDetailsDto(this User user, IReadOnlyList<string> permissions)
         {
             return new UserDetailsResponse(
                 user.ToBasicDto(),
+                new RoleWithPermissionsResponse(user.Role.Name, [.. permissions]),
                 user.RefreshTokens.Select(rf => rf.ToDto())
             );
         }

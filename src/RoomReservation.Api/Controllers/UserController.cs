@@ -5,6 +5,7 @@ using RoomReservation.Api.Dtos.Users.Requests;
 using RoomReservation.Api.Dtos.Users.Responses;
 using RoomReservation.Api.Extensions;
 using RoomReservation.Api.Extensions.Mappers;
+using RoomReservation.Core.Constants;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Results.Common;
@@ -17,6 +18,7 @@ namespace RoomReservation.Api.Controllers
     public class UserController(IUserService _userService) : ControllerBase
     {
         [HttpGet("{userId:guid}")]
+        [RequirePermission(Permissions.UserView)]
         public async Task<ActionResult<UserDetailsResponse>> GetSingle(Guid userId)
         {
             var result = await _userService.GetUserDetailsAsync(userId);
@@ -27,6 +29,7 @@ namespace RoomReservation.Api.Controllers
         }
 
         [HttpGet]
+        [RequirePermission(Permissions.UserList)]
         public async Task<ActionResult<IEnumerable<BasicUserResponse>>> GetAll([FromQuery] UserFilter filters)
         {
             var result = await _userService.GetUsersAsync(filters);

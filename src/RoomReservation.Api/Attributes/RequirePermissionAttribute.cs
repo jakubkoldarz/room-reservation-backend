@@ -2,5 +2,5 @@
 
 namespace RoomReservation.Api.Attributes
 {
-    public class RequirePermissionAttribute() : AuthorizeAttribute("RequireCompletedProfile");
+    public class RequirePermissionAttribute(string permission) : AuthorizeAttribute($"Permission:{permission}");
 }

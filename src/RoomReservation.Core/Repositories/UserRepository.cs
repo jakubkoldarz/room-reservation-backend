@@ -26,6 +26,7 @@ namespace RoomReservation.Core.Repositories
         {
             var user = await _db.Users
                 .Include(u => u.RefreshTokens.Where(rt => (rt.RevokedAt == null) && !(DateTime.UtcNow >= rt.ExpiresAt)))
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Id == userId);
             return user;
         }
