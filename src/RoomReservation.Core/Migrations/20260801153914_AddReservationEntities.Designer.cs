@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RoomReservation.Core.Data;
@@ -11,9 +12,11 @@ using RoomReservation.Core.Data;
 namespace RoomReservation.Core.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260801153914_AddReservationEntities")]
+    partial class AddReservationEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -60,7 +63,7 @@ namespace RoomReservation.Core.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Buildings");
+                    b.ToTable("Building");
                 });
 
             modelBuilder.Entity("RoomReservation.Core.Entities.Equipment", b =>
@@ -84,7 +87,7 @@ namespace RoomReservation.Core.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Equipments");
+                    b.ToTable("Equipment");
                 });
 
             modelBuilder.Entity("RoomReservation.Core.Entities.Permission", b =>
@@ -233,7 +236,7 @@ namespace RoomReservation.Core.Migrations
 
                     b.HasIndex("RoomId");
 
-                    b.ToTable("Reservations");
+                    b.ToTable("Reservation");
                 });
 
             modelBuilder.Entity("RoomReservation.Core.Entities.Role", b =>
@@ -400,7 +403,7 @@ namespace RoomReservation.Core.Migrations
                     b.HasIndex("BuildingId", "Identifier")
                         .IsUnique();
 
-                    b.ToTable("Rooms");
+                    b.ToTable("Room");
                 });
 
             modelBuilder.Entity("RoomReservation.Core.Entities.RoomAvailability", b =>
@@ -425,7 +428,7 @@ namespace RoomReservation.Core.Migrations
 
                     b.HasIndex("RoomId");
 
-                    b.ToTable("RoomAvailabilities");
+                    b.ToTable("RoomAvailability");
                 });
 
             modelBuilder.Entity("RoomReservation.Core.Entities.RoomEquipment", b =>
@@ -440,7 +443,7 @@ namespace RoomReservation.Core.Migrations
 
                     b.HasIndex("EquipmentId");
 
-                    b.ToTable("RoomEquipments");
+                    b.ToTable("RoomEquipment");
                 });
 
             modelBuilder.Entity("RoomReservation.Core.Entities.User", b =>
