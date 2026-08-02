@@ -8,7 +8,6 @@ using RoomReservation.Api.Extensions.Mappers;
 using RoomReservation.Core.Constants;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
-using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Api.Controllers
 {
@@ -24,15 +23,15 @@ namespace RoomReservation.Api.Controllers
             var result = await _userService.GetUserDetailsAsync(userId);
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
-            
-            return Ok(result.Value!.ToBasicDto());    
+
+            return Ok(result.Value!.ToBasicDto());
         }
 
         [HttpGet]
         [RequirePermission(Permissions.UserList)]
         public async Task<ActionResult<IEnumerable<BasicUserResponse>>> GetAll([FromQuery] UserFilter filters)
         {
-            var result = await _userService.GetUsersAsync(filters);
+            var result = await _userService.GetAllAsync(filters);
             return Ok(result.ToDto(u => u.ToBasicDto()));
         }
 

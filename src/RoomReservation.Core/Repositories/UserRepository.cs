@@ -30,18 +30,18 @@ namespace RoomReservation.Core.Repositories
                 .FirstOrDefaultAsync(u => u.Id == userId);
             return user;
         }
-        public async Task<(IEnumerable<User> users, int totalCount)> GetFilteredAsync(UserFilter filters)
+        public async Task<(IReadOnlyList<User> Users, int TotalCount)> GetFilteredAsync(UserFilter filters)
         {
             var users = _db.Users.AsQueryable();
 
             if (!string.IsNullOrEmpty(filters.Firstname))
-                users = users.Where(u => !string.IsNullOrEmpty(u.Firstname) && u.Firstname.Contains(filters.Firstname.ToLower()));
+                users = users.Where(u => !string.IsNullOrEmpty(u.Firstname) && EF.Functions.ILike(u.Firstname, $"%{filters.Firstname.Trim()}%"));
 
             if (!string.IsNullOrEmpty(filters.Lastname)) 
-                users = users.Where(u => !string.IsNullOrEmpty(u.Lastname) && u.Lastname.Contains(filters.Lastname.ToLower()));
+                users = users.Where(u => !string.IsNullOrEmpty(u.Lastname) && EF.Functions.ILike(u.Lastname, $"%{filters.Lastname.Trim()}%"));
 
             if (!string.IsNullOrEmpty(filters.Email)) 
-                users = users.Where(u => u.Email.Contains(filters.Email.ToLower()));
+                users = users.Where(u => EF.Functions.ILike(u.Email, $"%{filters.Email.Trim()}%"));
 
             var totalCount = await users.CountAsync();
 

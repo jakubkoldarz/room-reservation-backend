@@ -14,6 +14,12 @@ namespace RoomReservation.Core.Constants
         public const string UserList = "user.list";
         public const string UserBlock = "user.block";
 
+        public const string BuildingView = "building.view";
+        public const string BuildingList = "building.list";
+        public const string BuildingAdd = "building.add";
+        public const string BuildingDelete = "building.delete";
+        public const string BuildingEdit = "building.edit";
+
         public static Dictionary<string, Guid> Definitions = new()
         {
             [RoomView] = Guid.Parse("10000000-0000-0000-0000-000000000000"),
@@ -24,6 +30,12 @@ namespace RoomReservation.Core.Constants
 
             [UserView] = Guid.Parse("20000000-0000-0000-0000-000000000000"),
             [UserList] = Guid.Parse("20000000-0000-0000-0000-000000000001"),
+
+            [BuildingAdd] = Guid.Parse("30000000-0000-0000-0000-000000000000"),
+            [BuildingList] = Guid.Parse("30000000-0000-0000-0000-000000000001"),
+            [BuildingAdd] = Guid.Parse("30000000-0000-0000-0000-000000000002"),
+            [BuildingDelete] = Guid.Parse("30000000-0000-0000-0000-000000000003"),
+            [BuildingEdit] = Guid.Parse("30000000-0000-0000-0000-000000000004"),
         };
     }
 }
