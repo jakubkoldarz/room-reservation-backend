@@ -12,5 +12,6 @@ namespace RoomReservation.Core.Interfaces
         Task AddAsync(Equipment equipment);
         Task UpdateAsync(Equipment equipment);
         Task DeleteAsync(Equipment equipment);
+        Task<bool> AllExistAsync(IReadOnlyList<Guid> equipmentIds);
     }
 }

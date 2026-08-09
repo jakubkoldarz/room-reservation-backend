@@ -14,6 +14,13 @@ namespace RoomReservation.Core.Repositories
             await _db.SaveChangesAsync();
         }
 
+        public async Task<bool> AllExistAsync(IReadOnlyList<Guid> equipmentIds)
+        {
+            if (equipmentIds.Count == 0) return true;
+            var existingCount = await _db.Equipment.CountAsync(e => equipmentIds.Contains(e.Id));
+            return existingCount == equipmentIds.Count;
+        }
+
         public async Task DeleteAsync(Equipment equipment)
         {
             _db.Equipment.Remove(equipment);

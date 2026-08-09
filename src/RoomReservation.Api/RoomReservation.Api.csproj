@@ -28,7 +28,6 @@
   <ItemGroup>
     <Folder Include="Dtos\Reservations\Requests\" />
     <Folder Include="Dtos\Reservations\Responses\" />
-    <Folder Include="Dtos\Rooms\Requests\" />
     <Folder Include="Dtos\RefreshTokens\Requests\" />
   </ItemGroup>
 
