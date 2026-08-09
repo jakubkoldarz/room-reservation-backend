@@ -20,6 +20,12 @@ namespace RoomReservation.Core.Constants
         public const string BuildingDelete = "building.delete";
         public const string BuildingEdit = "building.edit";
 
+        public const string EquipmentView = "equipment.view";
+        public const string EquipmentList = "equipment.list";
+        public const string EquipmentAdd = "equipment.add";
+        public const string EquipmentDelete = "equipment.delete";
+        public const string EquipmentEdit = "equipment.edit";
+
         public static Dictionary<string, Guid> Definitions = new()
         {
             [RoomView] = Guid.Parse("10000000-0000-0000-0000-000000000000"),
@@ -36,6 +42,12 @@ namespace RoomReservation.Core.Constants
             [BuildingAdd] = Guid.Parse("30000000-0000-0000-0000-000000000002"),
             [BuildingDelete] = Guid.Parse("30000000-0000-0000-0000-000000000003"),
             [BuildingEdit] = Guid.Parse("30000000-0000-0000-0000-000000000004"),
+
+            [EquipmentView] = Guid.Parse("40000000-0000-0000-0000-000000000000"),
+            [EquipmentList] = Guid.Parse("40000000-0000-0000-0000-000000000001"),
+            [EquipmentAdd] = Guid.Parse("40000000-0000-0000-0000-000000000002"),
+            [EquipmentDelete] = Guid.Parse("40000000-0000-0000-0000-000000000003"),
+            [EquipmentEdit] = Guid.Parse("40000000-0000-0000-0000-000000000004"),
         };
     }
 }

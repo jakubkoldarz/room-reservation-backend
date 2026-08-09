@@ -47,6 +47,9 @@ namespace RoomReservation.Api.Extensions
             services.AddScoped<IBuildingRepository, BuildingRepository>();
             services.AddScoped<IBuildingService, BuildingService>();
 
+            services.AddScoped<IEquipmentRepository, EquipmentRepository>();
+            services.AddScoped<IEquipmentService, EquipmentService>();
+
             services.AddDbContext<AppDbContext>(options =>
             {
                 options.UseNpgsql(config.GetConnectionString("DefaultConnection"));

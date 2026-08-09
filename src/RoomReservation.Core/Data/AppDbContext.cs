@@ -12,7 +12,7 @@ namespace RoomReservation.Core.Data
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<Building> Buildings { get; set; }
-        public DbSet<Equipment> Equipments { get; set; }
+        public DbSet<Equipment> Equipment { get; set; }
         public DbSet<Permission> Permissions { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Reservation> Reservations { get; set; }
@@ -20,7 +20,7 @@ namespace RoomReservation.Core.Data
         public DbSet<RolePermissions> RolePermissions { get; set; }
         public DbSet<Room> Rooms { get; set; }
         public DbSet<RoomAvailability> RoomAvailabilities { get; set; }
-        public DbSet<RoomEquipment> RoomEquipments { get; set; }
+        public DbSet<RoomEquipment> RoomEquipment { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<VerificationCode> VerificationCodes { get; set; }
 

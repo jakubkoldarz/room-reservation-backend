@@ -16,7 +16,7 @@ namespace RoomReservation.Core.Entities
         public required int Floor { get; set; }
         public required int Capacity { get; set; }
 
-        public ICollection<RoomEquipment> RoomEquipments { get; set; } = [];
+        public ICollection<RoomEquipment> RoomEquipment { get; set; } = [];
         public ICollection<RoomAvailability> RoomAvailabilities { get; set; } = [];
         public ICollection<Reservation> Reservations { get; set; } = [];
     }

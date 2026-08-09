@@ -8,13 +8,14 @@ using RoomReservation.Api.Extensions.Mappers;
 using RoomReservation.Core.Constants;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
+using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Api.Controllers
 {
     [Authorize]
     [ApiController]
     [Route("[controller]")]
-    public class UserController(IUserService _userService) : ControllerBase
+    public class UsersController(IUserService _userService) : ControllerBase
     {
         [HttpGet("{userId:guid}")]
         [RequirePermission(Permissions.UserView)]
@@ -29,14 +30,14 @@ namespace RoomReservation.Api.Controllers
 
         [HttpGet]
         [RequirePermission(Permissions.UserList)]
-        public async Task<ActionResult<IEnumerable<BasicUserResponse>>> GetAll([FromQuery] UserFilter filters)
+        public async Task<ActionResult<PagedResult<BasicUserResponse>>> GetAll([FromQuery] UserFilter filters)
         {
             var result = await _userService.GetAllAsync(filters);
             return Ok(result.ToDto(u => u.ToBasicDto()));
         }
 
         [HttpPut("profile")]
-        public async Task<ActionResult<IEnumerable<BasicUserResponse>>> UpdateProfile([UserId] Guid userId, UpdateProfileRequest request)
+        public async Task<ActionResult<BasicUserResponse>> UpdateProfile([UserId] Guid userId, UpdateProfileRequest request)
         {
             var result = await _userService.UpdateUserAsync(userId, request.Firstname, request.Lastname);
             if (!result.IsSuccess)

@@ -8,17 +8,18 @@ using RoomReservation.Api.Extensions.Mappers;
 using RoomReservation.Core.Constants;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
+using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Api.Controllers
 {
     [Route("[controller]")]
     [Authorize]
     [ApiController]
-    public class BuildingController(IBuildingService _buildingService) : ControllerBase
+    public class BuildingsController(IBuildingService _buildingService) : ControllerBase
     {
         [HttpGet]
         [RequirePermission(Permissions.BuildingList)]
-        public async Task<ActionResult<BasicBuildingResponse[]>> GetAll([FromQuery] BuildingFilter filters)
+        public async Task<ActionResult<PagedResult<BasicBuildingResponse>>> GetAll([FromQuery] BuildingFilter filters)
         {
             var result = await _buildingService.GetAllAsync(filters);
             return Ok(result.ToDto(b => b.ToBasicDto()));

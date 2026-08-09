@@ -13,7 +13,7 @@ namespace RoomReservation.Core.Data.Configuration
             roomEquipment.Property(re => re.EquipmentId).IsRequired();
 
             roomEquipment.HasOne(re => re.Room)
-                .WithMany(r => r.RoomEquipments)
+                .WithMany(r => r.RoomEquipment)
                 .HasForeignKey(re => re.RoomId)
                 .OnDelete(DeleteBehavior.Cascade);
 
