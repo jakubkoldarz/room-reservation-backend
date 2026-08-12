@@ -1,5 +1,4 @@
-﻿using RoomReservation.Api.Dtos.Buildings.Responses;
-using RoomReservation.Api.Dtos.Rooms.Responses;
+﻿using RoomReservation.Api.Dtos.Rooms.Responses;
 using RoomReservation.Core.Entities;
 
 namespace RoomReservation.Api.Extensions.Mappers
@@ -16,18 +15,18 @@ namespace RoomReservation.Api.Extensions.Mappers
                 BuildingInfo: room.Building.ToBasicDto(),
                 Floor: room.Floor,
                 Capacity: room.Capacity,
-                Equipment: [.. room.RoomEquipment.Select(re => re.Equipment.ToBasicDto())],
-                Availability: [.. room.RoomAvailabilities.Select(a => a.ToBasicDto())]
+                Equipment: [.. room.RoomEquipment.Select(re => re.Equipment.ToBasicDto())]
             );
         }
 
-        public static RoomAvailabilityResponse ToBasicDto(this RoomAvailability availability)
+        public static RoomDetailsResponse ToDetailsDto(this Room room)
         {
-            return new RoomAvailabilityResponse
+            return new RoomDetailsResponse
             (
-                DayOfWeek: availability.DayOfWeek,
-                StartTime: availability.StartTime,
-                EndTime: availability.EndTime
+                RoomInfo: room.ToBasicDto(),
+                Availabilities: [.. room.Availabilities.Select(a => a.ToDto())],
+                SpecialAvailabilities: [.. room.SpecialAvailabilities.Select(sa => sa.ToDto())],
+                Reservations: [.. room.Reservations.Select(r => r.ToBasicDto())]
             );
         }
     }

@@ -10,13 +10,8 @@ namespace RoomReservation.Core.Data.Configuration
         public void Configure(EntityTypeBuilder<Reservation> reservation)
         {
             reservation.HasKey(r => r.Id);
-            reservation.Property(r => r.CreatedById).IsRequired();
-            reservation.Property(r => r.RoomId).IsRequired();
-            reservation.Property(r => r.StartTime).IsRequired();
-            reservation.Property(r => r.EndTime).IsRequired();
             reservation.Property(r => r.Purpose).HasMaxLength(100);
-            reservation.Property(r => r.Status).IsRequired().HasConversion<string>().HasDefaultValue(ReservationStatus.Pending);
-            reservation.Property(r => r.CreatedAt).IsRequired();
+            reservation.Property(r => r.Status).HasConversion<string>().HasDefaultValue(ReservationStatus.Pending);
 
             reservation.HasOne(r => r.CreatedBy)
                 .WithMany(u => u.Reservations)

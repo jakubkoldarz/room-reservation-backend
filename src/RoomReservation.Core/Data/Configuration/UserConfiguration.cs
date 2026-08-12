@@ -10,7 +10,6 @@ namespace RoomReservation.Core.Data.Configuration
         {
             user.HasKey(u => u.Id);
             user.HasIndex(x => x.Email).IsUnique();
-            user.Property(x => x.Email).IsRequired();
             user.Property(u => u.Firstname).HasMaxLength(50);
             user.Property(u => u.Lastname).HasMaxLength(100);
 

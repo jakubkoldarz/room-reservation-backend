@@ -3,6 +3,7 @@ using RoomReservation.Core.Enums;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models;
+using RoomReservation.Core.Providers;
 using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Core.Services
@@ -25,6 +26,10 @@ namespace RoomReservation.Core.Services
             if (existingRoom)
                 return new Error("Room with the same identifier already exists in the building", ErrorType.Conflict);
 
+            var validAvailabilities = AvailabilityProvider.EnsureValidAvailabilities(availabilities);
+            if (!validAvailabilities)
+                return new Error("Invalid availabilities provided", ErrorType.BadRequest);
+
             var roomToCreate = new Room
             {
                 Identifier = identifier,
@@ -32,7 +37,7 @@ namespace RoomReservation.Core.Services
                 BuildingId = buildingId,
                 Floor = floor,
                 Capacity = capacity,
-                RoomAvailabilities = [.. availabilities.Select(a => new RoomAvailability
+                Availabilities = [.. availabilities.Select(a => new RoomAvailability
                 {
                     DayOfWeek = a.DayOfWeek,
                     StartTime = a.StartTime,
@@ -100,6 +105,10 @@ namespace RoomReservation.Core.Services
             if ((existingRoom is not null) && (existingRoom.Id != roomId))
                 return new Error("Room with the same identifier already exists in the building", ErrorType.Conflict);
 
+            var validAvailabilities = AvailabilityProvider.EnsureValidAvailabilities(availabilities);
+            if (!validAvailabilities)
+                return new Error("Invalid availabilities provided", ErrorType.BadRequest);
+
             roomToUpdate.Identifier = identifier;
             roomToUpdate.RequiresApproval = requiresApproval;
             roomToUpdate.BuildingId = buildingId;
@@ -110,7 +119,7 @@ namespace RoomReservation.Core.Services
             {
                 EquipmentId = equipmentId
             })];
-            roomToUpdate.RoomAvailabilities = [.. availabilities.Select(a => new RoomAvailability
+            roomToUpdate.Availabilities = [.. availabilities.Select(a => new RoomAvailability
             {
                 DayOfWeek = a.DayOfWeek,
                 StartTime = a.StartTime,

@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace RoomReservation.Api.Dtos.Rooms.Requests
+namespace RoomReservation.Api.Dtos.Availabilities.Requests
 {
-    public record RoomAvailabilityRequest
+    public record AvailabilityRequest
     (
         [Required] DayOfWeek DayOfWeek,
         [Required] TimeOnly StartTime,

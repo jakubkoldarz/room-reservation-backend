@@ -1,6 +1,13 @@
-﻿namespace RoomReservation.Api.Dtos.Rooms.Responses
+﻿using RoomReservation.Api.Dtos.Availabilities.Responses;
+using RoomReservation.Api.Dtos.Reservations.Responses;
+
+namespace RoomReservation.Api.Dtos.Rooms.Responses
 {
-    public class RoomDetailsResponse
-    {
-    }
+    public record RoomDetailsResponse
+    (
+        BasicRoomResponse RoomInfo,
+        IReadOnlyList<BasicReservationResponse> Reservations,
+        IReadOnlyList<AvailabilityResponse> Availabilities,
+        IReadOnlyList<SpecialAvailabilityResponse> SpecialAvailabilities
+    );
 }

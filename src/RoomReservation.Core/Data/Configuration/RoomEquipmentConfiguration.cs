@@ -9,8 +9,6 @@ namespace RoomReservation.Core.Data.Configuration
         public void Configure(EntityTypeBuilder<RoomEquipment> roomEquipment)
         {
             roomEquipment.HasKey(re => new { re.RoomId, re.EquipmentId });
-            roomEquipment.Property(re => re.RoomId).IsRequired();
-            roomEquipment.Property(re => re.EquipmentId).IsRequired();
 
             roomEquipment.HasOne(re => re.Room)
                 .WithMany(r => r.RoomEquipment)

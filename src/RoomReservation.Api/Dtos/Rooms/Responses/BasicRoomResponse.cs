@@ -1,4 +1,5 @@
-﻿using RoomReservation.Api.Dtos.Buildings.Responses;
+﻿using RoomReservation.Api.Dtos.Availabilities.Responses;
+using RoomReservation.Api.Dtos.Buildings.Responses;
 using RoomReservation.Api.Dtos.Equipment.Responses;
 
 namespace RoomReservation.Api.Dtos.Rooms.Responses
@@ -11,7 +12,6 @@ namespace RoomReservation.Api.Dtos.Rooms.Responses
         int Capacity,
         int Floor,
         BasicBuildingResponse BuildingInfo,
-        IReadOnlyList<BasicEquipmentResponse> Equipment,
-        IReadOnlyList<RoomAvailabilityResponse> Availability
+        IReadOnlyList<BasicEquipmentResponse> Equipment
     );
 }

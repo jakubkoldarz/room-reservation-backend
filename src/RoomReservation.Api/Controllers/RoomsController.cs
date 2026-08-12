@@ -37,9 +37,8 @@ namespace RoomReservation.Api.Controllers
             if(!result.IsSuccess)
                 return result.Error.ToActionResult();
 
-            return Ok(result.Value.ToBasicDto());
+            return Ok(result.Value.ToDetailsDto());
         }
-
 
         [RequirePermission(Permissions.RoomAdd)]
         [HttpPost]

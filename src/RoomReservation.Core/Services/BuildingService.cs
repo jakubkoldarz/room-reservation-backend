@@ -2,17 +2,23 @@
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
+using RoomReservation.Core.Models;
+using RoomReservation.Core.Providers;
 using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Core.Services
 {
-    public class BuildingService(IBuildingRepository _buildings) : IBuildingService
+    public class BuildingService(IBuildingRepository _buildings, IRoomRepository _rooms) : IBuildingService
     {
-        public async Task<ResultT<Building>> CreateAsync(string name, string? identifier, string street, string city, string postalCode, int floorsCount)
+        public async Task<ResultT<Building>> CreateAsync(string name, string? identifier, string street, string city, string postalCode, int floorsCount, IReadOnlyList<AvailabilitySlot> availabilities)
         {
             var existingBuilding = await _buildings.ExistsByNameAsync(name);
             if (existingBuilding)
                 return new Error("Building with the same name already exists", ErrorType.Conflict);
+
+            var validAvailabilities = AvailabilityProvider.EnsureValidAvailabilities(availabilities);
+            if(!validAvailabilities)
+                return new Error("Invalid availabilities provided", ErrorType.BadRequest);
 
             var buildingToCreate = new Building
             {
@@ -21,7 +27,13 @@ namespace RoomReservation.Core.Services
                 Street = street,
                 City = city,
                 PostalCode = postalCode,
-                FloorsCount = floorsCount
+                FloorsCount = floorsCount,
+                Availabilities = [.. availabilities.Select(a => new BuildingAvailability
+                {
+                    DayOfWeek = a.DayOfWeek,
+                    StartTime = a.StartTime,
+                    EndTime = a.EndTime
+                })]
             };
             await _buildings.AddAsync(buildingToCreate);
             return ResultT<Building>.Success(buildingToCreate);
@@ -31,6 +43,10 @@ namespace RoomReservation.Core.Services
             var existingBuilding = await _buildings.GetByIdAsync(buildingId);
             if (existingBuilding is null)
                 return new Error("Building not found", ErrorType.NotFound);
+
+            var hasRooms = await _rooms.GetFilteredAsync(new RoomFilter { BuildingId = buildingId, Page = 1, PageSize = 1 });
+            if(hasRooms.TotalCount > 0)
+                return new Error("Cannot delete building with associated rooms", ErrorType.Conflict);
 
             await _buildings.DeleteAsync(existingBuilding);
             return Result.Success();
@@ -53,7 +69,7 @@ namespace RoomReservation.Core.Services
 
             return ResultT<Building>.Success(building);
         }
-        public async Task<ResultT<Building>> UpdateAsync(Guid buildingId, string name, string? identifier, string street, string city, string postalCode, int floorsCount)
+        public async Task<ResultT<Building>> UpdateAsync(Guid buildingId, string name, string? identifier, string street, string city, string postalCode, int floorsCount, IReadOnlyList<AvailabilitySlot> availabilities)
         {
             var buildingToUpdate = await _buildings.GetByIdAsync(buildingId);
             if (buildingToUpdate is null)
@@ -64,12 +80,22 @@ namespace RoomReservation.Core.Services
             if ((existingBuilding is not null) && (existingBuilding.Id != buildingId))
                 return new Error("Building with the same name already exists", ErrorType.Conflict);
 
+            var validAvailabilities = AvailabilityProvider.EnsureValidAvailabilities(availabilities);
+            if (!validAvailabilities)
+                return new Error("Invalid availabilities provided", ErrorType.BadRequest);
+
             buildingToUpdate.Name = name;
             buildingToUpdate.Identifier = identifier;
             buildingToUpdate.Street = street;
             buildingToUpdate.City = city;
             buildingToUpdate.PostalCode = postalCode;
             buildingToUpdate.FloorsCount = floorsCount;
+            buildingToUpdate.Availabilities = [.. availabilities.Select(a => new BuildingAvailability
+            {
+                DayOfWeek = a.DayOfWeek,
+                StartTime = a.StartTime,
+                EndTime = a.EndTime
+            })];
 
             await _buildings.UpdateAsync(buildingToUpdate);
             return ResultT<Building>.Success(buildingToUpdate);

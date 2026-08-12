@@ -10,17 +10,19 @@ namespace RoomReservation.Core.Data.Configuration
         {
             room.HasKey(r => r.Id);
             room.HasIndex(r => new { r.BuildingId, r.Identifier }).IsUnique();
-            room.Property(r => r.Identifier).IsRequired().HasMaxLength(50);
-            room.Property(r => r.RequiresApproval).IsRequired();
-            room.Property(r => r.Floor).IsRequired();
-            room.Property(r => r.Capacity).IsRequired();
+            room.Property(r => r.Identifier).HasMaxLength(50);
 
             room.HasOne(r => r.Building)
                 .WithMany(b => b.Rooms)
                 .HasForeignKey(r => r.BuildingId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            room.HasMany(r => r.RoomAvailabilities)
+            room.HasMany(r => r.Availabilities)
+                .WithOne(ra => ra.Room)
+                .HasForeignKey(ra => ra.RoomId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            room.HasMany(r => r.SpecialAvailabilities)
                 .WithOne(ra => ra.Room)
                 .HasForeignKey(ra => ra.RoomId)
                 .OnDelete(DeleteBehavior.Cascade);

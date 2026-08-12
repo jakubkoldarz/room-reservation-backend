@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RoomReservation.Core.Entities
+﻿namespace RoomReservation.Core.Entities
 {
     public class RoomEquipment
     {

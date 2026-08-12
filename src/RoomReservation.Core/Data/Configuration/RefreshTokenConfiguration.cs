@@ -17,12 +17,9 @@ namespace RoomReservation.Core.Data.Configuration
             token.HasIndex(rt => rt.UserId);
             token.HasIndex(rt => rt.TokenHash).IsUnique();
 
-            token.Property(rt => rt.TokenHash).IsRequired().HasMaxLength(100);
+            token.Property(rt => rt.TokenHash).HasMaxLength(100);
             token.Property(rt => rt.IpAddress).HasMaxLength(30);
             token.Property(rt => rt.UserAgent).HasMaxLength(500);
-
-            token.Property(rt => rt.CreatedAt).IsRequired();
-            token.Property(rt => rt.ExpiresAt).IsRequired();
         }
     }
 }

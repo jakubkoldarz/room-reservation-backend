@@ -13,28 +13,22 @@ namespace RoomReservation.Core.Data.Configuration
         {
             building.HasKey(b => b.Id);
 
-            building.Property(b => b.Name)
-                .IsRequired()
-                .HasMaxLength(100);
+            building.Property(b => b.Name).IsRequired().HasMaxLength(100);
             building.HasIndex(b => b.Name).IsUnique();
+            building.Property(b => b.Identifier).HasMaxLength(20);
+            building.Property(b => b.Street).HasMaxLength(50);
+            building.Property(b => b.City).HasMaxLength(50);
+            building.Property(b => b.PostalCode).HasMaxLength(6);
 
-            building.Property(b => b.Identifier)
-                .HasMaxLength(20);
+            building.HasMany(b => b.Availabilities)
+                .WithOne(a => a.Building)
+                .HasForeignKey(a => a.BuildingId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            building.Property(b => b.Street)
-                .IsRequired()
-                .HasMaxLength(50);
-
-            building.Property(b => b.City)
-                .IsRequired()
-                .HasMaxLength(50);
-
-            building.Property(b => b.PostalCode)
-               .IsRequired()
-               .HasMaxLength(6);
-
-            building.Property(b => b.FloorsCount)
-               .IsRequired();
+            building.HasMany(b => b.SpecialAvailabilities)
+                .WithOne(a => a.Building)
+                .HasForeignKey(a => a.BuildingId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

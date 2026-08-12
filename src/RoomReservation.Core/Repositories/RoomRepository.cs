@@ -30,7 +30,8 @@ namespace RoomReservation.Core.Repositories
             return await _db.Rooms.Include(r => r.Building)
                                   .Include(r => r.RoomEquipment)
                                     .ThenInclude(re => re.Equipment)
-                                  .Include(r => r.RoomAvailabilities)
+                                  .Include(r => r.Availabilities)
+                                  .Include(r => r.SpecialAvailabilities)
                                   .FirstOrDefaultAsync(r => r.Id == roomId);
         }
 
@@ -50,7 +51,7 @@ namespace RoomReservation.Core.Repositories
             var rooms = _db.Rooms.Include(r => r.Building)
                                   .Include(r => r.RoomEquipment)
                                     .ThenInclude(re => re.Equipment)
-                                  .Include(r => r.RoomAvailabilities)
+                                  .Include(r => r.Availabilities)
                                   .AsQueryable();
 
             if (filters.BuildingId.HasValue)
@@ -64,7 +65,7 @@ namespace RoomReservation.Core.Repositories
 
             if (filters.DayOfWeek.HasValue || filters.StartTime.HasValue || filters.EndTime.HasValue)
             {
-                rooms = rooms.Where(r => r.RoomAvailabilities.Any(ra =>
+                rooms = rooms.Where(r => r.Availabilities.Any(ra =>
                     (!filters.DayOfWeek.HasValue || ra.DayOfWeek == filters.DayOfWeek.Value) &&
                     (!filters.StartTime.HasValue || ra.StartTime <= filters.StartTime.Value) &&
                     (!filters.EndTime.HasValue || ra.EndTime >= filters.EndTime.Value)));

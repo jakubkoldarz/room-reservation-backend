@@ -8,6 +8,7 @@ using RoomReservation.Api.Extensions.Mappers;
 using RoomReservation.Core.Constants;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
+using RoomReservation.Core.Models;
 using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Api.Controllers
@@ -38,7 +39,7 @@ namespace RoomReservation.Api.Controllers
 
         [HttpPost]
         [RequirePermission(Permissions.BuildingAdd)]
-        public async Task<ActionResult<BasicBuildingResponse>> Add([FromBody] BuildingRequest request)
+        public async Task<ActionResult<BasicBuildingResponse>> Create([FromBody] BuildingRequest request)
         {
             var result = await _buildingService.CreateAsync(
                 request.Name,
@@ -46,7 +47,8 @@ namespace RoomReservation.Api.Controllers
                 request.Street,
                 request.City,
                 request.PostalCode,
-                request.FloorsCount
+                request.FloorsCount,
+                [.. request.Availabilities.Select(a => new AvailabilitySlot(DayOfWeek: a.DayOfWeek, StartTime: a.StartTime, EndTime: a.EndTime))]
             );
 
             if (!result.IsSuccess)
@@ -66,7 +68,8 @@ namespace RoomReservation.Api.Controllers
                 request.Street,
                 request.City,
                 request.PostalCode,
-                request.FloorsCount
+                request.FloorsCount,
+                [.. request.Availabilities.Select(a => new AvailabilitySlot(DayOfWeek: a.DayOfWeek, StartTime: a.StartTime, EndTime: a.EndTime))]
             );
 
             if (!result.IsSuccess)

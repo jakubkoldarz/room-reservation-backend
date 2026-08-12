@@ -28,7 +28,11 @@ namespace RoomReservation.Core.Repositories
         }
         public async Task<Building?> GetByIdAsync(Guid buildingId)
         {
-            return await _db.Buildings.Include(b => b.Rooms).FirstOrDefaultAsync(b => b.Id == buildingId);
+            return await _db.Buildings
+                .Include(b => b.Rooms)
+                .Include(b => b.Availabilities)
+                .Include(b => b.SpecialAvailabilities)
+                .FirstOrDefaultAsync(b => b.Id == buildingId);
         }
         public async Task<Building?> GetByNameAsync(string name)
         {

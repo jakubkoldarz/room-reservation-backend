@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using RoomReservation.Api.Dtos.Availabilities.Requests;
+using System.ComponentModel.DataAnnotations;
 
 namespace RoomReservation.Api.Dtos.Rooms.Requests
 {
@@ -10,6 +11,6 @@ namespace RoomReservation.Api.Dtos.Rooms.Requests
         [Required] int Floor,
         [Required, Range(1, int.MaxValue, ErrorMessage = "Capacity must be a positive integer.")] int Capacity,
         [Required, MaxLength(5, ErrorMessage = "Maximum 5 equipment items allowed.")] IReadOnlyList<Guid> EquipmentIds,
-        [Required] IReadOnlyList<RoomAvailabilityRequest> Availabilities
+        IReadOnlyList<AvailabilityRequest> Availabilities
     );
 }

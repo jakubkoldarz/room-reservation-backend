@@ -9,9 +9,6 @@ namespace RoomReservation.Core.Data.Configuration
         public void Configure(EntityTypeBuilder<RoomAvailability> roomAvailability)
         {
             roomAvailability.HasKey(ra => ra.Id);
-            roomAvailability.Property(ra => ra.StartTime).IsRequired();
-            roomAvailability.Property(ra => ra.EndTime).IsRequired();
-            roomAvailability.Property(ra => ra.DayOfWeek).IsRequired();
         }
     }
 }

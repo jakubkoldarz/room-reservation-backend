@@ -1,9 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using RoomReservation.Core.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace RoomReservation.Core.Data.Configuration
 {
@@ -17,20 +14,8 @@ namespace RoomReservation.Core.Data.Configuration
                             .IsRequired()
                             .HasMaxLength(6);
 
-            code.Property(v => v.Type)
-                .IsRequired()
-                .HasConversion<string>()
-                .HasMaxLength(40);
-
-            code.Property(v => v.CreatedAt)
-                .IsRequired();
-
-            code.Property(v => v.ExpiresAt)
-                .IsRequired();
-
-            code.Property(v => v.IsUsed)
-                .IsRequired()
-                .HasDefaultValue(false);
+            code.Property(v => v.Type).HasConversion<string>().HasMaxLength(40);
+            code.Property(v => v.IsUsed).HasDefaultValue(false);
 
             code.HasOne(v => v.User)
                 .WithMany()

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RoomReservation.Core.Entities
+﻿namespace RoomReservation.Core.Entities
 {
     public class Room
     {
@@ -17,7 +13,8 @@ namespace RoomReservation.Core.Entities
         public required int Capacity { get; set; }
 
         public ICollection<RoomEquipment> RoomEquipment { get; set; } = [];
-        public ICollection<RoomAvailability> RoomAvailabilities { get; set; } = [];
+        public ICollection<RoomAvailability> Availabilities { get; set; } = [];
+        public ICollection<RoomSpecialAvailability> SpecialAvailabilities { get; set; } = [];
         public ICollection<Reservation> Reservations { get; set; } = [];
     }
 }

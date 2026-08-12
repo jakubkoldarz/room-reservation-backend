@@ -9,13 +9,13 @@ namespace RoomReservation.Api.Extensions.Mappers
         {
             return new BasicBuildingResponse
             (
-                building.Id,
-                building.Name,
-                building.Identifier,
-                building.Street,
-                building.City,
-                building.PostalCode,
-                building.FloorsCount
+                Id: building.Id,
+                Name: building.Name,
+                Identifier: building.Identifier,
+                Street: building.Street,
+                City: building.City,
+                PostalCode: building.PostalCode,
+                FloorsCount: building.FloorsCount
             );
         }
 
@@ -23,8 +23,10 @@ namespace RoomReservation.Api.Extensions.Mappers
         {
             return new BuildingDetailsResponse
             (
-                building.ToBasicDto(),
-                [.. building.Rooms.Select(r => r.ToBasicDto())]
+                BuildingInfo: building.ToBasicDto(),
+                Availabilities: [.. building.Availabilities.Select(ba => ba.ToDto())],
+                SpecialAvailabilities: [.. building.SpecialAvailabilities.Select(sa => sa.ToDto())],
+                Rooms: [.. building.Rooms.Select(r => r.ToBasicDto())]
             );
         }
     }
