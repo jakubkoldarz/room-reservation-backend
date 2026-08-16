@@ -1,6 +1,4 @@
-﻿using System.Collections.ObjectModel;
-
-namespace RoomReservation.Core.Constants
+﻿namespace RoomReservation.Core.Constants
 {
     public static class Permissions
     {
@@ -9,6 +7,7 @@ namespace RoomReservation.Core.Constants
         public const string RoomAdd = "room.add";
         public const string RoomDelete = "room.delete";
         public const string RoomEdit = "room.edit";
+        public const string RoomEditAvailability = "room.edit.availability";
 
         public const string UserView = "user.view";
         public const string UserList = "user.list";
@@ -19,6 +18,7 @@ namespace RoomReservation.Core.Constants
         public const string BuildingAdd = "building.add";
         public const string BuildingDelete = "building.delete";
         public const string BuildingEdit = "building.edit";
+        public const string BuildingEditAvailability = "building.edit.availability";
 
         public const string EquipmentView = "equipment.view";
         public const string EquipmentList = "equipment.list";
@@ -33,6 +33,7 @@ namespace RoomReservation.Core.Constants
             [RoomAdd] = Guid.Parse("10000000-0000-0000-0000-000000000002"),
             [RoomDelete] = Guid.Parse("10000000-0000-0000-0000-000000000003"),
             [RoomEdit] = Guid.Parse("10000000-0000-0000-0000-000000000004"),
+            [RoomEditAvailability] = Guid.Parse("10000000-0000-0000-0000-000000000005"),
 
             [UserView] = Guid.Parse("20000000-0000-0000-0000-000000000000"),
             [UserList] = Guid.Parse("20000000-0000-0000-0000-000000000001"),
@@ -42,6 +43,7 @@ namespace RoomReservation.Core.Constants
             [BuildingAdd] = Guid.Parse("30000000-0000-0000-0000-000000000002"),
             [BuildingDelete] = Guid.Parse("30000000-0000-0000-0000-000000000003"),
             [BuildingEdit] = Guid.Parse("30000000-0000-0000-0000-000000000004"),
+            [BuildingEditAvailability] = Guid.Parse("30000000-0000-0000-0000-000000000005"),
 
             [EquipmentView] = Guid.Parse("40000000-0000-0000-0000-000000000000"),
             [EquipmentList] = Guid.Parse("40000000-0000-0000-0000-000000000001"),

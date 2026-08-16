@@ -13,5 +13,7 @@ namespace RoomReservation.Core.Interfaces
         Task AddAsync(Building building);
         Task UpdateAsync(Building building);
         Task DeleteAsync(Building building);
+        Task<bool> DeleteSpecialAvailabilityByIdAsync(Guid specialAvailabilityId);
+        Task AddSpecialAvailabilityAsync(BuildingSpecialAvailability specialAvailability);
     }
 }

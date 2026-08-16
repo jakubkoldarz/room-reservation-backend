@@ -18,5 +18,7 @@ namespace RoomReservation.Core.Interfaces
            Guid buildingId, int floor, int capacity,
            IReadOnlyList<Guid> equipmentIds, IReadOnlyList<AvailabilitySlot> availabilities);
         Task<Result> DeleteAsync(Guid roomId);
+        Task<Result> AddSpecialAvailabilityAsync(Guid roomId, SpecialAvailabilitySlot specialAvailability);
+        Task<Result> RemoveSpecialAvailabilityAsync(Guid specialAvailabilityId);
     }
 }

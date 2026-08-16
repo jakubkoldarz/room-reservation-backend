@@ -10,6 +10,44 @@ namespace RoomReservation.Core.Services
 {
     public class RoomService(IRoomRepository _rooms, IBuildingRepository _buildings, IEquipmentRepository _equipment) : IRoomService
     {
+        public async Task<Result> AddSpecialAvailabilityAsync(Guid roomId, SpecialAvailabilitySlot specialAvailability)
+        {
+            if (specialAvailability.StartDate < DateOnly.FromDateTime(DateTime.UtcNow.Date))
+                return new Error("Invalid start date", ErrorType.BadRequest);
+
+            if (specialAvailability.IsClosed && (specialAvailability.StartTime is not null || specialAvailability.EndTime is not null))
+                return new Error("Cannot specify start or end times for closed availability", ErrorType.BadRequest);
+
+            if (!specialAvailability.IsClosed && (specialAvailability.StartTime is null || specialAvailability.EndTime is null))
+                return new Error("Missing start or end time for open availability", ErrorType.BadRequest);
+
+            var room = await _rooms.GetByIdAsync(roomId);
+            if (room is null)
+                return new Error("Room not found", ErrorType.NotFound);
+
+            var existingSlots = room.SpecialAvailabilities
+                .Where(a => a.EndDate >= DateOnly.FromDateTime(DateTime.UtcNow.Date))
+                .Select(a => new SpecialAvailabilitySlot(a.StartDate, a.EndDate, a.IsClosed, a.StartTime, a.EndTime));
+
+            var combinedSlots = existingSlots.Append(specialAvailability).ToList();
+
+            if (!AvailabilityProvider.AreSpecialAvailabilitiesValid(combinedSlots))
+                return new Error("Invalid or overlapping special availability", ErrorType.Conflict);
+
+            var specialAvailabilityToCreate = new RoomSpecialAvailability
+            {
+                RoomId = roomId,
+                StartDate = specialAvailability.StartDate,
+                EndDate = specialAvailability.EndDate,
+                IsClosed = specialAvailability.IsClosed,
+                StartTime = specialAvailability.StartTime,
+                EndTime = specialAvailability.EndTime
+            };
+
+            await _rooms.AddSpecialAvailabilityAsync(specialAvailabilityToCreate);
+            return Result.Success();
+        }
+
         public async Task<ResultT<Room>> CreateAsync(string identifier, bool requiresApproval, Guid buildingId, int floor, int capacity, IReadOnlyList<Guid> equipmentIds, IReadOnlyList<AvailabilitySlot> availabilities)
         {
             if (equipmentIds.Distinct().Count() != equipmentIds.Count)
@@ -26,7 +64,7 @@ namespace RoomReservation.Core.Services
             if (existingRoom)
                 return new Error("Room with the same identifier already exists in the building", ErrorType.Conflict);
 
-            var validAvailabilities = AvailabilityProvider.EnsureValidAvailabilities(availabilities);
+            var validAvailabilities = AvailabilityProvider.AreAvailabilitiesValid(availabilities);
             if (!validAvailabilities)
                 return new Error("Invalid availabilities provided", ErrorType.BadRequest);
 
@@ -89,6 +127,15 @@ namespace RoomReservation.Core.Services
             return ResultT<Room>.Success(room);
         }
 
+        public async Task<Result> RemoveSpecialAvailabilityAsync(Guid specialAvailabilityId)
+        {
+            var deleted = await _rooms.DeleteSpecialAvailabilityByIdAsync(specialAvailabilityId);
+            if (!deleted)
+                return new Error("Special availability not found", ErrorType.NotFound);
+
+            return Result.Success();
+        }
+
         public async Task<ResultT<Room>> UpdateAsync(Guid roomId, string identifier, bool requiresApproval, Guid buildingId, int floor, int capacity, IReadOnlyList<Guid> equipmentIds, IReadOnlyList<AvailabilitySlot> availabilities)
         {
             if (equipmentIds.Distinct().Count() != equipmentIds.Count)
@@ -105,7 +152,7 @@ namespace RoomReservation.Core.Services
             if ((existingRoom is not null) && (existingRoom.Id != roomId))
                 return new Error("Room with the same identifier already exists in the building", ErrorType.Conflict);
 
-            var validAvailabilities = AvailabilityProvider.EnsureValidAvailabilities(availabilities);
+            var validAvailabilities = AvailabilityProvider.AreAvailabilitiesValid(availabilities);
             if (!validAvailabilities)
                 return new Error("Invalid availabilities provided", ErrorType.BadRequest);
 

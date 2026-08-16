@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RoomReservation.Api.Attributes;
+using RoomReservation.Api.Dtos.Availabilities.Requests;
 using RoomReservation.Api.Dtos.Rooms.Requests;
 using RoomReservation.Api.Dtos.Rooms.Responses;
 using RoomReservation.Api.Extensions;
@@ -84,6 +85,34 @@ namespace RoomReservation.Api.Controllers
         public async Task<ActionResult> Delete([FromRoute] Guid roomId)
         {
             var result = await _roomService.DeleteAsync(roomId);
+            if (!result.IsSuccess)
+                return result.Error.ToActionResult();
+
+            return NoContent();
+        }
+
+        [RequirePermission(Permissions.RoomEditAvailability)]
+        [HttpDelete("special-availabilities/{specialAvailabilityId:guid}")]
+        public async Task<ActionResult> RemoveSpecialAvailability([FromRoute] Guid roomId, [FromRoute] Guid specialAvailabilityId)
+        {
+            var result = await _roomService.RemoveSpecialAvailabilityAsync(specialAvailabilityId);
+            if (!result.IsSuccess)
+                return result.Error.ToActionResult();
+
+            return NoContent();
+        }
+
+        [RequirePermission(Permissions.RoomEditAvailability)]
+        [HttpPost("{roomId:guid}/special-availabilities")]
+        public async Task<ActionResult> UpdateSpecialAvailability([FromRoute] Guid roomId, [FromBody] SpecialAvailabilityRequest request)
+        {
+            var result = await _roomService.AddSpecialAvailabilityAsync(roomId, new SpecialAvailabilitySlot(
+                StartDate: request.StartDate,
+                EndDate: request.EndDate,
+                IsClosed: request.IsClosed,
+                StartTime: request.StartTime,
+                EndTime: request.EndTime
+            ));
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 

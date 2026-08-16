@@ -13,11 +13,30 @@ namespace RoomReservation.Core.Repositories
             _db.Buildings.Add(building);
             await _db.SaveChangesAsync();
         }
+
+        public async Task AddSpecialAvailabilityAsync(BuildingSpecialAvailability specialAvailability)
+        {
+            _db.BuildingSpecialAvailabilities.Add(specialAvailability);
+            await _db.SaveChangesAsync();
+        }
+
         public async Task DeleteAsync(Building building)
         {
             _db.Buildings.Remove(building);
             await _db.SaveChangesAsync();
         }
+
+        public async Task<bool> DeleteSpecialAvailabilityByIdAsync(Guid specialAvailabilityId)
+        {
+            var specialAvailability = await _db.BuildingSpecialAvailabilities.FindAsync(specialAvailabilityId);
+            if (specialAvailability is null)
+                return false;
+
+            _db.BuildingSpecialAvailabilities.Remove(specialAvailability);
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
         public Task<bool> ExistsByNameAsync(string name)
         {
             return _db.Buildings.AnyAsync(b => b.Name.ToLower().Trim() == name.ToLower().Trim());
@@ -62,6 +81,7 @@ namespace RoomReservation.Core.Repositories
 
             return (filteredBuildings, totalCount);
         }
+
         public async Task<IReadOnlyList<Building>> SearchByNameAsync(string name)
         {
             return await _db.Buildings

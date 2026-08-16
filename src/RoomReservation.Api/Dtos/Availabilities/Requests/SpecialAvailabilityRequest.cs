@@ -2,9 +2,8 @@
 {
     public record SpecialAvailabilityRequest
     (
-        Guid EntityId,
-        DateTime StartDate,
-        DateTime EndDate,
+        DateOnly StartDate,
+        DateOnly EndDate,
         bool IsClosed,
         TimeOnly? StartTime,
         TimeOnly? EndTime

@@ -82,5 +82,22 @@ namespace RoomReservation.Core.Repositories
                                        .ToListAsync();
             return (pagedRooms, total);
         }
+
+        public async Task<bool> DeleteSpecialAvailabilityByIdAsync(Guid specialAvailabilityId)
+        {
+            var specialAvailability = await _db.RoomSpecialAvailabilities.FindAsync(specialAvailabilityId);
+            if (specialAvailability is null)
+                return false;
+
+            _db.RoomSpecialAvailabilities.Remove(specialAvailability);
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task AddSpecialAvailabilityAsync(RoomSpecialAvailability specialAvailability)
+        {
+            _db.RoomSpecialAvailabilities.Add(specialAvailability);
+            await _db.SaveChangesAsync();
+        }
     }
 }
