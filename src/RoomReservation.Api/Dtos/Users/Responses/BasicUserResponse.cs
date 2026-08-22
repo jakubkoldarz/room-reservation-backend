@@ -4,9 +4,6 @@
     (
         Guid Id,
         string? Firstname, 
-        string? Lastname,
-        bool HasProfileCompleted,
-        bool HasEmailVerified,
-        bool Has2faEnabled
+        string? Lastname
     );
 }

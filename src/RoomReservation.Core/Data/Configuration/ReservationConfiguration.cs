@@ -11,6 +11,7 @@ namespace RoomReservation.Core.Data.Configuration
         {
             reservation.HasKey(r => r.Id);
             reservation.Property(r => r.Purpose).HasMaxLength(100);
+            reservation.Property(r => r.Reason).HasMaxLength(100);
             reservation.Property(r => r.Status).HasConversion<string>().HasDefaultValue(ReservationStatus.Pending);
 
             reservation.HasOne(r => r.CreatedBy)
@@ -23,10 +24,17 @@ namespace RoomReservation.Core.Data.Configuration
                 .HasForeignKey(r => r.ApprovedById)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            reservation.HasOne(r => r.CanceledBy)
+                .WithMany()
+                .HasForeignKey(r => r.CanceledById)
+                .OnDelete(DeleteBehavior.SetNull);
+
             reservation.HasOne(r => r.Room)
                 .WithMany(rm => rm.Reservations)
                 .HasForeignKey(r => r.RoomId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            reservation.HasIndex(r => new { r.RoomId, r.Date });
         }
     }
 }

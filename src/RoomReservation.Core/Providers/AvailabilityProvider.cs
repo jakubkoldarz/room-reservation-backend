@@ -1,4 +1,6 @@
-﻿using RoomReservation.Core.Models;
+﻿using RoomReservation.Core.Entities;
+using RoomReservation.Core.Models;
+using static RoomReservation.Core.Services.ReservationService;
 
 namespace RoomReservation.Core.Providers
 {
@@ -42,6 +44,27 @@ namespace RoomReservation.Core.Providers
             }
 
             return true;
+        }
+
+        public static bool HasOverlap(
+            TimeOnly start, TimeOnly end,
+            IEnumerable<Reservation> existingReservations,
+            Guid? excludeReservationId = null)
+        {
+            var reservationsToCheck = existingReservations
+                .Where(r => (excludeReservationId == null || r.Id != excludeReservationId));
+
+            var result = reservationsToCheck
+                .Any(r => (start >= r.EndTime || end <= r.StartTime));
+            return !result;
+        }
+
+        public static bool IsWithinAvailability(
+            TimeOnly start, TimeOnly end,
+            AvailabilityResolution resolution)
+        {
+            if (resolution.IsClosed) return false;
+            return start >= resolution.StartTime!.Value && end <= resolution.EndTime!.Value;
         }
     }
 }

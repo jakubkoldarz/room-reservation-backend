@@ -99,5 +99,21 @@ namespace RoomReservation.Core.Repositories
             _db.RoomSpecialAvailabilities.Add(specialAvailability);
             await _db.SaveChangesAsync();
         }
+
+        public async Task<RoomAvailability?> GetAvailabilityByDateAsync(Guid roomId, DateOnly dateOnly)
+        {
+            var dayOfWeek = dateOnly.DayOfWeek;
+            return await _db.RoomAvailabilities
+                .Where(ra => ra.DayOfWeek == dayOfWeek && ra.RoomId == roomId)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<RoomSpecialAvailability?> GetSpecialAvailabilityByDateAsync(Guid roomId, DateOnly dateOnly)
+        {
+            var specialAvailabilities = await _db.RoomSpecialAvailabilities
+                .Where(sa => sa.StartDate <= dateOnly && sa.EndDate >= dateOnly && sa.RoomId == roomId)
+                .FirstOrDefaultAsync();
+            return specialAvailabilities;
+        }
     }
 }

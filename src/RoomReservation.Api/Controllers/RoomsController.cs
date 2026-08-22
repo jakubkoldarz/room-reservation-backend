@@ -92,17 +92,6 @@ namespace RoomReservation.Api.Controllers
         }
 
         [RequirePermission(Permissions.RoomEditAvailability)]
-        [HttpDelete("special-availabilities/{specialAvailabilityId:guid}")]
-        public async Task<ActionResult> RemoveSpecialAvailability([FromRoute] Guid roomId, [FromRoute] Guid specialAvailabilityId)
-        {
-            var result = await _roomService.RemoveSpecialAvailabilityAsync(specialAvailabilityId);
-            if (!result.IsSuccess)
-                return result.Error.ToActionResult();
-
-            return NoContent();
-        }
-
-        [RequirePermission(Permissions.RoomEditAvailability)]
         [HttpPost("{roomId:guid}/special-availabilities")]
         public async Task<ActionResult> UpdateSpecialAvailability([FromRoute] Guid roomId, [FromBody] SpecialAvailabilityRequest request)
         {
@@ -113,6 +102,17 @@ namespace RoomReservation.Api.Controllers
                 StartTime: request.StartTime,
                 EndTime: request.EndTime
             ));
+            if (!result.IsSuccess)
+                return result.Error.ToActionResult();
+
+            return NoContent();
+        }
+
+        [RequirePermission(Permissions.RoomEditAvailability)]
+        [HttpDelete("special-availabilities/{specialAvailabilityId:guid}")]
+        public async Task<ActionResult> RemoveSpecialAvailability([FromRoute] Guid roomId, [FromRoute] Guid specialAvailabilityId)
+        {
+            var result = await _roomService.RemoveSpecialAvailabilityAsync(specialAvailabilityId);
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
