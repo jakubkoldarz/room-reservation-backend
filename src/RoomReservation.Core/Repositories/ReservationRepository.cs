@@ -23,9 +23,11 @@ namespace RoomReservation.Core.Repositories
         {
             var reservation = await _db.Reservations
                 .Include(r => r.Room)
+                    .ThenInclude(rm => rm.Building)
                 .Include(r => r.CreatedBy)
                 .Include(r => r.ApprovedBy)
                 .Include(r => r.CanceledBy)
+                .Include(r => r.RejectedBy)
                 .FirstOrDefaultAsync(r => r.Id == reservationId);
 
             return reservation;

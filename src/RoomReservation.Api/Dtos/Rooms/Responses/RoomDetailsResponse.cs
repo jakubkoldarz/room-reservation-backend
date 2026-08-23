@@ -6,7 +6,7 @@ namespace RoomReservation.Api.Dtos.Rooms.Responses
     public record RoomDetailsResponse
     (
         BasicRoomResponse RoomInfo,
-        IReadOnlyList<BasicReservationResponse> Reservations,
+        IReadOnlyList<ReservationResponse> Reservations,
         IReadOnlyList<AvailabilityResponse> Availabilities,
         IReadOnlyList<SpecialAvailabilityResponse> SpecialAvailabilities
     );

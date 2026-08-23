@@ -26,6 +26,13 @@
         public const string EquipmentDelete = "equipment.delete";
         public const string EquipmentEdit = "equipment.edit";
 
+        public const string ReservationView = "reservation.view";
+        public const string ReservationList = "reservation.list";
+        public const string ReservationForceCancel = "reservation.force.cancel";
+        public const string ReservationApprove = "reservation.approve";
+        public const string ReservationReject = "reservation.reject";
+        public const string ReservationCreate = "reservation.create";
+
         public static Dictionary<string, Guid> Definitions = new()
         {
             [RoomView] = Guid.Parse("10000000-0000-0000-0000-000000000000"),
@@ -50,6 +57,13 @@
             [EquipmentAdd] = Guid.Parse("40000000-0000-0000-0000-000000000002"),
             [EquipmentDelete] = Guid.Parse("40000000-0000-0000-0000-000000000003"),
             [EquipmentEdit] = Guid.Parse("40000000-0000-0000-0000-000000000004"),
+
+            [ReservationView] = Guid.Parse("50000000-0000-0000-0000-000000000000"),
+            [ReservationList] = Guid.Parse("50000000-0000-0000-0000-000000000001"),
+            [ReservationForceCancel] = Guid.Parse("50000000-0000-0000-0000-000000000002"),
+            [ReservationApprove] = Guid.Parse("50000000-0000-0000-0000-000000000003"),
+            [ReservationReject] = Guid.Parse("50000000-0000-0000-0000-000000000004"),
+            [ReservationCreate] = Guid.Parse("50000000-0000-0000-0000-000000000005"),
         };
     }
 }

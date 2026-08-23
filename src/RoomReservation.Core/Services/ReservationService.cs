@@ -10,6 +10,7 @@ namespace RoomReservation.Core.Services
 {
     public partial class ReservationService(
         IReservationRepository _reservations,
+        IUserRepository _users,
         IBuildingRepository _buildings,
         IEmailService _emailService,
         IRoomRepository _rooms) : IReservationService
@@ -28,16 +29,22 @@ namespace RoomReservation.Core.Services
             reservationToUpdate.Status = ReservationStatus.Approved;
             await _reservations.UpdateAsync(reservationToUpdate);
 
+            if (reservationToUpdate.CreatedBy != null)
+            {
+                var approvedByUser = await _users.GetByIdAsync(approvedById);
+                await SendApproveNotification(reservationToUpdate.CreatedBy, approvedByUser?.Firstname ?? "System", reservationToUpdate);
+            }
+
             return Result.Success();
         }
 
-        public async Task<Result> SelfCancelAsync(Guid reservationId, string reason)
+        public async Task<Result> SelfCancelAsync(Guid reservationId, string? reason, Guid cancelledById)
         {
             var reservationToUpdate = await _reservations.GetByIdAsync(reservationId);
-            if (reservationToUpdate == null)
+            if (reservationToUpdate == null || reservationToUpdate.CreatedById != cancelledById)
                 return new Error("Reservation not found", ErrorType.NotFound);
 
-            if (reservationToUpdate.Status is not (ReservationStatus.Pending or ReservationStatus.Approved))
+            if (reservationToUpdate.Status is not (ReservationStatus.Approved))
                 return new Error("Reservation has invalid status", ErrorType.BadRequest);
 
             reservationToUpdate.CanceledById = reservationToUpdate.CreatedById;
@@ -92,11 +99,15 @@ namespace RoomReservation.Core.Services
             return ResultT<Reservation>.Success(createdReservation);
         }
 
-        public async Task<Result> DeleteAsync(Guid reservationId)
+        public async Task<Result> DeleteAsync(Guid reservationId, Guid requestingUserId)
         {
             var reservationToDelete = await _reservations.GetByIdAsync(reservationId);
-            if (reservationToDelete == null)
+            if (reservationToDelete == null || reservationToDelete.CreatedById != requestingUserId)
                 return new Error("Reservation not found", ErrorType.NotFound);
+
+            if (reservationToDelete.Status is not ReservationStatus.Pending)
+                return new Error("Only Pending reservations can be deleted", ErrorType.BadRequest);
+
             await _reservations.DeleteAsync(reservationToDelete);
             return Result.Success();
         }
@@ -120,7 +131,7 @@ namespace RoomReservation.Core.Services
             return ResultT<Reservation>.Success(reservation);
         }
 
-        public async Task<Result> RejectAsync(Guid reservationId, string reason, Guid rejectedById)
+        public async Task<Result> RejectAsync(Guid reservationId, string? reason, Guid rejectedById)
         {
             var reservationToUpdate = await _reservations.GetByIdAsync(reservationId);
             if (reservationToUpdate == null)
@@ -134,6 +145,12 @@ namespace RoomReservation.Core.Services
             reservationToUpdate.Reason = reason;
             reservationToUpdate.Status = ReservationStatus.Rejected;
             await _reservations.UpdateAsync(reservationToUpdate);
+
+            if (reservationToUpdate.CreatedBy != null)
+            {
+                var rejectingUser = await _users.GetByIdAsync(rejectedById);
+                await SendRejectNotification(reservationToUpdate.CreatedBy, rejectingUser?.Firstname ?? "System", reservationToUpdate);
+            }
 
             return Result.Success();
         }
@@ -212,7 +229,7 @@ namespace RoomReservation.Core.Services
             return new AvailabilityResolution(true, null, null);
         }
 
-        public async Task<Result> ForceCancelAsync(Guid reservationId, string reason, Guid cancelledById)
+        public async Task<Result> ForceCancelAsync(Guid reservationId, string? reason, Guid cancelledById)
         {
             var reservationToUpdate = await _reservations.GetByIdAsync(reservationId);
             if (reservationToUpdate == null)
@@ -227,13 +244,16 @@ namespace RoomReservation.Core.Services
             reservationToUpdate.Status = ReservationStatus.Canceled;
             await _reservations.UpdateAsync(reservationToUpdate);
 
-            var user = reservationToUpdate.CreatedBy!;
-            await SendCancelNotification(user, reservationToUpdate);
+            if (reservationToUpdate.CreatedBy != null)
+            {
+                var cancellingUser = await _users.GetByIdAsync(cancelledById);
+                await SendCancelNotification(reservationToUpdate.CreatedBy, cancellingUser?.Firstname ?? "System", reservationToUpdate);
+            }
 
             return Result.Success();
         }
 
-        private async Task<Result> SendCancelNotification(User user, Reservation reservation)
+        private async Task<Result> SendCancelNotification(User recipient, string cancelledByName, Reservation reservation)
         {
             var subject = "Rezerwacja anulowana";
             var title = "Twoja rezerwacja została anulowana";
@@ -242,25 +262,83 @@ namespace RoomReservation.Core.Services
             {
                 ["Title"] = title,
                 ["RoomName"] = reservation.Room.Identifier,
+                ["BuildingName"] = GetBuildingName(reservation.Room.Building.Name, reservation.Room.Building.Identifier),
                 ["Date"] = reservation.Date.ToString("dd-MM-yyyy"),
                 ["StartTime"] = reservation.StartTime.ToString("HH:mm"),
                 ["EndTime"] = reservation.EndTime.ToString("HH:mm"),
                 ["CancelReason"] = reservation.Reason ?? "Brak powodu podanego przez administratora",
-                ["CanceledBy"] = reservation.CanceledBy?.Firstname ?? "Administrator",
-                ["CancelledAt"] = reservation.CanceledAt?.ToString("dd-MM-yyyy HH:mm") ?? DateTime.UtcNow.ToString("dd-MM-yyyy HH:mm"),
+                ["CanceledBy"] = cancelledByName,
+                ["CancelledAt"] = reservation.CanceledAt!.Value.ToString("dd-MM-yyyy HH:mm"),
             });
 
             if (!messageResult.IsSuccess)
                 return messageResult.Error;
 
-            var sendResult = await _emailService.SendEmailAsync(new EmailMessage
+            return await _emailService.SendEmailAsync(new EmailMessage
             {
-                To = user.Email,
+                To = recipient.Email,
                 Subject = subject,
                 HtmlMessage = messageResult.Value,
             });
-
-            return sendResult;
         }
+
+        private async Task<Result> SendRejectNotification(User recipient, string rejectedByName, Reservation reservation)
+        {
+            var subject = "Rezerwacja odrzucona";
+            var title = "Twoja prośba o rezerwacje została odrzucona";
+
+            var messageResult = await _emailService.GetMessageAsync("RejectReservation", new Dictionary<string, string>
+            {
+                ["Title"] = title,
+                ["RoomName"] = reservation.Room.Identifier,
+                ["BuildingName"] = GetBuildingName(reservation.Room.Building.Name, reservation.Room.Building.Identifier),
+                ["Date"] = reservation.Date.ToString("dd-MM-yyyy"),
+                ["StartTime"] = reservation.StartTime.ToString("HH:mm"),
+                ["EndTime"] = reservation.EndTime.ToString("HH:mm"),
+                ["RejectReason"] = reservation.Reason ?? "Brak powodu podanego przez administratora",
+                ["RejectedBy"] = rejectedByName,
+                ["RejectedAt"] = reservation.RejectedAt!.Value.ToString("dd-MM-yyyy HH:mm"),
+            });
+
+            if (!messageResult.IsSuccess)
+                return messageResult.Error;
+
+            return await _emailService.SendEmailAsync(new EmailMessage
+            {
+                To = recipient.Email,
+                Subject = subject,
+                HtmlMessage = messageResult.Value,
+            });
+        }
+
+        private async Task<Result> SendApproveNotification(User recipient, string approvedByName, Reservation reservation)
+        {
+            var subject = "Rezerwacja zaakceptowana";
+            var title = "Twoja rezerwacja została potwierdzona";
+
+            var messageResult = await _emailService.GetMessageAsync("ApproveReservation", new Dictionary<string, string>
+            {
+                ["Title"] = title,
+                ["RoomName"] = reservation.Room.Identifier,
+                ["BuildingName"] = GetBuildingName(reservation.Room.Building.Name, reservation.Room.Building.Identifier),
+                ["Date"] = reservation.Date.ToString("dd-MM-yyyy"),
+                ["StartTime"] = reservation.StartTime.ToString("HH:mm"),
+                ["EndTime"] = reservation.EndTime.ToString("HH:mm"),
+                ["ApprovedBy"] = approvedByName,
+                ["ApprovedAt"] = reservation.ApprovedAt!.Value.ToString("dd-MM-yyyy HH:mm"),
+            });
+
+            if (!messageResult.IsSuccess)
+                return messageResult.Error;
+
+            return await _emailService.SendEmailAsync(new EmailMessage
+            {
+                To = recipient.Email,
+                Subject = subject,
+                HtmlMessage = messageResult.Value,
+            });
+        }
+
+        private static string GetBuildingName(string buildingName, string? buildingIdentifier) => $"{buildingName}" + $"{(buildingIdentifier != null ? $" ({buildingIdentifier})" : "")}";
     }
 }
