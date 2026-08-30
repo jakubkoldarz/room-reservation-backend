@@ -5,9 +5,9 @@ namespace RoomReservation.Api.Extensions.Mappers
 {
     public static class TokenMapperExtensions
     {
-        public static RefreshTokenResponse ToDto(this RefreshToken refreshToken)
+        public static RefreshTokenResponseDto ToDto(this RefreshToken refreshToken)
         {
-            return new RefreshTokenResponse(
+            return new RefreshTokenResponseDto(
                 refreshToken.Id,
                 refreshToken.CreatedAt,
                 refreshToken.ExpiresAt,

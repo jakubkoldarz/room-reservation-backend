@@ -3,85 +3,51 @@ using RoomReservation.Core.Enums;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models;
-using RoomReservation.Core.Providers;
 using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Core.Services
 {
-    public class RoomService(IRoomRepository _rooms, IBuildingRepository _buildings, IEquipmentRepository _equipment) : IRoomService
+    public class RoomService(
+        IRoomRepository _rooms,
+        IAvailabilityService _availabilityService,
+        IReservationRepository _reservations,
+        IBuildingRepository _buildings,
+        IEquipmentRepository _equipment) : IRoomService
     {
-        public async Task<Result> AddSpecialAvailabilityAsync(Guid roomId, SpecialAvailabilitySlot specialAvailability)
+        public async Task<ResultT<Room>> CreateAsync(RoomRequest request)
         {
-            if (specialAvailability.StartDate < DateOnly.FromDateTime(DateTime.UtcNow.Date))
-                return new Error("Invalid start date", ErrorType.BadRequest);
+            var equipmentValidationResult = await AreEquipmentsValid(request.EquipmentIds);
+            if (!equipmentValidationResult.IsSuccess)
+                return equipmentValidationResult.Error;
 
-            if (specialAvailability.IsClosed && (specialAvailability.StartTime is not null || specialAvailability.EndTime is not null))
-                return new Error("Cannot specify start or end times for closed availability", ErrorType.BadRequest);
-
-            if (!specialAvailability.IsClosed && (specialAvailability.StartTime is null || specialAvailability.EndTime is null))
-                return new Error("Missing start or end time for open availability", ErrorType.BadRequest);
-
-            var room = await _rooms.GetByIdAsync(roomId);
-            if (room is null)
-                return new Error("Room not found", ErrorType.NotFound);
-
-            var existingSlots = room.SpecialAvailabilities
-                .Where(a => a.EndDate >= DateOnly.FromDateTime(DateTime.UtcNow.Date))
-                .Select(a => new SpecialAvailabilitySlot(a.StartDate, a.EndDate, a.IsClosed, a.StartTime, a.EndTime));
-
-            var combinedSlots = existingSlots.Append(specialAvailability).ToList();
-
-            if (!AvailabilityProvider.AreSpecialAvailabilitiesValid(combinedSlots))
-                return new Error("Invalid or overlapping special availability", ErrorType.Conflict);
-
-            var specialAvailabilityToCreate = new RoomSpecialAvailability
-            {
-                RoomId = roomId,
-                StartDate = specialAvailability.StartDate,
-                EndDate = specialAvailability.EndDate,
-                IsClosed = specialAvailability.IsClosed,
-                StartTime = specialAvailability.StartTime,
-                EndTime = specialAvailability.EndTime
-            };
-
-            await _rooms.AddSpecialAvailabilityAsync(specialAvailabilityToCreate);
-            return Result.Success();
-        }
-
-        public async Task<ResultT<Room>> CreateAsync(string identifier, bool requiresApproval, Guid buildingId, int floor, int capacity, IReadOnlyList<Guid> equipmentIds, IReadOnlyList<AvailabilitySlot> availabilities)
-        {
-            if (equipmentIds.Distinct().Count() != equipmentIds.Count)
-                return new Error("Duplicate equipment IDs are not allowed", ErrorType.BadRequest);
-
-            if (!await _equipment.AllExistAsync(equipmentIds))
-                return new Error("One or more equipment IDs are invalid", ErrorType.BadRequest);
-
-            var exisitingBuilding = await _buildings.GetByIdAsync(buildingId);
+            var exisitingBuilding = await _buildings.GetByIdAsync(request.BuildingId);
             if (exisitingBuilding is null)
                 return new Error("Building not found", ErrorType.NotFound);
 
-            var existingRoom = await _rooms.ExistsByIdentifierAsync(buildingId, identifier);
+            var existingRoom = await _rooms.ExistsByIdentifierAsync(request.BuildingId, request.Identifier);
             if (existingRoom)
                 return new Error("Room with the same identifier already exists in the building", ErrorType.Conflict);
 
-            var validAvailabilities = AvailabilityProvider.AreAvailabilitiesValid(availabilities);
+            var roomAvailabilities = request.Availabilities.Select(a => new Availability
+            {
+                DayOfWeek = a.DayOfWeek,
+                StartTime = a.StartTime,
+                EndTime = a.EndTime
+            }).ToList();
+
+            var validAvailabilities = _availabilityService.AreAvailabilitiesValid(roomAvailabilities);
             if (!validAvailabilities)
                 return new Error("Invalid availabilities provided", ErrorType.BadRequest);
 
             var roomToCreate = new Room
             {
-                Identifier = identifier,
-                RequiresApproval = requiresApproval,
-                BuildingId = buildingId,
-                Floor = floor,
-                Capacity = capacity,
-                Availabilities = [.. availabilities.Select(a => new RoomAvailability
-                {
-                    DayOfWeek = a.DayOfWeek,
-                    StartTime = a.StartTime,
-                    EndTime = a.EndTime
-                })],
-                RoomEquipment = [.. equipmentIds.Select(equipmentId => new RoomEquipment
+                Identifier = request.Identifier,
+                RequiresApproval = request.RequiresApproval,
+                BuildingId = request.BuildingId,
+                Floor = request.Floor,
+                Capacity = request.Capacity,
+                Availabilities = roomAvailabilities,
+                RoomEquipment = [.. request.EquipmentIds.Select(equipmentId => new RoomEquipment
                 {
                     EquipmentId = equipmentId
                 })]
@@ -92,11 +58,16 @@ namespace RoomReservation.Core.Services
             return ResultT<Room>.Success(createdRoom!);
         }
 
-        public async Task<Result> DeleteAsync(Guid roomId)
+        public async Task<Result> DeleteAsync(Guid roomId, bool force = false)
         {
             var existingRoom = await _rooms.GetByIdAsync(roomId);
             if (existingRoom is null)
                 return new Error("Room not found", ErrorType.NotFound);
+
+            var activeReservations = await _reservations.GetActiveFutureByRoomAsync(roomId);
+
+            if (!force && activeReservations.Any())
+                return new Error("Room has active reservations and cannot be deleted", ErrorType.Conflict);
 
             await _rooms.DeleteAsync(existingRoom);
             return Result.Success();
@@ -126,17 +97,41 @@ namespace RoomReservation.Core.Services
 
             return ResultT<Room>.Success(room);
         }
-
-        public async Task<Result> RemoveSpecialAvailabilityAsync(Guid specialAvailabilityId)
+        public async Task<ResultT<Room>> UpdateAsync(Guid roomId, RoomRequest request, bool force = false)
         {
-            var deleted = await _rooms.DeleteSpecialAvailabilityByIdAsync(specialAvailabilityId);
-            if (!deleted)
-                return new Error("Special availability not found", ErrorType.NotFound);
+            var toUpdate = await _rooms.GetByIdAsync(roomId);
+            if (toUpdate is null)
+                return new Error("Room not found", ErrorType.NotFound);
 
-            return Result.Success();
+            var equipmentValidationResult = await AreEquipmentsValid(request.EquipmentIds);
+            if (!equipmentValidationResult.IsSuccess)
+                return equipmentValidationResult.Error;
+
+            var existingBuilding = await _buildings.GetByIdAsync(request.BuildingId);
+            if (existingBuilding is null)
+                return new Error("Building not found", ErrorType.NotFound);
+
+            var existingRoom = await _rooms.ExistsByIdentifierAsync(request.BuildingId, request.Identifier);
+            if (existingRoom)
+                return new Error("Room with the same identifier already exists in the building", ErrorType.Conflict);
+
+            toUpdate.Identifier = request.Identifier;
+            toUpdate.RequiresApproval = request.RequiresApproval;
+            toUpdate.BuildingId = request.BuildingId;
+            toUpdate.Floor = request.Floor;
+            toUpdate.Capacity = request.Capacity;
+            toUpdate.RoomEquipment = [.. request.EquipmentIds.Select(equipmentId => new RoomEquipment { EquipmentId = equipmentId })];
+
+            await _rooms.UpdateAsync(toUpdate);
+
+            var availabilityResult = await _availabilityService.ReplaceForRoomAsync(roomId, request.Availabilities, force);
+            if (!availabilityResult.IsSuccess)
+                return availabilityResult.Error;
+
+            return ResultT<Room>.Success(toUpdate);
         }
 
-        public async Task<ResultT<Room>> UpdateAsync(Guid roomId, string identifier, bool requiresApproval, Guid buildingId, int floor, int capacity, IReadOnlyList<Guid> equipmentIds, IReadOnlyList<AvailabilitySlot> availabilities)
+        private async Task<Result> AreEquipmentsValid(IReadOnlyList<Guid> equipmentIds)
         {
             if (equipmentIds.Distinct().Count() != equipmentIds.Count)
                 return new Error("Duplicate equipment IDs are not allowed", ErrorType.BadRequest);
@@ -144,38 +139,7 @@ namespace RoomReservation.Core.Services
             if (!await _equipment.AllExistAsync(equipmentIds))
                 return new Error("One or more equipment IDs are invalid", ErrorType.BadRequest);
 
-            var roomToUpdate = await _rooms.GetByIdAsync(roomId);
-            if (roomToUpdate is null)
-                return new Error("Room not found", ErrorType.NotFound);
-
-            var existingRoom = await _rooms.GetByIdentifierAsync(buildingId, identifier);
-            if ((existingRoom is not null) && (existingRoom.Id != roomId))
-                return new Error("Room with the same identifier already exists in the building", ErrorType.Conflict);
-
-            var validAvailabilities = AvailabilityProvider.AreAvailabilitiesValid(availabilities);
-            if (!validAvailabilities)
-                return new Error("Invalid availabilities provided", ErrorType.BadRequest);
-
-            roomToUpdate.Identifier = identifier;
-            roomToUpdate.RequiresApproval = requiresApproval;
-            roomToUpdate.BuildingId = buildingId;
-            roomToUpdate.Floor = floor;
-            roomToUpdate.Capacity = capacity;
-
-            roomToUpdate.RoomEquipment = [.. equipmentIds.Select(equipmentId => new RoomEquipment
-            {
-                EquipmentId = equipmentId
-            })];
-            roomToUpdate.Availabilities = [.. availabilities.Select(a => new RoomAvailability
-            {
-                DayOfWeek = a.DayOfWeek,
-                StartTime = a.StartTime,
-                EndTime = a.EndTime
-            })];
-
-            await _rooms.UpdateAsync(roomToUpdate);
-            var updatedRoom = await _rooms.GetByIdAsync(roomId);
-            return ResultT<Room>.Success(updatedRoom!);
+            return Result.Success();
         }
     }
 }

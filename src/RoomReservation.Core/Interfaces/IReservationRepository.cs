@@ -11,5 +11,8 @@ namespace RoomReservation.Core.Interfaces
         Task AddAsync(Reservation reservation);
         Task UpdateAsync(Reservation reservation);
         Task DeleteAsync(Reservation reservation);
+
+        Task<IReadOnlyList<Reservation>> GetActiveFutureByRoomAsync(Guid roomId); 
+        Task<IReadOnlyList<Reservation>> GetActiveFutureByRoomIdsAsync(IReadOnlyList<Guid> roomIds);
     }
 }

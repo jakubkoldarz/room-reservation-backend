@@ -22,6 +22,51 @@ namespace RoomReservation.Core.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("EventRoom", b =>
+                {
+                    b.Property<Guid>("EventsId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RoomsId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("EventsId", "RoomsId");
+
+                    b.HasIndex("RoomsId");
+
+                    b.ToTable("EventRooms", (string)null);
+                });
+
+            modelBuilder.Entity("RoomReservation.Core.Entities.Availability", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("BuildingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("integer");
+
+                    b.Property<TimeOnly>("EndTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<Guid?>("RoomId")
+                        .HasColumnType("uuid");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time without time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BuildingId", "DayOfWeek");
+
+                    b.HasIndex("RoomId", "DayOfWeek");
+
+                    b.ToTable("Availabilities");
+                });
+
             modelBuilder.Entity("RoomReservation.Core.Entities.Building", b =>
                 {
                     b.Property<Guid>("Id")
@@ -63,62 +108,6 @@ namespace RoomReservation.Core.Migrations
                     b.ToTable("Buildings");
                 });
 
-            modelBuilder.Entity("RoomReservation.Core.Entities.BuildingAvailability", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BuildingId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("DayOfWeek")
-                        .HasColumnType("integer");
-
-                    b.Property<TimeOnly>("EndTime")
-                        .HasColumnType("time without time zone");
-
-                    b.Property<TimeOnly>("StartTime")
-                        .HasColumnType("time without time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BuildingId");
-
-                    b.ToTable("BuildingAvailabilities");
-                });
-
-            modelBuilder.Entity("RoomReservation.Core.Entities.BuildingSpecialAvailability", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BuildingId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateOnly>("EndDate")
-                        .HasColumnType("date");
-
-                    b.Property<TimeOnly?>("EndTime")
-                        .HasColumnType("time without time zone");
-
-                    b.Property<bool>("IsClosed")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateOnly>("StartDate")
-                        .HasColumnType("date");
-
-                    b.Property<TimeOnly?>("StartTime")
-                        .HasColumnType("time without time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BuildingId", "StartDate", "EndDate");
-
-                    b.ToTable("BuildingSpecialAvailabilities");
-                });
-
             modelBuilder.Entity("RoomReservation.Core.Entities.Equipment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -141,6 +130,36 @@ namespace RoomReservation.Core.Migrations
                         .IsUnique();
 
                     b.ToTable("Equipment");
+                });
+
+            modelBuilder.Entity("RoomReservation.Core.Entities.Event", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<TimeOnly?>("EndTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<bool>("IsClosed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<TimeOnly?>("StartTime")
+                        .HasColumnType("time without time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Events");
                 });
 
             modelBuilder.Entity("RoomReservation.Core.Entities.Permission", b =>
@@ -280,6 +299,31 @@ namespace RoomReservation.Core.Migrations
                         {
                             Id = new Guid("50000000-0000-0000-0000-000000000005"),
                             Name = "reservation.create"
+                        },
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0000-000000000000"),
+                            Name = "event.view"
+                        },
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0000-000000000001"),
+                            Name = "event.list"
+                        },
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0000-000000000002"),
+                            Name = "event.add"
+                        },
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0000-000000000003"),
+                            Name = "event.delete"
+                        },
+                        new
+                        {
+                            Id = new Guid("60000000-0000-0000-0000-000000000004"),
+                            Name = "event.edit"
                         });
                 });
 
@@ -567,31 +611,6 @@ namespace RoomReservation.Core.Migrations
                     b.ToTable("Rooms");
                 });
 
-            modelBuilder.Entity("RoomReservation.Core.Entities.RoomAvailability", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("DayOfWeek")
-                        .HasColumnType("integer");
-
-                    b.Property<TimeOnly>("EndTime")
-                        .HasColumnType("time without time zone");
-
-                    b.Property<Guid>("RoomId")
-                        .HasColumnType("uuid");
-
-                    b.Property<TimeOnly>("StartTime")
-                        .HasColumnType("time without time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RoomId");
-
-                    b.ToTable("RoomAvailabilities");
-                });
-
             modelBuilder.Entity("RoomReservation.Core.Entities.RoomEquipment", b =>
                 {
                     b.Property<Guid>("RoomId")
@@ -605,37 +624,6 @@ namespace RoomReservation.Core.Migrations
                     b.HasIndex("EquipmentId");
 
                     b.ToTable("RoomEquipment");
-                });
-
-            modelBuilder.Entity("RoomReservation.Core.Entities.RoomSpecialAvailability", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateOnly>("EndDate")
-                        .HasColumnType("date");
-
-                    b.Property<TimeOnly?>("EndTime")
-                        .HasColumnType("time without time zone");
-
-                    b.Property<bool>("IsClosed")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("RoomId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateOnly>("StartDate")
-                        .HasColumnType("date");
-
-                    b.Property<TimeOnly?>("StartTime")
-                        .HasColumnType("time without time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RoomId", "StartDate", "EndDate");
-
-                    b.ToTable("RoomSpecialAvailabilities");
                 });
 
             modelBuilder.Entity("RoomReservation.Core.Entities.User", b =>
@@ -722,26 +710,36 @@ namespace RoomReservation.Core.Migrations
                     b.ToTable("VerificationCodes");
                 });
 
-            modelBuilder.Entity("RoomReservation.Core.Entities.BuildingAvailability", b =>
+            modelBuilder.Entity("EventRoom", b =>
+                {
+                    b.HasOne("RoomReservation.Core.Entities.Event", null)
+                        .WithMany()
+                        .HasForeignKey("EventsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RoomReservation.Core.Entities.Room", null)
+                        .WithMany()
+                        .HasForeignKey("RoomsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("RoomReservation.Core.Entities.Availability", b =>
                 {
                     b.HasOne("RoomReservation.Core.Entities.Building", "Building")
                         .WithMany("Availabilities")
                         .HasForeignKey("BuildingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("RoomReservation.Core.Entities.Room", "Room")
+                        .WithMany("Availabilities")
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Building");
-                });
 
-            modelBuilder.Entity("RoomReservation.Core.Entities.BuildingSpecialAvailability", b =>
-                {
-                    b.HasOne("RoomReservation.Core.Entities.Building", "Building")
-                        .WithMany("SpecialAvailabilities")
-                        .HasForeignKey("BuildingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Building");
+                    b.Navigation("Room");
                 });
 
             modelBuilder.Entity("RoomReservation.Core.Entities.RefreshToken", b =>
@@ -823,17 +821,6 @@ namespace RoomReservation.Core.Migrations
                     b.Navigation("Building");
                 });
 
-            modelBuilder.Entity("RoomReservation.Core.Entities.RoomAvailability", b =>
-                {
-                    b.HasOne("RoomReservation.Core.Entities.Room", "Room")
-                        .WithMany("Availabilities")
-                        .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Room");
-                });
-
             modelBuilder.Entity("RoomReservation.Core.Entities.RoomEquipment", b =>
                 {
                     b.HasOne("RoomReservation.Core.Entities.Equipment", "Equipment")
@@ -849,17 +836,6 @@ namespace RoomReservation.Core.Migrations
                         .IsRequired();
 
                     b.Navigation("Equipment");
-
-                    b.Navigation("Room");
-                });
-
-            modelBuilder.Entity("RoomReservation.Core.Entities.RoomSpecialAvailability", b =>
-                {
-                    b.HasOne("RoomReservation.Core.Entities.Room", "Room")
-                        .WithMany("SpecialAvailabilities")
-                        .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.Navigation("Room");
                 });
@@ -891,8 +867,6 @@ namespace RoomReservation.Core.Migrations
                     b.Navigation("Availabilities");
 
                     b.Navigation("Rooms");
-
-                    b.Navigation("SpecialAvailabilities");
                 });
 
             modelBuilder.Entity("RoomReservation.Core.Entities.Permission", b =>
@@ -912,8 +886,6 @@ namespace RoomReservation.Core.Migrations
                     b.Navigation("Reservations");
 
                     b.Navigation("RoomEquipment");
-
-                    b.Navigation("SpecialAvailabilities");
                 });
 
             modelBuilder.Entity("RoomReservation.Core.Entities.User", b =>

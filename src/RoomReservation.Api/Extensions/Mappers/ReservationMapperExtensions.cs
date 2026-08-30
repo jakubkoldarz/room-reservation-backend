@@ -5,9 +5,9 @@ namespace RoomReservation.Api.Extensions.Mappers
 {
     public static class ReservationMapperExtensions
     {
-        public static ReservationResponse ToBasicDto(this Reservation reservation)
+        public static ReservationResponseDto ToBasicDto(this Reservation reservation)
         {
-            return new ReservationResponse(
+            return new ReservationResponseDto(
                 Id: reservation.Id,
 
                 CreatedBy: reservation.CreatedBy.ToActorDto(reservation.CreatedAt)!,
@@ -24,11 +24,11 @@ namespace RoomReservation.Api.Extensions.Mappers
             );
         }
 
-        private static ReservationActorResponse? ToActorDto(this User? user, DateTime? at)
+        private static ReservationActorResponseDto? ToActorDto(this User? user, DateTime? at)
         {
             if (user == null || at == null) return null;
 
-            return new ReservationActorResponse(
+            return new ReservationActorResponseDto(
                 (DateTime)at,
                 user.ToBasicDto()
             );

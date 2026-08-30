@@ -33,6 +33,12 @@
         public const string ReservationReject = "reservation.reject";
         public const string ReservationCreate = "reservation.create";
 
+        public const string EventView = "event.view";
+        public const string EventList = "event.list";
+        public const string EventAdd = "event.add";
+        public const string EventDelete = "event.delete";
+        public const string EventEdit = "event.edit";
+
         public static Dictionary<string, Guid> Definitions = new()
         {
             [RoomView] = Guid.Parse("10000000-0000-0000-0000-000000000000"),
@@ -64,6 +70,13 @@
             [ReservationApprove] = Guid.Parse("50000000-0000-0000-0000-000000000003"),
             [ReservationReject] = Guid.Parse("50000000-0000-0000-0000-000000000004"),
             [ReservationCreate] = Guid.Parse("50000000-0000-0000-0000-000000000005"),
+
+            [EventView] = Guid.Parse("60000000-0000-0000-0000-000000000000"),
+            [EventList] = Guid.Parse("60000000-0000-0000-0000-000000000001"),
+            [EventAdd] = Guid.Parse("60000000-0000-0000-0000-000000000002"),
+            [EventDelete] = Guid.Parse("60000000-0000-0000-0000-000000000003"),
+            [EventEdit] = Guid.Parse("60000000-0000-0000-0000-000000000004"),
         };
     }
 }
+

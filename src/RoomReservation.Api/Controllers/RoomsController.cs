@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RoomReservation.Api.Attributes;
-using RoomReservation.Api.Dtos.Availabilities.Requests;
 using RoomReservation.Api.Dtos.Rooms.Requests;
 using RoomReservation.Api.Dtos.Rooms.Responses;
 using RoomReservation.Api.Extensions;
@@ -10,6 +9,7 @@ using RoomReservation.Core.Constants;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models;
+using RoomReservation.Core.Models.Availability;
 using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Api.Controllers
@@ -21,21 +21,21 @@ namespace RoomReservation.Api.Controllers
     {
         [RequirePermission(Permissions.RoomList)]
         [HttpGet]
-        public async Task<ActionResult<PagedResult<BasicRoomResponse>>> GetAll([FromQuery] RoomFilter filters)
+        public async Task<ActionResult<PagedResult<BasicRoomResponseDto>>> GetAll([FromQuery] RoomFilter filters)
         {
             var result = await _roomService.GetAllAsync(filters);
-            if(!result.IsSuccess)
+            if (!result.IsSuccess)
                 return result.Error.ToActionResult();
-    
+
             return Ok(result.ToDto(r => r.ToBasicDto()));
         }
 
         [RequirePermission(Permissions.RoomView)]
         [HttpGet("{roomId:guid}")]
-        public async Task<ActionResult<BasicRoomResponse>> GetSingle([FromRoute] Guid roomId)
+        public async Task<ActionResult<BasicRoomResponseDto>> GetSingle([FromRoute] Guid roomId)
         {
             var result = await _roomService.GetByIdAsync(roomId);
-            if(!result.IsSuccess)
+            if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
             return Ok(result.Value.ToDetailsDto());
@@ -43,17 +43,11 @@ namespace RoomReservation.Api.Controllers
 
         [RequirePermission(Permissions.RoomAdd)]
         [HttpPost]
-        public async Task<ActionResult<BasicRoomResponse>> Create([FromBody] RoomRequest request)
+        public async Task<ActionResult<BasicRoomResponseDto>> Create([FromBody] RoomRequestDto request)
         {
-            var result = await _roomService.CreateAsync(
-                request.Identifier,
-                request.RequiresApproval,
-                request.BuildingId,
-                request.Floor,
-                request.Capacity,
-                request.EquipmentIds,
-                [.. request.Availabilities.Select(a => new AvailabilitySlot(a.DayOfWeek, a.StartTime, a.EndTime))]);
+            var roomRequest = ToRoomRequest(request);
 
+            var result = await _roomService.CreateAsync(roomRequest);
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
@@ -62,18 +56,14 @@ namespace RoomReservation.Api.Controllers
 
         [RequirePermission(Permissions.RoomEdit)]
         [HttpPut("{roomId:guid}")]
-        public async Task<ActionResult<BasicRoomResponse>> Update([FromRoute] Guid roomId, [FromBody] RoomRequest request)
+        public async Task<ActionResult<BasicRoomResponseDto>> Update(
+            [FromRoute] Guid roomId,
+            [FromBody] RoomRequestDto request,
+            [FromQuery] bool force = false)
         {
-            var result = await _roomService.UpdateAsync(
-                roomId,
-                request.Identifier,
-                request.RequiresApproval,
-                request.BuildingId,
-                request.Floor,
-                request.Capacity,
-                request.EquipmentIds,
-                [.. request.Availabilities.Select(a => new AvailabilitySlot(a.DayOfWeek, a.StartTime, a.EndTime))]);
+            var roomRequest = ToRoomRequest(request);
 
+            var result = await _roomService.UpdateAsync(roomId, roomRequest, force);
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
@@ -82,41 +72,29 @@ namespace RoomReservation.Api.Controllers
 
         [RequirePermission(Permissions.RoomDelete)]
         [HttpDelete("{roomId:guid}")]
-        public async Task<ActionResult> Delete([FromRoute] Guid roomId)
+        public async Task<ActionResult> Delete([FromRoute] Guid roomId, [FromQuery] bool force = false)
         {
-            var result = await _roomService.DeleteAsync(roomId);
+            var result = await _roomService.DeleteAsync(roomId, force);
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
             return NoContent();
         }
 
-        [RequirePermission(Permissions.RoomEditAvailability)]
-        [HttpPost("{roomId:guid}/special-availabilities")]
-        public async Task<ActionResult> UpdateSpecialAvailability([FromRoute] Guid roomId, [FromBody] SpecialAvailabilityRequest request)
+        private static RoomRequest ToRoomRequest(RoomRequestDto request)
         {
-            var result = await _roomService.AddSpecialAvailabilityAsync(roomId, new SpecialAvailabilitySlot(
-                StartDate: request.StartDate,
-                EndDate: request.EndDate,
-                IsClosed: request.IsClosed,
-                StartTime: request.StartTime,
-                EndTime: request.EndTime
-            ));
-            if (!result.IsSuccess)
-                return result.Error.ToActionResult();
-
-            return NoContent();
-        }
-
-        [RequirePermission(Permissions.RoomEditAvailability)]
-        [HttpDelete("special-availabilities/{specialAvailabilityId:guid}")]
-        public async Task<ActionResult> RemoveSpecialAvailability([FromRoute] Guid roomId, [FromRoute] Guid specialAvailabilityId)
-        {
-            var result = await _roomService.RemoveSpecialAvailabilityAsync(specialAvailabilityId);
-            if (!result.IsSuccess)
-                return result.Error.ToActionResult();
-
-            return NoContent();
+            return new RoomRequest(
+                Identifier: request.Identifier,
+                RequiresApproval: request.RequiresApproval,
+                BuildingId: request.BuildingId,
+                Floor: request.Floor,
+                Capacity: request.Capacity,
+                EquipmentIds: request.EquipmentIds,
+                Availabilities: [.. request.Availabilities.Select(a => new AvailabilityRequest(
+                    DayOfWeek: a.DayOfWeek,
+                    StartTime: a.StartTime,
+                    EndTime: a.EndTime))]
+            );
         }
     }
 }

@@ -19,7 +19,7 @@ namespace RoomReservation.Api.Controllers
     {
         [HttpGet("{userId:guid}")]
         [RequirePermission(Permissions.UserView)]
-        public async Task<ActionResult<UserDetailsResponse>> GetSingle(Guid userId)
+        public async Task<ActionResult<UserDetailsResponseDto>> GetSingle(Guid userId)
         {
             var result = await _userService.GetUserDetailsAsync(userId);
             if (!result.IsSuccess)
@@ -30,14 +30,14 @@ namespace RoomReservation.Api.Controllers
 
         [HttpGet]
         [RequirePermission(Permissions.UserList)]
-        public async Task<ActionResult<PagedResult<BasicUserResponse>>> GetAll([FromQuery] UserFilter filters)
+        public async Task<ActionResult<PagedResult<BasicUserResponseDto>>> GetAll([FromQuery] UserFilter filters)
         {
             var result = await _userService.GetAllAsync(filters);
             return Ok(result.ToDto(u => u.ToBasicDto()));
         }
 
         [HttpPut("profile")]
-        public async Task<ActionResult<BasicUserResponse>> UpdateProfile([UserId] Guid userId, UpdateProfileRequest request)
+        public async Task<ActionResult<BasicUserResponseDto>> UpdateProfile([UserId] Guid userId, UpdateProfileRequestDto request)
         {
             var result = await _userService.UpdateUserAsync(userId, request.Firstname, request.Lastname);
             if (!result.IsSuccess)

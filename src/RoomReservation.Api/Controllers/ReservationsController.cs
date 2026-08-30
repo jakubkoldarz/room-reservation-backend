@@ -19,7 +19,7 @@ namespace RoomReservation.Api.Controllers
     {
         [HttpGet("{reservationId}")]
         [RequirePermission(Permissions.ReservationView)]
-        public async Task<ActionResult<ReservationResponse>> GetSingle(Guid reservationId)
+        public async Task<ActionResult<ReservationResponseDto>> GetSingle(Guid reservationId)
         {
             var result = await _reservationService.GetByIdAsync(reservationId);
             if (!result.IsSuccess)
@@ -30,7 +30,7 @@ namespace RoomReservation.Api.Controllers
 
         [HttpGet]
         [RequirePermission(Permissions.ReservationList)]
-        public async Task<ActionResult<PagedResult<ReservationResponse>>> GetAll([FromQuery] ReservationFilter filters)
+        public async Task<ActionResult<PagedResult<ReservationResponseDto>>> GetAll([FromQuery] ReservationFilter filters)
         {
             var result = await _reservationService.GetAllAsync(filters);
             if (!result.IsSuccess)
@@ -41,7 +41,7 @@ namespace RoomReservation.Api.Controllers
 
         [HttpGet("mine")]
         [RequireCompletedProfile]
-        public async Task<ActionResult<PagedResult<ReservationResponse>>> GetMyReservations([FromQuery] ReservationFilter filters)
+        public async Task<ActionResult<PagedResult<ReservationResponseDto>>> GetMyReservations([FromQuery] ReservationFilter filters)
         {
             var userId = User.GetUserId();
             if (userId == null)
@@ -57,7 +57,7 @@ namespace RoomReservation.Api.Controllers
 
         [HttpPost]
         [RequirePermission(Permissions.ReservationCreate)]
-        public async Task<ActionResult<ReservationResponse>> Create([FromBody] CreateReservationRequest request)
+        public async Task<ActionResult<ReservationResponseDto>> Create([FromBody] CreateReservationRequestDto request)
         {
             var userId = User.GetUserId();
             if (userId == null)
@@ -95,7 +95,7 @@ namespace RoomReservation.Api.Controllers
 
         [HttpPost("{reservationId:guid}/reject")]
         [RequirePermission(Permissions.ReservationReject)]
-        public async Task<ActionResult> Reject(Guid reservationId, [FromBody] ReservationReasonRequest request)
+        public async Task<ActionResult> Reject(Guid reservationId, [FromBody] ReservationReasonRequestDto request)
         {
             var userId = User.GetUserId();
             if (userId == null)
@@ -110,7 +110,7 @@ namespace RoomReservation.Api.Controllers
 
         [HttpPost("{reservationId:guid}/cancel")]
         [RequireCompletedProfile]
-        public async Task<ActionResult> Cancel(Guid reservationId, [FromBody] ReservationReasonRequest request)
+        public async Task<ActionResult> Cancel(Guid reservationId, [FromBody] ReservationReasonRequestDto request)
         {
             var userId = User.GetUserId();
             if (userId == null)
@@ -126,7 +126,7 @@ namespace RoomReservation.Api.Controllers
 
         [HttpPost("{reservationId:guid}/force-cancel")]
         [RequirePermission(Permissions.ReservationForceCancel)]
-        public async Task<ActionResult> ForceCancel(Guid reservationId, [FromBody] ReservationReasonRequest request)
+        public async Task<ActionResult> ForceCancel(Guid reservationId, [FromBody] ReservationReasonRequestDto request)
         {
             var userId = User.GetUserId();
             if (userId == null)
@@ -155,7 +155,7 @@ namespace RoomReservation.Api.Controllers
         }
 
         [HttpPut("{reservationId:guid}")]
-        public async Task<ActionResult<ReservationResponse>> Update(Guid reservationId, [FromBody] UpdateReservationRequest request)
+        public async Task<ActionResult<ReservationResponseDto>> Update(Guid reservationId, [FromBody] UpdateReservationRequestDto request)
         {
             var userId = User.GetUserId();
             if (userId == null)

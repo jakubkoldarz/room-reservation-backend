@@ -14,27 +14,10 @@ namespace RoomReservation.Core.Repositories
             await _db.SaveChangesAsync();
         }
 
-        public async Task AddSpecialAvailabilityAsync(BuildingSpecialAvailability specialAvailability)
-        {
-            _db.BuildingSpecialAvailabilities.Add(specialAvailability);
-            await _db.SaveChangesAsync();
-        }
-
         public async Task DeleteAsync(Building building)
         {
             _db.Buildings.Remove(building);
             await _db.SaveChangesAsync();
-        }
-
-        public async Task<bool> DeleteSpecialAvailabilityByIdAsync(Guid specialAvailabilityId)
-        {
-            var specialAvailability = await _db.BuildingSpecialAvailabilities.FindAsync(specialAvailabilityId);
-            if (specialAvailability is null)
-                return false;
-
-            _db.BuildingSpecialAvailabilities.Remove(specialAvailability);
-            await _db.SaveChangesAsync();
-            return true;
         }
 
         public Task<bool> ExistsByNameAsync(string name)
@@ -50,7 +33,6 @@ namespace RoomReservation.Core.Repositories
             return await _db.Buildings
                 .Include(b => b.Rooms)
                 .Include(b => b.Availabilities)
-                .Include(b => b.SpecialAvailabilities)
                 .FirstOrDefaultAsync(b => b.Id == buildingId);
         }
         public async Task<Building?> GetByNameAsync(string name)
@@ -92,21 +74,6 @@ namespace RoomReservation.Core.Repositories
         {
             _db.Buildings.Update(building);
             await _db.SaveChangesAsync();
-        }
-
-        public async Task<BuildingAvailability?> GetAvailabilityByDateAsync(Guid buildingId, DateOnly dateOnly)
-        {
-            var dayOfWeek = dateOnly.DayOfWeek;
-            return await _db.BuildingAvailabilities
-                .Where(ba => ba.DayOfWeek == dayOfWeek && ba.BuildingId == buildingId)
-                .FirstOrDefaultAsync();
-        }
-
-        public async Task<BuildingSpecialAvailability?> GetSpecialAvailabilityByDateAsync(Guid buildingId, DateOnly dateOnly)
-        {
-            return await _db.BuildingSpecialAvailabilities
-                .Where(sa => sa.StartDate <= dateOnly && sa.EndDate >= dateOnly && sa.BuildingId == buildingId)
-                .FirstOrDefaultAsync();
         }
     }
 }

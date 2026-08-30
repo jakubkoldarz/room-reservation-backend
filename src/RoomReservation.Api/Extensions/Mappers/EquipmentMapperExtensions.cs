@@ -5,9 +5,9 @@ namespace RoomReservation.Api.Extensions.Mappers
 {
     public static class EquipmentMapperExtensions
     {
-        public static BasicEquipmentResponse ToBasicDto(this Equipment equipment)
+        public static EquipmentResponseDto ToBasicDto(this Equipment equipment)
         {
-            return new BasicEquipmentResponse
+            return new EquipmentResponseDto
             (
                 equipment.Id,
                 equipment.Name,

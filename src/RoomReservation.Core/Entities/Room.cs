@@ -13,8 +13,8 @@
         public required int Capacity { get; set; }
 
         public ICollection<RoomEquipment> RoomEquipment { get; set; } = [];
-        public ICollection<RoomAvailability> Availabilities { get; set; } = [];
-        public ICollection<RoomSpecialAvailability> SpecialAvailabilities { get; set; } = [];
+        public ICollection<Availability> Availabilities { get; set; } = [];
+        public ICollection<Event> Events { get; set; } = [];
         public ICollection<Reservation> Reservations { get; set; } = [];
     }
 }

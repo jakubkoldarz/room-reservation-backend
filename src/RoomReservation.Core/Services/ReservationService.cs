@@ -3,7 +3,7 @@ using RoomReservation.Core.Enums;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models;
-using RoomReservation.Core.Providers;
+using RoomReservation.Core.Models.Availability;
 using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Core.Services
@@ -11,7 +11,7 @@ namespace RoomReservation.Core.Services
     public partial class ReservationService(
         IReservationRepository _reservations,
         IUserRepository _users,
-        IBuildingRepository _buildings,
+        IAvailabilityService _availabilityService,
         IEmailService _emailService,
         IRoomRepository _rooms) : IReservationService
     {
@@ -68,14 +68,13 @@ namespace RoomReservation.Core.Services
             var existingReservations = await _reservations.GetActiveByRoomAndDateAsync(roomId, date);
             if (existingReservations.Count > 0)
             {
-                var isOverlaping = AvailabilityProvider.HasOverlap(startTime, endTime, existingReservations);
+                var isOverlaping = HasOverlap(startTime, endTime, existingReservations);
                 if (isOverlaping)
                     return new Error("Reseravtion is in conflict with existing ones", ErrorType.Conflict);
             }
 
-            var availability = await ResolveAvailability(room.Id, room.BuildingId, date);
-            var isWithinAvailability = AvailabilityProvider.IsWithinAvailability(startTime, endTime, availability);
-            if (!isWithinAvailability)
+            var availability = await _availabilityService.ResolveAvailabilityAsync(roomId, date);
+            if (!IsWithinAvailability(startTime, endTime, availability))
                 return new Error("Selected room is not available at provided time", ErrorType.BadRequest);
 
             var statusToSet = room.RequiresApproval ? ReservationStatus.Pending : ReservationStatus.Approved;
@@ -170,14 +169,13 @@ namespace RoomReservation.Core.Services
             var existingReservations = await _reservations.GetActiveByRoomAndDateAsync(reservationToUpdate.RoomId, reservationToUpdate.Date);
             if (existingReservations.Count > 0)
             {
-                var isOverlaping = AvailabilityProvider.HasOverlap(startTime, endTime, existingReservations, excludeReservationId: reservationId);
+                var isOverlaping = HasOverlap(startTime, endTime, existingReservations, excludeReservationId: reservationId);
                 if (isOverlaping)
                     return new Error("Reseravtion is in conflict with existing ones", ErrorType.Conflict);
             }
 
-            var availability = await ResolveAvailability(reservationToUpdate.RoomId, reservationToUpdate.Room.BuildingId, reservationToUpdate.Date);
-            var isWithinAvailability = AvailabilityProvider.IsWithinAvailability(startTime, endTime, availability);
-            if (!isWithinAvailability)
+            var availability = await _availabilityService.ResolveAvailabilityAsync(reservationToUpdate.RoomId, reservationToUpdate.Date);
+            if (!IsWithinAvailability(startTime, endTime, availability))
                 return new Error("Selected room is not available at provided time", ErrorType.BadRequest);
 
             var hasTimeframeChanged = startTime != reservationToUpdate.StartTime || endTime != reservationToUpdate.EndTime;
@@ -196,37 +194,6 @@ namespace RoomReservation.Core.Services
             if (updatedReservation == null)
                 return new Error("Reservation cannot be retrieved", ErrorType.Internal);
             return ResultT<Reservation>.Success(updatedReservation);
-        }
-
-        private async Task<AvailabilityResolution> ResolveAvailability(Guid roomId, Guid buildingId, DateOnly date)
-        {
-            var roomSpecial = await _rooms.GetSpecialAvailabilityByDateAsync(roomId, date);
-            if (roomSpecial != null)
-            {
-                if (roomSpecial.IsClosed) return new AvailabilityResolution(true, null, null);
-                return new AvailabilityResolution(false, roomSpecial.StartTime, roomSpecial.EndTime);
-            }
-
-            var buildingSpecial = await _buildings.GetSpecialAvailabilityByDateAsync(buildingId, date);
-            if (buildingSpecial != null)
-            {
-                if (buildingSpecial.IsClosed) return new AvailabilityResolution(true, null, null);
-                return new AvailabilityResolution(false, buildingSpecial.StartTime, buildingSpecial.EndTime);
-            }
-
-            var roomAvailability = await _rooms.GetAvailabilityByDateAsync(roomId, date);
-            if (roomAvailability != null)
-            {
-                return new AvailabilityResolution(false, roomAvailability.StartTime, roomAvailability.EndTime);
-            }
-
-            var buildingAvailability = await _buildings.GetAvailabilityByDateAsync(buildingId, date);
-            if (buildingAvailability != null)
-            {
-                return new AvailabilityResolution(false, buildingAvailability.StartTime, buildingAvailability.EndTime);
-            }
-
-            return new AvailabilityResolution(true, null, null);
         }
 
         public async Task<Result> ForceCancelAsync(Guid reservationId, string? reason, Guid cancelledById)
@@ -340,5 +307,24 @@ namespace RoomReservation.Core.Services
         }
 
         private static string GetBuildingName(string buildingName, string? buildingIdentifier) => $"{buildingName}" + $"{(buildingIdentifier != null ? $" ({buildingIdentifier})" : "")}";
+
+        private static bool HasOverlap(
+           TimeOnly start, TimeOnly end,
+           IEnumerable<Reservation> existingReservations,
+           Guid? excludeReservationId = null)
+        {
+            var reservationsToCheck = existingReservations
+                .Where(r => (excludeReservationId == null || r.Id != excludeReservationId));
+
+            var result = reservationsToCheck
+                .Any(r => (start >= r.EndTime || end <= r.StartTime));
+            return !result;
+        }
+
+        private static bool IsWithinAvailability(TimeOnly start, TimeOnly end, AvailabilityResolution resolution)
+        {
+            if (resolution.IsClosed) return false;
+            return start >= resolution.StartTime!.Value && end <= resolution.EndTime!.Value;
+        }
     }
 }

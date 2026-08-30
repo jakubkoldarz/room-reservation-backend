@@ -19,7 +19,7 @@ namespace RoomReservation.Api.Controllers
     {
         [HttpGet]
         [RequirePermission(Permissions.EquipmentList)]
-        public async Task<ActionResult<PagedResult<BasicEquipmentResponse>>> GetAll([FromQuery] EquipmentFilter filters)
+        public async Task<ActionResult<PagedResult<EquipmentResponseDto>>> GetAll([FromQuery] EquipmentFilter filters)
         {
             var result = await _equipmentService.GetAllAsync(filters);
             return Ok(result.ToDto(eq => eq.ToBasicDto()));
@@ -27,7 +27,7 @@ namespace RoomReservation.Api.Controllers
 
         [HttpGet("{equipmentId:guid}")]
         [RequirePermission(Permissions.EquipmentView)]
-        public async Task<ActionResult<BasicEquipmentResponse>> GetSingle([FromRoute] Guid equipmentId)
+        public async Task<ActionResult<EquipmentResponseDto>> GetSingle([FromRoute] Guid equipmentId)
         {
             var result = await _equipmentService.GetByIdAsync(equipmentId);
             if (!result.IsSuccess)
@@ -38,7 +38,7 @@ namespace RoomReservation.Api.Controllers
 
         [HttpPost]
         [RequirePermission(Permissions.EquipmentAdd)]
-        public async Task<ActionResult<BasicEquipmentResponse>> Create([FromBody] EquipmentRequest request)
+        public async Task<ActionResult<EquipmentResponseDto>> Create([FromBody] EquipmentRequestDto request)
         {
             var result = await _equipmentService.CreateAsync(request.Name, request.Icon);
             if (!result.IsSuccess)
@@ -49,7 +49,7 @@ namespace RoomReservation.Api.Controllers
 
         [HttpPut("{equipmentId:guid}")]
         [RequirePermission(Permissions.EquipmentEdit)]
-        public async Task<ActionResult<BasicEquipmentResponse>> Update([FromRoute] Guid equipmentId, [FromBody] EquipmentRequest request)
+        public async Task<ActionResult<EquipmentResponseDto>> Update([FromRoute] Guid equipmentId, [FromBody] EquipmentRequestDto request)
         {
             var result = await _equipmentService.UpdateAsync(equipmentId, request.Name, request.Icon);
             if(!result.IsSuccess)

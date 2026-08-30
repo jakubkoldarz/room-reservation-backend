@@ -11,7 +11,6 @@
         public required int FloorsCount { get; set; }
 
         public ICollection<Room> Rooms { get; set; } = [];
-        public ICollection<BuildingAvailability> Availabilities { get; set; } = [];
-        public ICollection<BuildingSpecialAvailability> SpecialAvailabilities { get; set; } = [];
+        public ICollection<Availability> Availabilities { get; set; } = [];
     }
 }

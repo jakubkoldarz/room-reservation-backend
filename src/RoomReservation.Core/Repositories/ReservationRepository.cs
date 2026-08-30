@@ -88,5 +88,41 @@ namespace RoomReservation.Core.Repositories
             _db.Reservations.Update(reservation);
             await _db.SaveChangesAsync();
         }
+
+        public async Task<IReadOnlyList<Reservation>> GetActiveFutureByRoomAsync(Guid roomId)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+            var reservations = await _db.Reservations
+                .Where(r => r.RoomId == roomId &&
+                            r.Date >= today &&
+                            (r.Status == ReservationStatus.Approved || r.Status == ReservationStatus.Pending))
+                .ToListAsync();
+
+            return reservations;
+        }
+
+        public async Task<IReadOnlyList<Reservation>> GetActiveFutureByBuildingAsync(Guid buildingId)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+            var reservations = await _db.Reservations
+                .Where(r => r.Room.BuildingId == buildingId &&
+                            r.Date >= today &&
+                            (r.Status == ReservationStatus.Approved || r.Status == ReservationStatus.Pending))
+                .ToListAsync();
+
+            return reservations;
+        }
+
+        public async Task<IReadOnlyList<Reservation>> GetActiveFutureByRoomIdsAsync(IReadOnlyList<Guid> roomIds)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+            var reservations = await _db.Reservations
+                .Where(r => roomIds.Contains(r.RoomId) &&
+                            r.Date >= today &&
+                            (r.Status == ReservationStatus.Approved || r.Status == ReservationStatus.Pending))
+                .ToListAsync();
+
+            return reservations;
+        }
     }
 }

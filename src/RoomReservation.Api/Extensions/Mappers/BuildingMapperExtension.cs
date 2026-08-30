@@ -5,9 +5,9 @@ namespace RoomReservation.Api.Extensions.Mappers
 {
     public static class BuildingMapperExtension
     {
-        public static BasicBuildingResponse ToBasicDto(this Building building)
+        public static BasicBuildingResponseDto ToBasicDto(this Building building)
         {
-            return new BasicBuildingResponse
+            return new BasicBuildingResponseDto
             (
                 Id: building.Id,
                 Name: building.Name,
@@ -19,13 +19,12 @@ namespace RoomReservation.Api.Extensions.Mappers
             );
         }
 
-        public static BuildingDetailsResponse ToDetailsDto(this Building building)
+        public static BuildingDetailsResponseDto ToDetailsDto(this Building building)
         {
-            return new BuildingDetailsResponse
+            return new BuildingDetailsResponseDto
             (
                 BuildingInfo: building.ToBasicDto(),
                 Availabilities: [.. building.Availabilities.Select(ba => ba.ToDto())],
-                SpecialAvailabilities: [.. building.SpecialAvailabilities.Select(sa => sa.ToDto())],
                 Rooms: [.. building.Rooms.Select(r => r.ToBasicDto())]
             );
         }

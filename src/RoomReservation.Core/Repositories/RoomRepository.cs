@@ -31,7 +31,6 @@ namespace RoomReservation.Core.Repositories
                                   .Include(r => r.RoomEquipment)
                                     .ThenInclude(re => re.Equipment)
                                   .Include(r => r.Availabilities)
-                                  .Include(r => r.SpecialAvailabilities)
                                   .FirstOrDefaultAsync(r => r.Id == roomId);
         }
 
@@ -83,37 +82,10 @@ namespace RoomReservation.Core.Repositories
             return (pagedRooms, total);
         }
 
-        public async Task<bool> DeleteSpecialAvailabilityByIdAsync(Guid specialAvailabilityId)
+        public async Task<IReadOnlyList<Room>> GetByIdsAsync(IReadOnlyList<Guid> roomIds)
         {
-            var specialAvailability = await _db.RoomSpecialAvailabilities.FindAsync(specialAvailabilityId);
-            if (specialAvailability is null)
-                return false;
-
-            _db.RoomSpecialAvailabilities.Remove(specialAvailability);
-            await _db.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task AddSpecialAvailabilityAsync(RoomSpecialAvailability specialAvailability)
-        {
-            _db.RoomSpecialAvailabilities.Add(specialAvailability);
-            await _db.SaveChangesAsync();
-        }
-
-        public async Task<RoomAvailability?> GetAvailabilityByDateAsync(Guid roomId, DateOnly dateOnly)
-        {
-            var dayOfWeek = dateOnly.DayOfWeek;
-            return await _db.RoomAvailabilities
-                .Where(ra => ra.DayOfWeek == dayOfWeek && ra.RoomId == roomId)
-                .FirstOrDefaultAsync();
-        }
-
-        public async Task<RoomSpecialAvailability?> GetSpecialAvailabilityByDateAsync(Guid roomId, DateOnly dateOnly)
-        {
-            var specialAvailabilities = await _db.RoomSpecialAvailabilities
-                .Where(sa => sa.StartDate <= dateOnly && sa.EndDate >= dateOnly && sa.RoomId == roomId)
-                .FirstOrDefaultAsync();
-            return specialAvailabilities;
+            var rooms = await _db.Rooms.Where(r => roomIds.Contains(r.Id)).ToListAsync();
+            return rooms;
         }
     }
 }

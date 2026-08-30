@@ -24,11 +24,6 @@ namespace RoomReservation.Core.Data.Configuration
                 .WithOne(a => a.Building)
                 .HasForeignKey(a => a.BuildingId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            building.HasMany(b => b.SpecialAvailabilities)
-                .WithOne(a => a.Building)
-                .HasForeignKey(a => a.BuildingId)
-                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

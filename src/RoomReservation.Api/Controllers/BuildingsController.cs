@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RoomReservation.Api.Attributes;
-using RoomReservation.Api.Dtos.Availabilities.Requests;
 using RoomReservation.Api.Dtos.Buildings.Requests;
 using RoomReservation.Api.Dtos.Buildings.Responses;
 using RoomReservation.Api.Extensions;
@@ -10,6 +9,7 @@ using RoomReservation.Core.Constants;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models;
+using RoomReservation.Core.Models.Availability;
 using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Api.Controllers
@@ -21,7 +21,7 @@ namespace RoomReservation.Api.Controllers
     {
         [HttpGet]
         [RequirePermission(Permissions.BuildingList)]
-        public async Task<ActionResult<PagedResult<BasicBuildingResponse>>> GetAll([FromQuery] BuildingFilter filters)
+        public async Task<ActionResult<PagedResult<BasicBuildingResponseDto>>> GetAll([FromQuery] BuildingFilter filters)
         {
             var result = await _buildingService.GetAllAsync(filters);
             return Ok(result.ToDto(b => b.ToBasicDto()));
@@ -29,7 +29,7 @@ namespace RoomReservation.Api.Controllers
 
         [HttpGet("{buildingId:guid}")]
         [RequirePermission(Permissions.BuildingView)]
-        public async Task<ActionResult<BuildingDetailsResponse>> GetSingle([FromRoute] Guid buildingId)
+        public async Task<ActionResult<BuildingDetailsResponseDto>> GetSingle([FromRoute] Guid buildingId)
         {
             var result = await _buildingService.GetByIdAsync(buildingId);
             if (!result.IsSuccess)
@@ -40,17 +40,11 @@ namespace RoomReservation.Api.Controllers
 
         [HttpPost]
         [RequirePermission(Permissions.BuildingAdd)]
-        public async Task<ActionResult<BasicBuildingResponse>> Create([FromBody] BuildingRequest request)
+        public async Task<ActionResult<BasicBuildingResponseDto>> Create([FromBody] BuildingRequestDto request)
         {
-            var result = await _buildingService.CreateAsync(
-                request.Name,
-                request.Identifier,
-                request.Street,
-                request.City,
-                request.PostalCode,
-                request.FloorsCount,
-                [.. request.Availabilities.Select(a => new AvailabilitySlot(DayOfWeek: a.DayOfWeek, StartTime: a.StartTime, EndTime: a.EndTime))]
-            );
+            var buildingRequest = ToBuildingRequest(request);
+
+            var result = await _buildingService.CreateAsync(buildingRequest);
 
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
@@ -60,18 +54,11 @@ namespace RoomReservation.Api.Controllers
 
         [HttpPut("{buildingId:guid}")]
         [RequirePermission(Permissions.BuildingEdit)]
-        public async Task<ActionResult<BasicBuildingResponse>> Update([FromRoute] Guid buildingId, [FromBody] BuildingRequest request)
+        public async Task<ActionResult<BasicBuildingResponseDto>> Update([FromRoute] Guid buildingId, [FromBody] BuildingRequestDto request)
         {
-            var result = await _buildingService.UpdateAsync(
-                buildingId,
-                request.Name,
-                request.Identifier,
-                request.Street,
-                request.City,
-                request.PostalCode,
-                request.FloorsCount,
-                [.. request.Availabilities.Select(a => new AvailabilitySlot(DayOfWeek: a.DayOfWeek, StartTime: a.StartTime, EndTime: a.EndTime))]
-            );
+            var buildingRequest = ToBuildingRequest(request);
+
+            var result = await _buildingService.UpdateAsync(buildingId, buildingRequest);
 
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
@@ -90,36 +77,20 @@ namespace RoomReservation.Api.Controllers
             return NoContent();
         }
 
-        [HttpPost("{buildingId:guid}/special-availabilities")]
-        [RequirePermission(Permissions.BuildingEditAvailability)]
-        public async Task<ActionResult> AddSpecialAvailability([FromRoute] Guid buildingId, [FromBody] SpecialAvailabilityRequest request)
+        private static BuildingRequest ToBuildingRequest(BuildingRequestDto request)
         {
-            var result = await _buildingService.AddSpecialAvailabilityAsync(
-                buildingId,
-                new SpecialAvailabilitySlot(
-                    StartDate: request.StartDate,
-                    EndDate: request.EndDate,
-                    IsClosed: request.IsClosed,
-                    StartTime: request.StartTime,
-                    EndTime: request.EndTime
-                )
+            return new BuildingRequest(
+                Name: request.Name,
+                Identifier: request.Identifier,
+                Street: request.Street,
+                City: request.City,
+                PostalCode: request.PostalCode,
+                FloorsCount: request.FloorsCount,
+                Availabilities: [.. request.Availabilities.Select(a => new AvailabilityRequest(
+                    DayOfWeek: a.DayOfWeek,
+                    StartTime: a.StartTime,
+                    EndTime: a.EndTime))]
             );
-
-            if (!result.IsSuccess)
-                return result.Error.ToActionResult();
-
-            return NoContent();
-        }
-
-        [HttpDelete("special-availabilities/{specialAvailabilityId:guid}")]
-        [RequirePermission(Permissions.BuildingEditAvailability)]
-        public async Task<ActionResult> RemoveSpecialAvailability([FromRoute] Guid specialAvailabilityId)
-        {
-            var result = await _buildingService.RemoveSpecialAvailabilityAsync(specialAvailabilityId);
-            if (!result.IsSuccess)
-                return result.Error.ToActionResult();
-
-            return NoContent();
         }
     }
 }
