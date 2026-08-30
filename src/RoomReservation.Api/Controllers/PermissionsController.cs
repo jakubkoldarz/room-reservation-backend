@@ -3,14 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using RoomReservation.Api.Attributes;
 using RoomReservation.Api.Dtos.Permissions.Responses;
 using RoomReservation.Core.Constants;
-using RoomReservation.Core.Services;
+using RoomReservation.Core.Interfaces;
 
 namespace RoomReservation.Api.Controllers
 {
     [Authorize]
     [ApiController]
     [Route("[controller]")]
-    public class PermissionsController(PermissionService _permissionService) : ControllerBase
+    public class PermissionsController(IPermissionService _permissionService) : ControllerBase
     {
         [HttpGet]
         [RequirePermission(Permissions.PermissionList)]

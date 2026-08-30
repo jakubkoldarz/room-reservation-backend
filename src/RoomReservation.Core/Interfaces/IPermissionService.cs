@@ -6,5 +6,6 @@ namespace RoomReservation.Core.Interfaces
     {
         Task<bool> UserHasPermissionAsync(Guid userId, string permission);
         Task<ResultT<IReadOnlyList<string>>> GetUserPermissionsAsync(Guid userId);
+        Task<IReadOnlyList<string>> GetAllPermissionsAsync();
     }
 }
