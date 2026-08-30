@@ -43,6 +43,9 @@ namespace RoomReservation.Core.Repositories
             if (!string.IsNullOrEmpty(filters.Email)) 
                 users = users.Where(u => EF.Functions.ILike(u.Email, $"%{filters.Email.Trim()}%"));
 
+            if(filters.RoleId.HasValue)
+                users = users.Where(u => u.RoleId == filters.RoleId.Value);
+
             var totalCount = await users.CountAsync();
 
             var filteredUsers = await users

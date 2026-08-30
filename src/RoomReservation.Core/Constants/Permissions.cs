@@ -39,6 +39,14 @@
         public const string EventDelete = "event.delete";
         public const string EventEdit = "event.edit";
 
+        public const string RoleView = "role.view";
+        public const string RoleList = "role.list";
+        public const string RoleAdd = "role.add";
+        public const string RoleDelete = "role.delete";
+        public const string RoleEdit = "role.edit";
+
+        public const string PermissionList = "permission.list";
+
         public static Dictionary<string, Guid> Definitions = new()
         {
             [RoomView] = Guid.Parse("10000000-0000-0000-0000-000000000000"),
@@ -76,6 +84,14 @@
             [EventAdd] = Guid.Parse("60000000-0000-0000-0000-000000000002"),
             [EventDelete] = Guid.Parse("60000000-0000-0000-0000-000000000003"),
             [EventEdit] = Guid.Parse("60000000-0000-0000-0000-000000000004"),
+
+            [RoleView] = Guid.Parse("70000000-0000-0000-0000-000000000000"),
+            [RoleList] = Guid.Parse("70000000-0000-0000-0000-000000000001"),
+            [RoleAdd] = Guid.Parse("70000000-0000-0000-0000-000000000002"),
+            [RoleDelete] = Guid.Parse("70000000-0000-0000-0000-000000000003"),
+            [RoleEdit] = Guid.Parse("70000000-0000-0000-0000-000000000004"),
+
+            [PermissionList] = Guid.Parse("80000000-0000-0000-0000-000000000000"),
         };
     }
 }

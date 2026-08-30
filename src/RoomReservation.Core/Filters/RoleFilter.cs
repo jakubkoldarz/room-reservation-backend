@@ -1,6 +1,6 @@
 ﻿namespace RoomReservation.Core.Filters
 {
-    public class EquipmentFilter : PagedFilter
+    public class RoleFilter : PagedFilter
     {
         public string? Name { get; set; }
     }

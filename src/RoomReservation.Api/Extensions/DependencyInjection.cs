@@ -62,6 +62,9 @@ namespace RoomReservation.Api.Extensions
             services.AddScoped<IEventRepository, EventRepository>();
             services.AddScoped<IEventService, EventService>();
 
+            services.AddScoped<IRoleRepository, RoleRepository>();
+            services.AddScoped<IRoleService, RoleService>();
+
             services.AddDbContext<AppDbContext>(options =>
             {
                 options.UseNpgsql(config.GetConnectionString("DefaultConnection"));

@@ -29,5 +29,10 @@ namespace RoomReservation.Core.Services
         {
            return await _permissions.UserHasPermissionAsync(userId, permission);
         }
+
+        public async Task<IReadOnlyList<string>> GetAllPermissionsAsync()
+        {
+            return await _permissions.GetAllAsync();
+        }
     }
 }

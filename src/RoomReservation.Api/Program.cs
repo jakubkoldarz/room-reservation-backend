@@ -1,14 +1,17 @@
 using Microsoft.EntityFrameworkCore;
+using RoomReservation.Api;
 using RoomReservation.Api.Extensions;
 using RoomReservation.Core.Data;
-using RoomReservation.Core.Seeders;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCore(builder.Configuration);
+builder.Services.AddExceptionHandler<ExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 var app = builder.Build();
+app.UseExceptionHandler();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -27,7 +30,7 @@ using (var scope = app.Services.CreateScope())
 
 if (app.Environment.IsDevelopment())
 {
-    using(var scope = app.Services.CreateScope())
+    using (var scope = app.Services.CreateScope())
     {
         //var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         //await new DatabaseSeeder(context).SeedAsync();
@@ -42,10 +45,11 @@ if (app.Environment.IsDevelopment())
         options.AddPreferredSecuritySchemes("Bearer")
             .AddHttpAuthentication("Bearer", auth =>
             {
-                auth.Token = ""; 
+                auth.Token = "";
             });
     });
 }
+
 
 app.UseAuthentication();
 app.UseAuthorization();

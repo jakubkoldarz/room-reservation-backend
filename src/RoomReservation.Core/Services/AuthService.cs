@@ -13,6 +13,7 @@ namespace RoomReservation.Core.Services
         ITokenProvider _tokenProvider,
         IRefreshTokenService _refreshTokenService,
         IVerificationCodeService _verificationCodeService,
+        IRoleRepository _roles,
         IEmailService _emailService) : IAuthService
     {
         public async Task<Result> ChangePasswordAsync(Guid userId, string oldPassword, string newPassword)
@@ -128,10 +129,15 @@ namespace RoomReservation.Core.Services
             if (user is not null)
                 return new Error("Email is already taken", ErrorType.BadRequest);
 
+            var defaultRole = await _roles.GetDefaultRoleAsync();
+            if(defaultRole is null)
+                return new Error("Unexpected error: Default role not found", ErrorType.Internal);
+
             var userToCreate = new User
             {
                 Email = email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+                RoleId = defaultRole.Id,
             };
 
             var createdUser = await _users.CreateAsync(userToCreate);
