@@ -2,7 +2,7 @@
 
 namespace RoomReservation.Core.Models.Availability
 {
-    public record AvailabilityRequest
+    public record AvailabilityModel
     (
         [Required] DayOfWeek DayOfWeek,
         [Required] TimeOnly StartTime,

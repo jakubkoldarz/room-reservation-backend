@@ -75,9 +75,9 @@ namespace RoomReservation.Api.Controllers
             return NoContent();
         }
 
-        private static EventRequest ToEventRequest(EventRequestDto request)
+        private static EventModel ToEventRequest(EventRequestDto request)
         {
-            return new EventRequest(
+            return new EventModel(
                 Name: request.Name,
                 StartDate: request.StartDate,
                 EndDate: request.EndDate,

@@ -2,13 +2,13 @@
 
 namespace RoomReservation.Core.Models
 {
-    public record RoomRequest(
+    public record RoomModel(
         string Identifier,
         bool RequiresApproval,
         Guid BuildingId,
         int Floor,
         int Capacity,
         IReadOnlyList<Guid> EquipmentIds,
-        IReadOnlyList<AvailabilityRequest> Availabilities
+        IReadOnlyList<AvailabilityModel> Availabilities
     );
 }

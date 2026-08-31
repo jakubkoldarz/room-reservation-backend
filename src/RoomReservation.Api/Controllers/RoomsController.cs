@@ -81,16 +81,16 @@ namespace RoomReservation.Api.Controllers
             return NoContent();
         }
 
-        private static RoomRequest ToRoomRequest(RoomRequestDto request)
+        private static RoomModel ToRoomRequest(RoomRequestDto request)
         {
-            return new RoomRequest(
+            return new RoomModel(
                 Identifier: request.Identifier,
                 RequiresApproval: request.RequiresApproval,
                 BuildingId: request.BuildingId,
                 Floor: request.Floor,
                 Capacity: request.Capacity,
                 EquipmentIds: request.EquipmentIds,
-                Availabilities: [.. request.Availabilities.Select(a => new AvailabilityRequest(
+                Availabilities: [.. request.Availabilities.Select(a => new AvailabilityModel(
                     DayOfWeek: a.DayOfWeek,
                     StartTime: a.StartTime,
                     EndTime: a.EndTime))]

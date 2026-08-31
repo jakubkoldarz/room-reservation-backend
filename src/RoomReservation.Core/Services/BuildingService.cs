@@ -3,8 +3,6 @@ using RoomReservation.Core.Enums;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models;
-using RoomReservation.Core.Models.Availability;
-using RoomReservation.Core.Providers;
 using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Core.Services
@@ -12,9 +10,9 @@ namespace RoomReservation.Core.Services
     public class BuildingService(
         IBuildingRepository _buildings,
         IRoomRepository _rooms,
-        IAvailabilityService _availabilities) : IBuildingService
+        IAvailabilityService _availabilityService) : IBuildingService
     {
-        public async Task<ResultT<Building>> CreateAsync(BuildingRequest request)
+        public async Task<ResultT<Building>> CreateAsync(BuildingModel request)
         {
             var existingBuilding = await _buildings.ExistsByNameAsync(request.Name);
             if (existingBuilding)
@@ -27,7 +25,7 @@ namespace RoomReservation.Core.Services
                 EndTime = a.EndTime
             }).ToList();
 
-            if (!_availabilities.AreAvailabilitiesValid(availabilityEntities))
+            if (!await _availabilityService.AreAvailabilitiesValid(availabilityEntities))
                 return new Error("Invalid availabilities provided", ErrorType.BadRequest);
 
             var buildingToCreate = new Building
@@ -74,7 +72,7 @@ namespace RoomReservation.Core.Services
 
             return ResultT<Building>.Success(building);
         }
-        public async Task<ResultT<Building>> UpdateAsync(Guid buildingId, BuildingRequest request)
+        public async Task<ResultT<Building>> UpdateAsync(Guid buildingId, BuildingModel request)
         {
             var buildingToUpdate = await _buildings.GetByIdAsync(buildingId);
             if (buildingToUpdate is null)
@@ -92,8 +90,12 @@ namespace RoomReservation.Core.Services
                 EndTime = a.EndTime
             }).ToList();
 
-            if (!_availabilities.AreAvailabilitiesValid(newAvailabilities))
+            if (!await _availabilityService.AreAvailabilitiesValid(newAvailabilities))
                 return new Error("Invalid availabilities provided", ErrorType.BadRequest);
+
+            var conflictingRoomAvailabilities = await _availabilityService.GetConflictingRoomsAsync(buildingId, newAvailabilities);
+            if(conflictingRoomAvailabilities.Any())
+                return new Error("Some rooms have conflicting availabilities", ErrorType.Conflict);
 
             buildingToUpdate.Name = request.Name;
             buildingToUpdate.Identifier = request.Identifier;

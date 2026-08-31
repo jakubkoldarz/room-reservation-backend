@@ -2,7 +2,7 @@
 
 namespace RoomReservation.Core.Models.Availability
 {
-    public record EventRequest
+    public record EventModel
     (
         [Required] string Name,
         [Required] DateOnly StartDate,

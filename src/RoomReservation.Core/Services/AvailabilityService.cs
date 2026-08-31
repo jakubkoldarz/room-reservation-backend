@@ -12,16 +12,30 @@ namespace RoomReservation.Core.Services
         IEventRepository _events,
         IRoomRepository _rooms) : IAvailabilityService
     {
-        public bool AreAvailabilitiesValid(IReadOnlyList<Availability> availabilities)
+        public async Task<bool> AreAvailabilitiesValid(
+            IReadOnlyList<Availability> availabilities,
+            Guid? boundingBuildingId = null)
         {
+            if (availabilities.Count == 0)
+                return true;
+
             if (availabilities.Any(a => a.StartTime >= a.EndTime))
                 return false;
 
-            bool hasDuplicateDays = availabilities
-                .GroupBy(a => a.DayOfWeek)
-                .Any(group => group.Count() > 1);
+            bool hasDuplicateDays = availabilities.Select(a => a.DayOfWeek).Distinct().Count() != availabilities.Count;
+            if (hasDuplicateDays)
+                return false;
 
-            return !hasDuplicateDays;
+            if (boundingBuildingId is not null)
+            {
+                var boundingAvailabilities = await _availabilities.GetByBuildingAsync(boundingBuildingId.Value);
+
+                var fitsWithinBounds = IsWithinBuildingBounds(availabilities, boundingAvailabilities);
+                if (!fitsWithinBounds)
+                    return false;
+            }
+
+            return true;
         }
 
         public async Task<IReadOnlyList<Availability>> GetAllForRoomAsync(Guid roomId)
@@ -29,12 +43,7 @@ namespace RoomReservation.Core.Services
             return await _availabilities.GetByRoomAsync(roomId);
         }
 
-        public async Task<IReadOnlyList<Availability>> GetDefaultsForBuildingAsync(Guid buildingId)
-        {
-            return await _availabilities.GetByBuildingAsync(buildingId);
-        }
-
-        public async Task<ResultT<IReadOnlyList<Availability>>> ReplaceForRoomAsync(Guid roomId, IReadOnlyList<AvailabilityRequest> request, bool force = false)
+        public async Task<ResultT<IReadOnlyList<Availability>>> ReplaceForRoomAsync(Guid roomId, IReadOnlyList<AvailabilityModel> request, bool force = false)
         {
             var room = await _rooms.GetByIdAsync(roomId);
             if (room is null)
@@ -48,7 +57,7 @@ namespace RoomReservation.Core.Services
                 EndTime = a.EndTime
             }).ToList();
 
-            if (!AreAvailabilitiesValid(newAvailabilities))
+            if (!await AreAvailabilitiesValid(newAvailabilities, boundingBuildingId: room.BuildingId))
                 return new Error("Invalid availabilities provided", ErrorType.BadRequest);
 
             var events = await _events.GetActiveByRoomAsync(roomId);
@@ -104,6 +113,19 @@ namespace RoomReservation.Core.Services
             return conflictingReservations;
         }
 
+        public bool IsWithinBuildingBounds(IReadOnlyList<Availability> roomAvailabilities, IReadOnlyList<Availability> buildingAvailabilities)
+        {
+            foreach (var room in roomAvailabilities)
+            {
+                var building = buildingAvailabilities.FirstOrDefault(b => b.DayOfWeek == room.DayOfWeek);
+                if (building is null) return false;
+
+                if (room.StartTime < building.StartTime || room.EndTime > building.EndTime)
+                    return false;
+            }
+            return true;
+        }
+
         private static AvailabilityResolution ResolveAvailability(
             Guid roomId,
             DateOnly date,
@@ -130,6 +152,22 @@ namespace RoomReservation.Core.Services
         {
             if (resolution.IsClosed) return false;
             return start >= resolution.StartTime!.Value && end <= resolution.EndTime!.Value;
+        }
+
+        public async Task<IReadOnlyList<Room>> GetConflictingRoomsAsync(Guid buildingId, IReadOnlyList<Availability> newAvailabilities)
+        {
+            var allRooms = await _rooms.GetByBuildingIdAsync(buildingId);
+            if (!allRooms.Any())
+                return [];
+
+            var conflictingRooms = new List<Room>();
+            foreach (var room in allRooms)
+            {
+                var isWithinBounds = IsWithinBuildingBounds([.. room.Availabilities], newAvailabilities);
+                if (!isWithinBounds)
+                    conflictingRooms.Add(room);
+            }
+            return conflictingRooms;
         }
     }
 }

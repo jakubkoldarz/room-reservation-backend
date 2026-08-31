@@ -87,5 +87,14 @@ namespace RoomReservation.Core.Repositories
             var rooms = await _db.Rooms.Where(r => roomIds.Contains(r.Id)).ToListAsync();
             return rooms;
         }
+
+        public async Task<IReadOnlyList<Room>> GetByBuildingIdAsync(Guid buildingId)
+        {
+            var rooms = await _db.Rooms
+                .Include(r => r.Availabilities)
+                .Where(r => r.BuildingId == buildingId)
+                .ToListAsync();
+            return rooms;
+        }
     }
 }

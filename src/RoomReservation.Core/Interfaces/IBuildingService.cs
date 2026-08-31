@@ -9,8 +9,8 @@ namespace RoomReservation.Core.Interfaces
     {
         Task<ResultT<Building>> GetByIdAsync(Guid buildingId);
         Task<PagedResult<Building>> GetAllAsync(BuildingFilter filters);
-        Task<ResultT<Building>> CreateAsync(BuildingRequest request);
-        Task<ResultT<Building>> UpdateAsync(Guid buildingId, BuildingRequest request);
+        Task<ResultT<Building>> CreateAsync(BuildingModel request);
+        Task<ResultT<Building>> UpdateAsync(Guid buildingId, BuildingModel request);
         Task<Result> DeleteAsync(Guid buildingId);
     }
 }

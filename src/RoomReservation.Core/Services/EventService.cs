@@ -30,7 +30,7 @@ namespace RoomReservation.Core.Services
             return true;
         }
 
-        public async Task<ResultT<Event>> CreateAsync(IReadOnlyList<Guid> roomIds, EventRequest request, bool force = false)
+        public async Task<ResultT<Event>> CreateAsync(IReadOnlyList<Guid> roomIds, EventModel request, bool force = false)
         {
             var rooms = await _rooms.GetByIdsAsync(roomIds);
             if (rooms.Count != roomIds.Count)
@@ -102,7 +102,7 @@ namespace RoomReservation.Core.Services
             return ResultT<Event>.Success(ev);
         }
 
-        public async Task<ResultT<Event>> UpdateAsync(Guid eventId, IReadOnlyList<Guid> roomIds, EventRequest request, bool force = false)
+        public async Task<ResultT<Event>> UpdateAsync(Guid eventId, IReadOnlyList<Guid> roomIds, EventModel request, bool force = false)
         {
             var toUpdate = await _events.GetByIdAsync(eventId);
             if (toUpdate is null)
@@ -139,7 +139,7 @@ namespace RoomReservation.Core.Services
             return ResultT<Event>.Success(toUpdate);
         }
 
-        private static Result IsEventValid(EventRequest request)
+        private static Result IsEventValid(EventModel request)
         {
             if (request.StartDate > request.EndDate)
                 return new Error("Invalid date range", ErrorType.BadRequest);

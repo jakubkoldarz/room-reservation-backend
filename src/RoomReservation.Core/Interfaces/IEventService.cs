@@ -11,8 +11,8 @@ namespace RoomReservation.Core.Interfaces
         Task<ResultT<Event>> GetByIdAsync(Guid eventId);
         Task<IReadOnlyList<Event>> GetActiveForRoomAsync(Guid roomId);
 
-        Task<ResultT<Event>> CreateAsync(IReadOnlyList<Guid> roomIds, EventRequest request, bool force = false);
-        Task<ResultT<Event>> UpdateAsync(Guid eventId, IReadOnlyList<Guid> roomIds, EventRequest request, bool force = false);
+        Task<ResultT<Event>> CreateAsync(IReadOnlyList<Guid> roomIds, EventModel request, bool force = false);
+        Task<ResultT<Event>> UpdateAsync(Guid eventId, IReadOnlyList<Guid> roomIds, EventModel request, bool force = false);
         Task<Result> DeleteAsync(Guid eventId, bool force = false);
     }
 }

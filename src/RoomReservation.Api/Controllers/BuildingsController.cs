@@ -77,16 +77,16 @@ namespace RoomReservation.Api.Controllers
             return NoContent();
         }
 
-        private static BuildingRequest ToBuildingRequest(BuildingRequestDto request)
+        private static BuildingModel ToBuildingRequest(BuildingRequestDto request)
         {
-            return new BuildingRequest(
+            return new BuildingModel(
                 Name: request.Name,
                 Identifier: request.Identifier,
                 Street: request.Street,
                 City: request.City,
                 PostalCode: request.PostalCode,
                 FloorsCount: request.FloorsCount,
-                Availabilities: [.. request.Availabilities.Select(a => new AvailabilityRequest(
+                Availabilities: [.. request.Availabilities.Select(a => new AvailabilityModel(
                     DayOfWeek: a.DayOfWeek,
                     StartTime: a.StartTime,
                     EndTime: a.EndTime))]
