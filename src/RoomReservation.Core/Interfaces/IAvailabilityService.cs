@@ -6,14 +6,15 @@ namespace RoomReservation.Core.Interfaces
 {
     public interface IAvailabilityService
     {
-        Task<bool> AreAvailabilitiesValid(IReadOnlyList<Availability> availabilities, Guid? boundingBuildingId = null);
+        Task<Result> AreAvailabilitiesValid(IReadOnlyList<Availability> availabilities, Guid? boundingBuildingId = null);
 
         Task<AvailabilityResolution> ResolveAvailabilityAsync(Guid roomId, DateOnly date);
 
         Task<IReadOnlyList<Availability>> GetAllForRoomAsync(Guid roomId);
         Task<IReadOnlyList<Room>> GetConflictingRoomsAsync(Guid buildingId, IReadOnlyList<Availability> newAvailabilities);
 
-        Task<ResultT<IReadOnlyList<Availability>>> ReplaceForRoomAsync(Guid roomId, IReadOnlyList<AvailabilityModel> request, bool force = false);
+        Task<ResultT<IReadOnlyList<Availability>>> ReplaceIfValidForRoomAsync(Room room, IReadOnlyList<AvailabilityModel> models, bool force = false);
+        Task<ResultT<IReadOnlyList<Availability>>> ReplaceIfValidForBuildingAsync(Building building, IReadOnlyList<AvailabilityModel> models);
 
         Task<IReadOnlyList<Reservation>> GetConflictingReservationsForRoomAsync(Guid roomId, IReadOnlyList<Availability> availabilities, IReadOnlyList<Event> events);
         Task<IReadOnlyList<Reservation>> GetConflictingReservationsForRoomsAsync(IReadOnlyList<Guid> roomIds, IReadOnlyList<Availability> availabilities, IReadOnlyList<Event> events);

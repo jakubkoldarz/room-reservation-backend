@@ -36,8 +36,8 @@ namespace RoomReservation.Core.Services
             }).ToList();
 
             var validAvailabilities = await _availabilityService.AreAvailabilitiesValid(roomAvailabilities, boundingBuildingId: model.BuildingId);
-            if (!validAvailabilities)
-                return new Error("Invalid availabilities provided", ErrorType.BadRequest);
+            if (!validAvailabilities.IsSuccess)
+                return validAvailabilities.Error;
 
             var roomToCreate = new Room
             {
@@ -97,36 +97,36 @@ namespace RoomReservation.Core.Services
 
             return ResultT<Room>.Success(room);
         }
-        public async Task<ResultT<Room>> UpdateAsync(Guid roomId, RoomModel request, bool force = false)
+        public async Task<ResultT<Room>> UpdateAsync(Guid roomId, RoomModel model, bool force = false)
         {
             var toUpdate = await _rooms.GetByIdAsync(roomId);
             if (toUpdate is null)
                 return new Error("Room not found", ErrorType.NotFound);
 
-            var equipmentValidationResult = await AreEquipmentsValid(request.EquipmentIds);
+            var equipmentValidationResult = await AreEquipmentsValid(model.EquipmentIds);
             if (!equipmentValidationResult.IsSuccess)
                 return equipmentValidationResult.Error;
 
-            var existingBuilding = await _buildings.GetByIdAsync(request.BuildingId);
+            var existingBuilding = await _buildings.GetByIdAsync(model.BuildingId);
             if (existingBuilding is null)
                 return new Error("Building not found", ErrorType.NotFound);
 
-            var existingRoom = await _rooms.ExistsByIdentifierAsync(request.BuildingId, request.Identifier);
+            var existingRoom = await _rooms.ExistsByIdentifierAsync(model.BuildingId, model.Identifier, toUpdate.Id);
             if (existingRoom)
                 return new Error("Room with the same identifier already exists in the building", ErrorType.Conflict);
 
-            toUpdate.Identifier = request.Identifier;
-            toUpdate.RequiresApproval = request.RequiresApproval;
-            toUpdate.BuildingId = request.BuildingId;
-            toUpdate.Floor = request.Floor;
-            toUpdate.Capacity = request.Capacity;
-            toUpdate.RoomEquipment = [.. request.EquipmentIds.Select(equipmentId => new RoomEquipment { EquipmentId = equipmentId })];
+            toUpdate.Identifier = model.Identifier;
+            toUpdate.RequiresApproval = model.RequiresApproval;
+            toUpdate.BuildingId = model.BuildingId;
+            toUpdate.Floor = model.Floor;
+            toUpdate.Capacity = model.Capacity;
+            toUpdate.RoomEquipment = [.. model.EquipmentIds.Select(equipmentId => new RoomEquipment { EquipmentId = equipmentId })];
 
             await _rooms.UpdateAsync(toUpdate);
 
-            var availabilityResult = await _availabilityService.ReplaceForRoomAsync(toUpdate.Id, request.Availabilities, force);
-            if (!availabilityResult.IsSuccess)
-                return availabilityResult.Error;
+            var replacementResult = await _availabilityService.ReplaceIfValidForRoomAsync(toUpdate, model.Availabilities, force);
+            if (!replacementResult.IsSuccess)
+                return replacementResult.Error;
 
             return ResultT<Room>.Success(toUpdate);
         }

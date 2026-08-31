@@ -20,9 +20,14 @@ namespace RoomReservation.Core.Repositories
             await _db.SaveChangesAsync();
         }
 
-        public async Task<bool> ExistsByIdentifierAsync(Guid buildingId, string identifier)
+        public async Task<bool> ExistsByIdentifierAsync(Guid buildingId, string identifier, Guid? excludeId = null)
         {
-            return await _db.Rooms.AnyAsync(r => r.BuildingId == buildingId && r.Identifier == identifier);
+            var query = _db.Rooms.Where(r => r.BuildingId == buildingId && r.Identifier == identifier);
+            if (excludeId.HasValue)
+            {
+                query = query.Where(r => r.Id != excludeId.Value);
+            }
+            return await query.AnyAsync();
         }
 
         public async Task<Room?> GetByIdAsync(Guid roomId)

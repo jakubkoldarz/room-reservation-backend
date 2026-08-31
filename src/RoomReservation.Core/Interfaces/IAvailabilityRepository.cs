@@ -8,5 +8,6 @@ namespace RoomReservation.Core.Interfaces
         Task<IReadOnlyList<Availability>> GetByRoomIdsAsync(IReadOnlyList<Guid> roomIds);
         Task<IReadOnlyList<Availability>> GetByBuildingAsync(Guid buildingId);
         Task ReplaceForRoomAsync(Guid roomId, IReadOnlyList<Availability> availabilities); 
+        Task ReplaceForBuildingAsync(Guid buildingId, IReadOnlyList<Availability> availabilities);
     }
 }

@@ -1,4 +1,5 @@
-﻿using RoomReservation.Core.Entities;
+﻿using Org.BouncyCastle.Asn1.Ocsp;
+using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models.Availability;
@@ -12,19 +13,19 @@ namespace RoomReservation.Core.Services
         IEventRepository _events,
         IRoomRepository _rooms) : IAvailabilityService
     {
-        public async Task<bool> AreAvailabilitiesValid(
+        public async Task<Result> AreAvailabilitiesValid(
             IReadOnlyList<Availability> availabilities,
             Guid? boundingBuildingId = null)
         {
             if (availabilities.Count == 0)
-                return true;
+                return Result.Success();
 
             if (availabilities.Any(a => a.StartTime >= a.EndTime))
-                return false;
+                return new Error("Invalid availability: start time is not before end time", ErrorType.BadRequest);
 
             bool hasDuplicateDays = availabilities.Select(a => a.DayOfWeek).Distinct().Count() != availabilities.Count;
             if (hasDuplicateDays)
-                return false;
+                return new Error("Invalid availability: duplicate days found", ErrorType.Conflict);
 
             if (boundingBuildingId is not null)
             {
@@ -32,41 +33,15 @@ namespace RoomReservation.Core.Services
 
                 var fitsWithinBounds = IsWithinBuildingBounds(availabilities, boundingAvailabilities);
                 if (!fitsWithinBounds)
-                    return false;
+                    return new Error("Invalid availability: does not fit within building bounds", ErrorType.Conflict);
             }
 
-            return true;
+            return Result.Success();
         }
 
         public async Task<IReadOnlyList<Availability>> GetAllForRoomAsync(Guid roomId)
         {
             return await _availabilities.GetByRoomAsync(roomId);
-        }
-
-        public async Task<ResultT<IReadOnlyList<Availability>>> ReplaceForRoomAsync(Guid roomId, IReadOnlyList<AvailabilityModel> request, bool force = false)
-        {
-            var room = await _rooms.GetByIdAsync(roomId);
-            if (room is null)
-                return new Error("Room not found", ErrorType.NotFound);
-
-            var newAvailabilities = request.Select(a => new Availability
-            {
-                RoomId = roomId,
-                DayOfWeek = a.DayOfWeek,
-                StartTime = a.StartTime,
-                EndTime = a.EndTime
-            }).ToList();
-
-            if (!await AreAvailabilitiesValid(newAvailabilities, boundingBuildingId: room.BuildingId))
-                return new Error("Invalid availabilities provided", ErrorType.BadRequest);
-
-            var events = await _events.GetActiveByRoomAsync(roomId);
-            var conflicts = await GetConflictingReservationsForRoomAsync(roomId, newAvailabilities, events);
-            if (!force && conflicts.Any())
-                return new Error("Conflicting reservations found", ErrorType.Conflict);
-
-            await _availabilities.ReplaceForRoomAsync(roomId, newAvailabilities);
-            return ResultT<IReadOnlyList<Availability>>.Success(newAvailabilities);
         }
 
         public async Task<AvailabilityResolution> ResolveAvailabilityAsync(Guid roomId, DateOnly date)
@@ -168,6 +143,51 @@ namespace RoomReservation.Core.Services
                     conflictingRooms.Add(room);
             }
             return conflictingRooms;
+        }
+
+       public async Task<ResultT<IReadOnlyList<Availability>>> ReplaceIfValidForRoomAsync(Room room, IReadOnlyList<AvailabilityModel> models, bool force = false)
+        {
+            var newAvailabilities = models.Select(a => new Availability
+            {
+                RoomId = room.Id,
+                DayOfWeek = a.DayOfWeek,
+                StartTime = a.StartTime,
+                EndTime = a.EndTime
+            }).ToList();
+
+            var validationResult = await AreAvailabilitiesValid(newAvailabilities, boundingBuildingId: room.BuildingId);
+            if (!validationResult.IsSuccess)
+                return validationResult.Error;
+
+            var events = await _events.GetActiveByRoomAsync(room.Id);
+            var conflicts = await GetConflictingReservationsForRoomAsync(room.Id, newAvailabilities, events);
+            if (!force && conflicts.Any())
+                return new Error("Conflicting reservations found", ErrorType.Conflict);
+
+            await _availabilities.ReplaceForRoomAsync(room.Id, newAvailabilities);
+            return ResultT<IReadOnlyList<Availability>>.Success(newAvailabilities);
+        }
+
+        public async Task<ResultT<IReadOnlyList<Availability>>> ReplaceIfValidForBuildingAsync(Building building, IReadOnlyList<AvailabilityModel> availabilityModels)
+        {
+            var availabilities = availabilityModels.Select(a => new Availability
+            {
+                BuildingId = building.Id,
+                DayOfWeek = a.DayOfWeek,
+                StartTime = a.StartTime,
+                EndTime = a.EndTime
+            }).ToList();
+
+            var conflictingRoomAvailabilities = await GetConflictingRoomsAsync(building.Id, availabilities);
+            if (conflictingRoomAvailabilities.Any())
+                return new Error("Some rooms have conflicting availabilities", ErrorType.Conflict);
+
+            var validationResult = await AreAvailabilitiesValid(availabilities);
+            if (!validationResult.IsSuccess)
+                return validationResult.Error;
+
+            await _availabilities.ReplaceForBuildingAsync(building.Id, availabilities);
+            return ResultT<IReadOnlyList<Availability>>.Success(availabilities);
         }
     }
 }
