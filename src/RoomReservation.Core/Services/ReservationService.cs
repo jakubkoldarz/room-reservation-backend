@@ -1,4 +1,5 @@
-﻿using RoomReservation.Core.Entities;
+﻿using Org.BouncyCastle.Asn1.Ocsp;
+using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
@@ -60,6 +61,9 @@ namespace RoomReservation.Core.Services
         {
             if (startTime >= endTime)
                 return new Error("Invalid timeframe provided", ErrorType.BadRequest);
+
+            if (date < DateOnly.FromDateTime(DateTime.UtcNow))
+                return new Error("Start date is in the past", ErrorType.BadRequest);
 
             var room = await _rooms.GetByIdAsync(roomId);
             if (room == null)
@@ -325,6 +329,20 @@ namespace RoomReservation.Core.Services
         {
             if (resolution.IsClosed) return false;
             return start >= resolution.StartTime!.Value && end <= resolution.EndTime!.Value;
+        }
+
+        public async Task<IReadOnlyList<Reservation>> GetConflictingWithEventAsync(Event ev)
+        {
+            var activeReservations = await _reservations.GetActiveFutureByRoomIdsAsync([.. ev.Rooms.Select(rm => rm.Id)]);
+            var relevantReservations = activeReservations.Where(r => ev.StartDate <= r.Date && r.Date <= ev.EndDate);
+
+            if(ev.IsClosed)
+                return [.. relevantReservations];
+
+            var conflictingReservations = relevantReservations
+                .Where(r => !(ev.StartTime <= r.StartTime && r.EndTime <= ev.EndTime));
+
+            return [.. conflictingReservations];
         }
     }
 }

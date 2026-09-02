@@ -24,7 +24,7 @@ namespace RoomReservation.Core.Repositories
         }
         public async Task DeleteExpiredOlderThanAsync(TimeSpan age)
         {
-            var cutoff = DateTime.Now - age;
+            var cutoff = DateTime.UtcNow - age;
             await _db.RefreshTokens.Where(rt => rt.ExpiresAt < cutoff).ExecuteDeleteAsync();
         }
         public async Task<RefreshToken?> GetByHashAsync(string tokenHash) 

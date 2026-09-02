@@ -1,7 +1,8 @@
 ﻿using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Interfaces;
-using RoomReservation.Core.Models.Availability;
+using RoomReservation.Core.Models.Events;
+using RoomReservation.Core.Models.Reservations;
 using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Core.Services
@@ -10,11 +11,14 @@ namespace RoomReservation.Core.Services
         IEventRepository _events,
         IAvailabilityRepository _availabilities,
         IAvailabilityService _availabilityService,
+        IReservationService _reservationService,
         IRoomRepository _rooms) : IEventService
     {
-        public bool AreEventsValid(IReadOnlyList<Guid> roomIds, DateOnly startDate, DateOnly endDate, IReadOnlyList<Event> existingEvents, Guid? excludeEventId = null)
+        public IReadOnlyList<Event> GetConflictingEvents(IReadOnlyList<Guid> roomIds, DateOnly startDate, DateOnly endDate, IReadOnlyList<Event> existingEvents, Guid? excludeEventId = null)
         {
             var relevantEvents = existingEvents.Where(e => excludeEventId == null || e.Id != excludeEventId);
+
+            var conflictingEvents = new List<Event>();
 
             foreach (var existingEvent in relevantEvents)
             {
@@ -24,10 +28,10 @@ namespace RoomReservation.Core.Services
 
                 bool sharesRoom = existingEvent.Rooms.Any(r => roomIds.Contains(r.Id));
                 if (sharesRoom)
-                    return false;
+                    conflictingEvents.Add(existingEvent);
             }
 
-            return true;
+            return conflictingEvents;
         }
 
         public async Task<ResultT<Event>> CreateAsync(IReadOnlyList<Guid> roomIds, EventModel request, bool force = false)
@@ -41,8 +45,12 @@ namespace RoomReservation.Core.Services
                 return validationResult.Error;
 
             var existingEvents = await _events.GetActiveByRoomIdsAsync(roomIds);
-            if (!AreEventsValid(roomIds, request.StartDate, request.EndDate, existingEvents))
-                return new Error("One or more rooms already have an overlapping event", ErrorType.Conflict);
+            var conflictingEvents = GetConflictingEvents(roomIds, request.StartDate, request.EndDate, existingEvents);
+            if (conflictingEvents.Any())
+            {
+                var conflictingEventModels = conflictingEvents.Select(e => new ConflictingEventModel(e.Id, e.Name, e.StartDate, e.EndDate)).ToList();
+                return new ConflictError<ConflictingEventModel>("One or more rooms already have an overlapping event", conflictingEventModels);
+            }
 
             var newEvent = new Event
             {
@@ -55,12 +63,13 @@ namespace RoomReservation.Core.Services
                 Rooms = [.. rooms],
             };
 
-            var combinedEvents = existingEvents.Append(newEvent).ToList();
-            var availabilities = await _availabilities.GetByRoomIdsAsync(roomIds);
-
-            var conflicts = await _availabilityService.GetConflictingReservationsForRoomsAsync(roomIds, availabilities, combinedEvents);
-            if (!force && conflicts.Any())
-                return new Error("Conflicting reservations found", ErrorType.Conflict);
+            var conflictingReservations = await _reservationService.GetConflictingWithEventAsync(newEvent);
+            if (!force && conflictingReservations.Any())
+            {
+                var conflictingModels = conflictingReservations
+                    .Select(r => new ConflictingReservationModel(r.Id, r.Date, r.StartTime, r.EndTime, r.RoomId, r.Status.ToString().ToUpper())).ToList();
+                return new ConflictError<ConflictingReservationModel>("Conflicting reservations found", conflictingModels);
+            }
 
             await _events.AddAsync(newEvent);
             return ResultT<Event>.Success(newEvent);
@@ -81,7 +90,11 @@ namespace RoomReservation.Core.Services
 
             var conflicts = await _availabilityService.GetConflictingReservationsForRoomsAsync(roomIds, availabilities, remainingEvents);
             if (!force && conflicts.Any())
-                return new Error("Conflicting reservations found", ErrorType.Conflict);
+            {
+                var conflictingModels = conflicts
+                    .Select(r => new ConflictingReservationModel(r.Id, r.Date, r.StartTime, r.EndTime, r.RoomId, r.Status.ToString().ToUpper())).ToList();
+                return new ConflictError<ConflictingReservationModel>("Conflicting reservations found", conflictingModels);
+            }
 
             await _events.DeleteAsync(existingEvent);
             return Result.Success();
@@ -116,6 +129,34 @@ namespace RoomReservation.Core.Services
             if (!validationResult.IsSuccess)
                 return validationResult.Error;
 
+            var otherEvents = await _events.GetActiveByRoomIdsAsync(roomIds);
+            var conflictingEvents = GetConflictingEvents(roomIds, request.StartDate, request.EndDate, otherEvents, excludeEventId: eventId);
+            if (conflictingEvents.Any())
+            {
+                var conflictingEventModels = conflictingEvents.Select(e => new ConflictingEventModel(e.Id, e.Name, e.StartDate, e.EndDate)).ToList();
+                return new ConflictError<ConflictingEventModel>("One or more rooms already have an overlapping event", conflictingEventModels);
+            }
+
+            var candidate = new Event
+            {
+                Id = toUpdate.Id,
+                Name = request.Name,
+                StartDate = request.StartDate,
+                EndDate = request.EndDate,
+                IsClosed = request.IsClosed,
+                StartTime = request.StartTime,
+                EndTime = request.EndTime,
+                Rooms = [.. rooms],
+            };
+
+            var conflictingReservations = await _reservationService.GetConflictingWithEventAsync(candidate);
+            if (!force && conflictingReservations.Any())
+            {
+                var conflictingModels = conflictingReservations
+                    .Select(r => new ConflictingReservationModel(r.Id, r.Date, r.StartTime, r.EndTime, r.RoomId, r.Status.ToString().ToUpper())).ToList();
+                return new ConflictError<ConflictingReservationModel>("Conflicting reservations found", conflictingModels);
+            }
+
             toUpdate.Name = request.Name;
             toUpdate.StartDate = request.StartDate;
             toUpdate.EndDate = request.EndDate;
@@ -124,31 +165,23 @@ namespace RoomReservation.Core.Services
             toUpdate.EndTime = request.EndTime;
             toUpdate.Rooms = [.. rooms];
 
-            var otherEvents = await _events.GetActiveByRoomIdsAsync(roomIds);
-            if (!AreEventsValid(roomIds, request.StartDate, request.EndDate, otherEvents, excludeEventId: eventId))
-                return new Error("One or more rooms already have an overlapping event", ErrorType.Conflict);
-
-            var combinedEvents = otherEvents.Where(e => e.Id != eventId).Append(toUpdate).ToList();
-            var availabilities = await _availabilities.GetByRoomIdsAsync(roomIds);
-
-            var conflicts = await _availabilityService.GetConflictingReservationsForRoomsAsync(roomIds, availabilities, combinedEvents);
-            if (!force && conflicts.Any())
-                return new Error("Conflicting reservations found", ErrorType.Conflict);
-
             await _events.UpdateAsync(toUpdate);
             return ResultT<Event>.Success(toUpdate);
         }
 
         private static Result IsEventValid(EventModel request)
         {
-            if (request.StartDate > request.EndDate)
-                return new Error("Invalid date range", ErrorType.BadRequest);
-
             if (request.IsClosed && (request.StartTime is not null || request.EndTime is not null))
                 return new Error("Cannot specify start or end times for closed event", ErrorType.BadRequest);
 
             if (!request.IsClosed && (request.StartTime is null || request.EndTime is null))
                 return new Error("Missing start or end time for open event", ErrorType.BadRequest);
+
+            if (request.StartDate > request.EndDate)
+                return new Error("Start date is after end date", ErrorType.BadRequest);
+
+            if (request.StartDate < DateOnly.FromDateTime(DateTime.UtcNow))
+                return new Error("Start date is in the past", ErrorType.BadRequest);
 
             return Result.Success();
         }

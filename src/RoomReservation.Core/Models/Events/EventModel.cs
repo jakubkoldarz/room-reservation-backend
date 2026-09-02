@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace RoomReservation.Core.Models.Availability
+namespace RoomReservation.Core.Models.Events
 {
     public record EventModel
     (

@@ -48,9 +48,11 @@ namespace RoomReservation.Core.Repositories
         {
             var reservationsQuery = _db.Reservations
                 .Include(r => r.Room)
+                    .ThenInclude(rm => rm.Building)
                 .Include(r => r.CreatedBy)
                 .Include(r => r.ApprovedBy)
                 .Include(r => r.CanceledBy)
+                .Include(r => r.RejectedBy)
                 .AsQueryable();
 
             if (filters.CreatedById.HasValue)

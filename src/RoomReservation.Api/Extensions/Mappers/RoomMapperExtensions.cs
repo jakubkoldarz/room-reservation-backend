@@ -12,10 +12,8 @@ namespace RoomReservation.Api.Extensions.Mappers
                 Id: room.Id,
                 Identifier: room.Identifier,
                 RequiresApproval: room.RequiresApproval,
-                BuildingInfo: room.Building.ToBasicDto(),
                 Floor: room.Floor,
-                Capacity: room.Capacity,
-                Equipment: [.. room.RoomEquipment.Select(re => re.Equipment.ToBasicDto())]
+                Capacity: room.Capacity
             );
         }
 
@@ -23,9 +21,20 @@ namespace RoomReservation.Api.Extensions.Mappers
         {
             return new RoomDetailsResponseDto
             (
-                RoomInfo: room.ToBasicDto(),
+                Details: room.ToDto(),
                 Availabilities: [.. room.Availabilities.Select(a => a.ToDto())],
-                Reservations: [.. room.Reservations.Select(r => r.ToBasicDto())]
+                Reservations: [.. room.Reservations.Select(r => r.ToBasicDto())],
+                Events: [.. room.Events.Select(e => e.ToDto())]
+            );
+        }
+
+        public static RoomResponseDto ToDto(this Room room)
+        {
+            return new RoomResponseDto
+            (
+                RoomInfo: room.ToBasicDto(),
+                BuildingInfo: room.Building.ToBasicDto(),
+                Equipment: [.. room.RoomEquipment.Select(re => re.Equipment.ToBasicDto())]
             );
         }
     }

@@ -9,7 +9,7 @@ namespace RoomReservation.Api.Extensions.Mappers
         {
             return new EventResponseDto(
                 ev.Id, ev.Name, ev.StartDate, ev.EndDate, ev.IsClosed, ev.StartTime, ev.EndTime,
-                [.. ev.Rooms.Select(r => r.Id)]);
+                [.. ev.Rooms.Select(r => r.ToBasicDto())]);
         }
     }
 }

@@ -15,5 +15,6 @@ namespace RoomReservation.Core.Interfaces
         Task<Result> RejectAsync(Guid reservationId, string? reason, Guid rejectedById);
         Task<Result> ApproveAsync(Guid reservationId, Guid approvedById);
         Task<Result> DeleteAsync(Guid reservationId, Guid requestingUserId);
+        Task<IReadOnlyList<Reservation>> GetConflictingWithEventAsync(Event ev);
     }
 }

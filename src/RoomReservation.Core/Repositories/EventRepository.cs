@@ -24,6 +24,7 @@ namespace RoomReservation.Core.Repositories
             var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
 
             return await _db.Events
+                .Include(e => e.Rooms)
                 .Where(e => e.Rooms.Any(r => r.Id == roomId) && e.EndDate >= today)
                 .ToListAsync();
         }
@@ -33,6 +34,7 @@ namespace RoomReservation.Core.Repositories
             var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
 
             return await _db.Events
+                .Include(e => e.Rooms)
                 .Where(e => e.Rooms.Any(r => roomIds.Contains(r.Id)) && e.EndDate >= today)
                 .ToListAsync();
         }

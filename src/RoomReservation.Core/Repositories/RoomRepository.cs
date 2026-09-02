@@ -36,6 +36,7 @@ namespace RoomReservation.Core.Repositories
                                   .Include(r => r.RoomEquipment)
                                     .ThenInclude(re => re.Equipment)
                                   .Include(r => r.Availabilities)
+                                  .Include(r => r.Reservations)
                                   .FirstOrDefaultAsync(r => r.Id == roomId);
         }
 
@@ -89,7 +90,10 @@ namespace RoomReservation.Core.Repositories
 
         public async Task<IReadOnlyList<Room>> GetByIdsAsync(IReadOnlyList<Guid> roomIds)
         {
-            var rooms = await _db.Rooms.Where(r => roomIds.Contains(r.Id)).ToListAsync();
+            var rooms = await _db.Rooms
+                .Include(r => r.Building)
+                .Where(r => roomIds.Contains(r.Id))
+                .ToListAsync();
             return rooms;
         }
 

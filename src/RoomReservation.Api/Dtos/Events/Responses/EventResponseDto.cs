@@ -1,4 +1,6 @@
-﻿namespace RoomReservation.Api.Dtos.Events.Responses
+﻿using RoomReservation.Api.Dtos.Rooms.Responses;
+
+namespace RoomReservation.Api.Dtos.Events.Responses
 {
     public record EventResponseDto(
         Guid Id,
@@ -8,6 +10,6 @@
         bool IsClosed,
         TimeOnly? StartTime,
         TimeOnly? EndTime,
-        IReadOnlyList<Guid> RoomIds
+        IReadOnlyList<BasicRoomResponseDto> Rooms
     );
 }

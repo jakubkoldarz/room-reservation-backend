@@ -7,7 +7,7 @@ using RoomReservation.Api.Extensions;
 using RoomReservation.Api.Extensions.Mappers;
 using RoomReservation.Core.Constants;
 using RoomReservation.Core.Interfaces;
-using RoomReservation.Core.Models.Availability;
+using RoomReservation.Core.Models.Events;
 
 namespace RoomReservation.Api.Controllers
 {
