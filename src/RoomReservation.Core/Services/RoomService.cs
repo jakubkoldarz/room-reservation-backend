@@ -122,12 +122,11 @@ namespace RoomReservation.Core.Services
             toUpdate.Capacity = model.Capacity;
             toUpdate.RoomEquipment = [.. model.EquipmentIds.Select(equipmentId => new RoomEquipment { EquipmentId = equipmentId })];
 
-            await _rooms.UpdateAsync(toUpdate);
-
             var replacementResult = await _availabilityService.ReplaceIfValidForRoomAsync(toUpdate, model.Availabilities, force);
             if (!replacementResult.IsSuccess)
                 return replacementResult.Error;
 
+            await _rooms.UpdateAsync(toUpdate);
             return ResultT<Room>.Success(toUpdate);
         }
 

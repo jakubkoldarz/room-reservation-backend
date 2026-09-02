@@ -1,5 +1,4 @@
-﻿using Org.BouncyCastle.Asn1.Ocsp;
-using RoomReservation.Core.Entities;
+﻿using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models.Availability;
@@ -145,7 +144,7 @@ namespace RoomReservation.Core.Services
             return conflictingRooms;
         }
 
-       public async Task<ResultT<IReadOnlyList<Availability>>> ReplaceIfValidForRoomAsync(Room room, IReadOnlyList<AvailabilityModel> models, bool force = false)
+        public async Task<ResultT<IReadOnlyList<Availability>>> ReplaceIfValidForRoomAsync(Room room, IReadOnlyList<AvailabilityModel> models, bool force = false)
         {
             var newAvailabilities = models.Select(a => new Availability
             {
@@ -178,13 +177,13 @@ namespace RoomReservation.Core.Services
                 EndTime = a.EndTime
             }).ToList();
 
-            var conflictingRoomAvailabilities = await GetConflictingRoomsAsync(building.Id, availabilities);
-            if (conflictingRoomAvailabilities.Any())
-                return new Error("Some rooms have conflicting availabilities", ErrorType.Conflict);
-
             var validationResult = await AreAvailabilitiesValid(availabilities);
             if (!validationResult.IsSuccess)
                 return validationResult.Error;
+
+            var conflictingRoomAvailabilities = await GetConflictingRoomsAsync(building.Id, availabilities);
+            if (conflictingRoomAvailabilities.Any())
+                return new Error("Some rooms have conflicting availabilities", ErrorType.Conflict);
 
             await _availabilities.ReplaceForBuildingAsync(building.Id, availabilities);
             return ResultT<IReadOnlyList<Availability>>.Success(availabilities);
