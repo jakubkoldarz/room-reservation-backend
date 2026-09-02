@@ -20,7 +20,17 @@ namespace RoomReservation.Api.Extensions
                 _ => ("Internal server error", HttpStatusCode.InternalServerError)
             };
 
-            return new ObjectResult(new ErrorResponse(message, statusCode))
+            object body;
+            if(error is IConflictError conflictingError)
+            {
+                body = new ErrorResponse(message, statusCode, conflictingError.ConflictingItems);
+            }
+            else
+            {
+                body = new ErrorResponse(message, statusCode);
+            }
+
+            return new ObjectResult(body)
             {
                 StatusCode = (int)statusCode
             };

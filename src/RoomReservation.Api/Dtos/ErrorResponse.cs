@@ -1,10 +1,10 @@
-﻿using RoomReservation.Core.Results;
-using System.Net;
+﻿using System.Net;
 
 namespace RoomReservation.Api.Dtos
 {
     public record ErrorResponse(
         string Message,
-        HttpStatusCode StatusCode
+        HttpStatusCode StatusCode,
+        IEnumerable<object>? ConflictingItems = null
     );
 }

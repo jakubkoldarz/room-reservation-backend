@@ -8,8 +8,8 @@ using RoomReservation.Api.Extensions.Mappers;
 using RoomReservation.Core.Constants;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
-using RoomReservation.Core.Models;
 using RoomReservation.Core.Models.Availability;
+using RoomReservation.Core.Models.Rooms;
 using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Api.Controllers

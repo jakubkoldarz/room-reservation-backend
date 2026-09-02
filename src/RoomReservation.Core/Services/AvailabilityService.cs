@@ -2,6 +2,7 @@
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models.Availability;
+using RoomReservation.Core.Models.Rooms;
 using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Core.Services
@@ -17,7 +18,7 @@ namespace RoomReservation.Core.Services
             Guid? boundingBuildingId = null)
         {
             if (availabilities.Count == 0)
-                return Result.Success();
+                return new Error("Invalid availabilities: empty list", ErrorType.BadRequest);
 
             if (availabilities.Any(a => a.StartTime >= a.EndTime))
                 return new Error("Invalid availability: start time is not before end time", ErrorType.BadRequest);
@@ -181,9 +182,12 @@ namespace RoomReservation.Core.Services
             if (!validationResult.IsSuccess)
                 return validationResult.Error;
 
-            var conflictingRoomAvailabilities = await GetConflictingRoomsAsync(building.Id, availabilities);
-            if (conflictingRoomAvailabilities.Any())
-                return new Error("Some rooms have conflicting availabilities", ErrorType.Conflict);
+            var conflictingRooms = await GetConflictingRoomsAsync(building.Id, availabilities);
+            if (conflictingRooms.Any())
+            {
+                var models = conflictingRooms.Select(r => new ConflictingRoomModel(r.Id, r.Identifier)).ToList();
+                return new ConflictError<ConflictingRoomModel>("Some rooms have availabilities that do not fit within the new building availabilities", models);
+            }
 
             await _availabilities.ReplaceForBuildingAsync(building.Id, availabilities);
             return ResultT<IReadOnlyList<Availability>>.Success(availabilities);

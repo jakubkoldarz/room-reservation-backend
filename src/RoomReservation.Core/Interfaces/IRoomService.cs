@@ -1,6 +1,6 @@
 ﻿using RoomReservation.Core.Entities;
 using RoomReservation.Core.Filters;
-using RoomReservation.Core.Models;
+using RoomReservation.Core.Models.Rooms;
 using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Core.Interfaces

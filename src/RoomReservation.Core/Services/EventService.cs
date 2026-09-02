@@ -56,7 +56,7 @@ namespace RoomReservation.Core.Services
             };
 
             var combinedEvents = existingEvents.Append(newEvent).ToList();
-            var availabilities = await _availabilities.GetByRoomIdsAsync(roomIds); 
+            var availabilities = await _availabilities.GetByRoomIdsAsync(roomIds);
 
             var conflicts = await _availabilityService.GetConflictingReservationsForRoomsAsync(roomIds, availabilities, combinedEvents);
             if (!force && conflicts.Any())

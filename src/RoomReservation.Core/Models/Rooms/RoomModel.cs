@@ -1,6 +1,6 @@
 ﻿using RoomReservation.Core.Models.Availability;
 
-namespace RoomReservation.Core.Models
+namespace RoomReservation.Core.Models.Rooms
 {
     public record RoomModel(
         string Identifier,

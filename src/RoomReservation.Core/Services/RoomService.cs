@@ -2,7 +2,7 @@
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
-using RoomReservation.Core.Models;
+using RoomReservation.Core.Models.Rooms;
 using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Core.Services
