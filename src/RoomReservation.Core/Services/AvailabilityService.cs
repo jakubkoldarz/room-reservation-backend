@@ -2,6 +2,7 @@
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models.Availability;
+using RoomReservation.Core.Models.Reservations;
 using RoomReservation.Core.Models.Rooms;
 using RoomReservation.Core.Results.Common;
 
@@ -162,7 +163,10 @@ namespace RoomReservation.Core.Services
             var events = await _events.GetActiveByRoomAsync(room.Id);
             var conflicts = await GetConflictingReservationsForRoomAsync(room.Id, newAvailabilities, events);
             if (!force && conflicts.Any())
-                return new Error("Conflicting reservations found", ErrorType.Conflict);
+            {
+                var conflictingModels = conflicts.Select(r => new ConflictingReservationModel(r.Id, r.Date, r.StartTime, r.EndTime, r.RoomId, r.Status.ToString().ToUpper())).ToList();
+                return new ConflictError<ConflictingReservationModel>("Conflicting reservations found", conflictingModels);
+            }
 
             await _availabilities.ReplaceForRoomAsync(room.Id, newAvailabilities);
             return ResultT<IReadOnlyList<Availability>>.Success(newAvailabilities);
