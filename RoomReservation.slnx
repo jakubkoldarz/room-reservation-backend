@@ -6,6 +6,7 @@
   <Folder Name="/src/">
     <Project Path="src/RoomReservation.Api/RoomReservation.Api.csproj" />
     <Project Path="src/RoomReservation.Core/RoomReservation.Core.csproj" />
+    <Project Path="src/RoomReservation.Worker/RoomReservation.Worker.csproj" Id="9fe464d3-e173-4614-bc4a-42593826ba85" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/RoomReservation.Core.Tests/RoomReservation.Core.Tests.csproj" />

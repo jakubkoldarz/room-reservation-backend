@@ -47,6 +47,12 @@ services:
       - postgres-db
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+
+  roomreservation.worker:
+    image: ${DOCKER_REGISTRY-}roomreservationworker
+    build:
+      context: .
+      dockerfile: RoomReservation.Worker/Dockerfile
  
 volumes:
   room_data:
