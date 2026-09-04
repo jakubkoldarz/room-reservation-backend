@@ -6,23 +6,30 @@ namespace RoomReservation.Api.Extensions.Mappers
 {
     public static class UserMapperExtensions
     {
-        public static BasicUserResponse ToBasicDto(this User user)
+        public static UserAccountStatusResponseDto ToAccountStatusDto(this User user)
         {
-            return new BasicUserResponse(
-                user.Id,
-                user.Firstname,
-                user.Lastname,
+            return new UserAccountStatusResponseDto(
                 user.IsProfileComplete,
                 user.IsEmailVerified,
                 user.Is2faEnabled
             );
         }
 
-        public static UserDetailsResponse ToDetailsDto(this User user, IReadOnlyList<string> permissions)
+        public static BasicUserResponseDto ToBasicDto(this User user)
         {
-            return new UserDetailsResponse(
+            return new BasicUserResponseDto(
+                user.Id,
+                user.Firstname,
+                user.Lastname
+            );
+        }
+
+        public static UserDetailsResponseDto ToDetailsDto(this User user, IReadOnlyList<string> permissions)
+        {
+            return new UserDetailsResponseDto(
                 user.ToBasicDto(),
-                new RoleWithPermissionsResponse(user.Role.Name, [.. permissions]),
+                user.ToAccountStatusDto(),
+                new RoleWithPermissionsResponseDto(user.Role.Name, [.. permissions]),
                 user.RefreshTokens.Select(rf => rf.ToDto())
             );
         }

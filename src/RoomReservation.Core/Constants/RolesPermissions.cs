@@ -1,9 +1,4 @@
-﻿using RoomReservation.Core.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RoomReservation.Core.Constants
+﻿namespace RoomReservation.Core.Constants
 {
     public static class RolesPermissions
     {

@@ -16,8 +16,8 @@ namespace RoomReservation.Core.Seeders
         {
             List<User> users = new List<User>()
             {
-                new() { Id=Guid.Parse("10000000-0000-0000-0000-000000000000"), Firstname = "Admin", Lastname = "Admin", Email = "admin@rooms.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("password"), RoleId = Roles.SuperAdmin.Id },
-                new() { Id=Guid.Parse("10000000-0000-0000-0000-000000000001"), Firstname = "Jan", Lastname = "Kowalski", Email = "user@rooms.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("password") },
+                new() { Id=Guid.Parse("10000000-0000-0000-0000-000000000000"), Firstname = "Admin", Lastname = "Admin", Email = "admin@rooms.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("password"), RoleId = Roles.SuperAdmin.Id, IsEmailVerified = true, IsProfileComplete = true },
+                new() { Id=Guid.Parse("10000000-0000-0000-0000-000000000001"), Firstname = "Jan", Lastname = "Kowalski", Email = "user@rooms.com", PasswordHash = BCrypt.Net.BCrypt.HashPassword("password"), IsEmailVerified = true, IsProfileComplete = true },
                 new() { Firstname = "Anna", Lastname = "Nowak", Email = "anna.nowak@wp.pl", PasswordHash = "password" },
                 new() { Firstname = "Piotr", Lastname = "Wiśniewski", Email = "piotr.wisniewski@onet.pl", PasswordHash = "password" },
                 new() { Firstname = "Katarzyna", Lastname = "Wójcik", Email = "k.wojcik@interia.pl", PasswordHash = "password" },

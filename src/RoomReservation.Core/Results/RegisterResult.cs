@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
-
-namespace RoomReservation.Core.Results
+﻿namespace RoomReservation.Core.Results
 {
     public class RegisterResult
     {

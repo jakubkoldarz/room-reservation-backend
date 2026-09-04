@@ -1,0 +1,18 @@
+﻿using RoomReservation.Core.Entities;
+using RoomReservation.Core.Filters;
+
+namespace RoomReservation.Core.Interfaces
+{
+    public interface IRoomRepository
+    {
+        Task<Room?> GetByIdAsync(Guid roomId);
+        Task<IReadOnlyList<Room>> GetByBuildingIdAsync(Guid buildingId);
+        Task<IReadOnlyList<Room>> GetByIdsAsync(IReadOnlyList<Guid> roomIds);
+        Task<Room?> GetByIdentifierAsync(Guid buildingId, string identifier);
+        Task<bool> ExistsByIdentifierAsync(Guid buildingId, string identifier, Guid? excludeId = null);
+        Task<(IReadOnlyList<Room> Rooms, int TotalCount)> GetFilteredAsync(RoomFilter filters);
+        Task AddAsync(Room room);
+        Task UpdateAsync(Room room);
+        Task DeleteAsync(Room room);
+    }
+}

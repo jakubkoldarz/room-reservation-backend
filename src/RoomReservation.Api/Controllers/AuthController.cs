@@ -21,7 +21,7 @@ namespace RoomReservation.Api.Controllers
         IRefreshTokenService _refreshTokenService) : ControllerBase
     {
         [HttpPost("register")]
-        public async Task<ActionResult<JwtTokenResponse>> Register(RegisterRequest request)
+        public async Task<ActionResult<JwtTokenResponseDto>> Register(RegisterRequestDto request)
         {
             var (ipAddress, userAgent) = GetUserInfo();
 
@@ -31,12 +31,12 @@ namespace RoomReservation.Api.Controllers
                 return result.Error.ToActionResult();
 
             Response.Cookies.AppendRefreshToken(result.Value.RefreshToken);
-            return Ok(new JwtTokenResponse(result.Value.JwtToken));
+            return Ok(new JwtTokenResponseDto(result.Value.JwtToken));
         }
 
         [Authorize]
         [HttpPost("email/confirmation/verify")]
-        public async Task<IActionResult> ConfirmEmail([UserId] Guid userId, VerificationCodedRequest request)
+        public async Task<IActionResult> ConfirmEmail([UserId] Guid userId, VerificationCodedRequestDto request)
         {
             var result = await _authService.ConfirmEmailAsync(userId, request.VerificationCode);
 
@@ -47,7 +47,7 @@ namespace RoomReservation.Api.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<ActionResult<LoginResponse>> Login(LoginRequest request)
+        public async Task<ActionResult<LoginResponseDto>> Login(LoginRequestDto request)
         {
             var (ipAddress, userAgent) = GetUserInfo();
             var result = await _authService.LoginAsync(request.Email, request.Password, ipAddress, userAgent);
@@ -56,14 +56,14 @@ namespace RoomReservation.Api.Controllers
                 return result.Error.ToActionResult();
 
             if (result.Value.Requires2FA)
-                return Accepted(new LoginResponse(true, VerificationId: result.Value.VerificationId));
+                return Accepted(new LoginResponseDto(true, VerificationId: result.Value.VerificationId));
 
             Response.Cookies.AppendRefreshToken(result.Value.RefreshToken);
-            return Ok(new LoginResponse(false, JwtToken: result.Value.JwtToken));
+            return Ok(new LoginResponseDto(false, JwtToken: result.Value.JwtToken));
         }
 
         [HttpPost("login/2fa")]
-        public async Task<ActionResult<JwtTokenResponse>> Verify2fa(VerificationRequest request)
+        public async Task<ActionResult<JwtTokenResponseDto>> Verify2fa(VerificationRequestDto request)
         {
             var (ipAddress, userAgent) = GetUserInfo();
             var result = await _authService.Verify2faAsync(
@@ -76,12 +76,12 @@ namespace RoomReservation.Api.Controllers
                 return result.Error.ToActionResult();
 
             Response.Cookies.AppendRefreshToken(result.Value.RefreshToken);
-            return Ok(new JwtTokenResponse(result.Value.JwtToken));
+            return Ok(new JwtTokenResponseDto(result.Value.JwtToken));
         }
 
         [Authorize]
         [HttpGet("me")]
-        public async Task<ActionResult<UserDetailsResponse>> Index([UserId] Guid userId)
+        public async Task<ActionResult<UserDetailsResponseDto>> Index([UserId] Guid userId)
         {
             var userResult = await _userService.GetUserDetailsAsync(userId);
             if (!userResult.IsSuccess)
@@ -132,7 +132,7 @@ namespace RoomReservation.Api.Controllers
         }
 
         [HttpPost("refresh")]
-        public async Task<ActionResult<JwtTokenResponse>> Refresh()
+        public async Task<ActionResult<JwtTokenResponseDto>> Refresh()
         {
             var cookieExist = Request.Cookies.TryGetValue("refreshToken", out var refreshToken);
             if (!cookieExist || string.IsNullOrEmpty(refreshToken))
@@ -145,13 +145,13 @@ namespace RoomReservation.Api.Controllers
                 return tokensResponse.Error.ToActionResult();
             Response.Cookies.AppendRefreshToken(tokensResponse.Value.refreshToken);
 
-            return Ok(new JwtTokenResponse(tokensResponse.Value.jwtToken));
+            return Ok(new JwtTokenResponseDto(tokensResponse.Value.jwtToken));
         }
 
         [Authorize]
         [RequireCompletedProfile]
         [HttpPost("password")]
-        public async Task<IActionResult> ChangePassword([UserId] Guid userId, ChangePasswordRequest request)
+        public async Task<IActionResult> ChangePassword([UserId] Guid userId, ChangePasswordRequestDto request)
         {
             var result = await _authService.ChangePasswordAsync(userId, request.OldPassword, request.NewPassword);
             if (!result.IsSuccess)
@@ -163,18 +163,18 @@ namespace RoomReservation.Api.Controllers
         [Authorize]
         [RequireCompletedProfile]
         [HttpPost("email")]
-        public async Task<ActionResult<VerificationIdResponse>> ChangeEmail([UserId] Guid userId, EmailRequest request)
+        public async Task<ActionResult<VerificationIdResponseDto>> ChangeEmail([UserId] Guid userId, EmailRequestDto request)
         {
             var result = await _authService.IssueChangeEmailAsync(userId, request.EmailAddress);
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
-            return Ok(new VerificationIdResponse(result.Value.Id));
+            return Ok(new VerificationIdResponseDto(result.Value.Id));
         }
 
         [Authorize]
         [HttpPost("email/verify")]
-        public async Task<IActionResult> ConfirmEmailChange(VerificationRequest request)
+        public async Task<IActionResult> ConfirmEmailChange(VerificationRequestDto request)
         {
             var result = await _authService.ConfirmEmailChangeAsync(request.VerificationId, request.VerificationCode);
             if (!result.IsSuccess)
@@ -185,13 +185,13 @@ namespace RoomReservation.Api.Controllers
 
         [Authorize]
         [HttpPost("email/confirmation")]
-        public async Task<ActionResult<VerificationIdResponse>> SendEmailConfirmation([UserId] Guid userId)
+        public async Task<ActionResult<VerificationIdResponseDto>> SendEmailConfirmation([UserId] Guid userId)
         {
             var result = await _authService.IssueEmailVerificationAsync(userId);
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
-            return Ok(new VerificationIdResponse(result.Value));
+            return Ok(new VerificationIdResponseDto(result.Value));
         }
 
 

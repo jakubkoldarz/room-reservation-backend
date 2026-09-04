@@ -16,10 +16,21 @@ namespace RoomReservation.Api.Extensions
                 ErrorType.NotFound => (error.ErrorMessage, HttpStatusCode.NotFound),
                 ErrorType.Unauthorized => (error.ErrorMessage, HttpStatusCode.Unauthorized),
                 ErrorType.Forbidden => (error.ErrorMessage, HttpStatusCode.Forbidden),
+                ErrorType.Conflict => (error.ErrorMessage, HttpStatusCode.Conflict),
                 _ => ("Internal server error", HttpStatusCode.InternalServerError)
             };
 
-            return new ObjectResult(new ErrorResponse(message, statusCode))
+            object body;
+            if(error is IConflictError conflictingError)
+            {
+                body = new ErrorResponse(message, statusCode, conflictingError.ConflictingItems);
+            }
+            else
+            {
+                body = new ErrorResponse(message, statusCode);
+            }
+
+            return new ObjectResult(body)
             {
                 StatusCode = (int)statusCode
             };

@@ -1,8 +1,4 @@
 ﻿using RoomReservation.Core.Enums;
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Text;
 
 namespace RoomReservation.Core.Results.Common
 {

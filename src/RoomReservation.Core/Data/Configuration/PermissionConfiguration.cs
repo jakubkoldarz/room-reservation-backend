@@ -8,13 +8,13 @@ namespace RoomReservation.Core.Data.Configuration
 {
     public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
     {
-        public void Configure(EntityTypeBuilder<Permission> builder)
+        public void Configure(EntityTypeBuilder<Permission> permission)
         {
-            builder.HasKey(p => p.Id);
-            builder.HasIndex(p => p.Name).IsUnique();
+            permission.HasKey(p => p.Id);
+            permission.HasIndex(p => p.Name).IsUnique();
 
             var allPermissions = Permissions.Definitions.Select(p => new Permission{ Name = p.Key, Id = p.Value });
-            builder.HasData(allPermissions.Select(p => new Permission { Id = p.Id, Name = p.Name }));
+            permission.HasData(allPermissions.Select(p => new Permission { Id = p.Id, Name = p.Name }));
         }
     }
 }
