@@ -67,6 +67,7 @@ namespace RoomReservation.Core.Services
             mimeMessage.Body = new TextPart("html") { Text = renderResult.Value };
 
             using var client = new SmtpClient();
+            //client.AuthenticationMechanisms.Remove("GSSAPI");
             try
             {
                 await client.ConnectAsync(_smtpHost, _smtpPort, SecureSocketOptions.StartTls);
@@ -88,7 +89,7 @@ namespace RoomReservation.Core.Services
 
         private async Task<ResultT<string>> RenderTemplateAsync(string templateName, Dictionary<string, string> replacements)
         {
-            var resourceName = $"{typeof(EmailService).Namespace}.Emails.Templates.{templateName}.html";
+            var resourceName = $"{typeof(EmailMessage).Namespace}.Templates.{templateName}.html";
 
             using var stream = _assembly.GetManifestResourceStream(resourceName);
             if (stream is null)

@@ -52,6 +52,12 @@ services:
 
   roomreservation.worker:
     image: ${DOCKER_REGISTRY-}roomreservationworker
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres-db;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}
+      - SMTP__Host=${SMTP_HOST}
+      - SMTP__Port=${SMTP_PORT}
+      - SMTP__Email=${SMTP_EMAIL}
+      - SMTP__Password=${SMTP_PASSWORD}
     build:
       context: .
       dockerfile: src/RoomReservation.Worker/Dockerfile

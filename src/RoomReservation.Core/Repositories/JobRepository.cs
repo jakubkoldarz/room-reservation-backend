@@ -22,21 +22,21 @@ namespace RoomReservation.Core.Repositories
         public async Task<Job?> TryClaimNextJobAsync()
         {
             var jobs = await _db.Jobs
-            .FromSqlInterpolated($@"
-                UPDATE jobs_queue
-                SET status = {JobStatus.Processing.ToString()},
-                    attempts = attempts + 1
-                WHERE id = (
-                    SELECT id FROM jobs_queue
-                    WHERE status = {JobStatus.Pending.ToString()}
-                        AND (next_attempt_at <= now())
-                    ORDER BY created_at
-                    LIMIT 1
-                    FOR UPDATE SKIP LOCKED
-                )
-                RETURNING *
-            ")
-            .ToListAsync();
+                        .FromSqlInterpolated($@"
+                    UPDATE jobs_queue
+                    SET ""Status"" = {JobStatus.Processing.ToString()},
+                        ""Attempts"" = ""Attempts"" + 1
+                    WHERE ""Id"" = (
+                        SELECT ""Id"" FROM jobs_queue
+                        WHERE ""Status"" = {JobStatus.Pending.ToString()}
+                          AND (""NextAttemptAt"" IS NULL OR ""NextAttemptAt"" <= now())
+                        ORDER BY ""CreatedAt""
+                        LIMIT 1
+                        FOR UPDATE SKIP LOCKED
+                    )
+                    RETURNING *
+                ")
+                .ToListAsync();
 
             return jobs.SingleOrDefault();
         }

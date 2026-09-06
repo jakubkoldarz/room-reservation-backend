@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using RoomReservation.Api;
 using RoomReservation.Api.Extensions;
 using RoomReservation.Core.Data;
+using RoomReservation.Core.Emails;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -55,5 +56,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
+var names = typeof(EmailMessage).Assembly.GetManifestResourceNames();
+foreach (var name in names)
+    Console.WriteLine(name);
+
 app.Run();
+
 
