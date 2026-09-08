@@ -44,6 +44,7 @@
         public const string RoleAdd = "role.add";
         public const string RoleDelete = "role.delete";
         public const string RoleEdit = "role.edit";
+        public const string RoleAssign = "role.assign";
 
         public const string PermissionList = "permission.list";
 
@@ -90,6 +91,7 @@
             [RoleAdd] = Guid.Parse("70000000-0000-0000-0000-000000000002"),
             [RoleDelete] = Guid.Parse("70000000-0000-0000-0000-000000000003"),
             [RoleEdit] = Guid.Parse("70000000-0000-0000-0000-000000000004"),
+            [RoleAssign] = Guid.Parse("70000000-0000-0000-0000-000000000005"),
 
             [PermissionList] = Guid.Parse("80000000-0000-0000-0000-000000000000"),
         };

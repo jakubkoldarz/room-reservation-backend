@@ -173,6 +173,30 @@ namespace RoomReservation.Api.Controllers
         }
 
         [Authorize]
+        [RequireCompletedProfile]
+        [HttpPost("2fa/enable")]
+        public async Task<ActionResult<VerificationIdResponseDto>> Enable2fa([UserId] Guid userId)
+        {
+            var result = await _authService.Enable2faAsync(userId);
+            if (!result.IsSuccess)
+                return result.Error.ToActionResult();
+
+            return NoContent();
+        }
+
+        [Authorize]
+        [RequireCompletedProfile]
+        [HttpPost("2fa/disable")]
+        public async Task<ActionResult<VerificationIdResponseDto>> Disable2fa([UserId] Guid userId)
+        {
+            var result = await _authService.Disable2faAsync(userId);
+            if (!result.IsSuccess)
+                return result.Error.ToActionResult();
+
+            return NoContent();
+        }
+
+        [Authorize]
         [HttpPost("email/verify")]
         public async Task<IActionResult> ConfirmEmailChange(VerificationRequestDto request)
         {

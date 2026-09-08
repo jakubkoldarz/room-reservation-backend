@@ -41,12 +41,8 @@ namespace RoomReservation.Api.Controllers
 
         [HttpGet("mine")]
         [RequireCompletedProfile]
-        public async Task<ActionResult<PagedResult<ReservationResponseDto>>> GetMyReservations([FromQuery] ReservationFilter filters)
+        public async Task<ActionResult<PagedResult<ReservationResponseDto>>> GetMyReservations([FromQuery] ReservationFilter filters, [UserId] Guid userId)
         {
-            var userId = User.GetUserId();
-            if (userId == null)
-                return Unauthorized();
-
             filters.CreatedById = userId;
             var result = await _reservationService.GetAllAsync(filters);
             if (!result.IsSuccess)
@@ -57,14 +53,10 @@ namespace RoomReservation.Api.Controllers
 
         [HttpPost]
         [RequirePermission(Permissions.ReservationCreate)]
-        public async Task<ActionResult<ReservationResponseDto>> Create([FromBody] CreateReservationRequestDto request)
+        public async Task<ActionResult<ReservationResponseDto>> Create([FromBody] CreateReservationRequestDto request, [UserId] Guid userId)
         {
-            var userId = User.GetUserId();
-            if (userId == null)
-                return Unauthorized();
-
             var result = await _reservationService.CreateAsync(
-                createdById: (Guid)userId,
+                createdById: userId,
                 roomId: request.RoomId,
                 date: request.Date,
                 startTime: request.StartTime,
@@ -79,13 +71,9 @@ namespace RoomReservation.Api.Controllers
 
         [HttpPost("{reservationId:guid}/approve")]
         [RequirePermission(Permissions.ReservationApprove)]
-        public async Task<ActionResult> Approve(Guid reservationId)
+        public async Task<ActionResult> Approve(Guid reservationId, [UserId] Guid userId)
         {
-            var userId = User.GetUserId();
-            if (userId == null)
-                return Unauthorized();
-
-            var result = await _reservationService.ApproveAsync(reservationId, approvedById: (Guid)userId);
+            var result = await _reservationService.ApproveAsync(reservationId, approvedById: userId);
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
@@ -95,13 +83,9 @@ namespace RoomReservation.Api.Controllers
 
         [HttpPost("{reservationId:guid}/reject")]
         [RequirePermission(Permissions.ReservationReject)]
-        public async Task<ActionResult> Reject(Guid reservationId, [FromBody] ReservationReasonRequestDto request)
+        public async Task<ActionResult> Reject(Guid reservationId, [FromBody] ReservationReasonRequestDto request, [UserId] Guid userId)
         {
-            var userId = User.GetUserId();
-            if (userId == null)
-                return Unauthorized();
-
-            var result = await _reservationService.RejectAsync(reservationId, rejectedById: (Guid)userId, reason: request.Reason);
+            var result = await _reservationService.RejectAsync(reservationId, rejectedById: userId, reason: request.Reason);
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
@@ -110,13 +94,9 @@ namespace RoomReservation.Api.Controllers
 
         [HttpPost("{reservationId:guid}/cancel")]
         [RequireCompletedProfile]
-        public async Task<ActionResult> Cancel(Guid reservationId, [FromBody] ReservationReasonRequestDto request)
+        public async Task<ActionResult> Cancel(Guid reservationId, [FromBody] ReservationReasonRequestDto request, [UserId] Guid userId)
         {
-            var userId = User.GetUserId();
-            if (userId == null)
-                return Unauthorized();
-
-            var result = await _reservationService.SelfCancelAsync(reservationId, reason: request.Reason, cancelledById: (Guid)userId);
+            var result = await _reservationService.SelfCancelAsync(reservationId, reason: request.Reason, cancelledById: userId);
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
@@ -126,13 +106,9 @@ namespace RoomReservation.Api.Controllers
 
         [HttpPost("{reservationId:guid}/force-cancel")]
         [RequirePermission(Permissions.ReservationForceCancel)]
-        public async Task<ActionResult> ForceCancel(Guid reservationId, [FromBody] ReservationReasonRequestDto request)
+        public async Task<ActionResult> ForceCancel(Guid reservationId, [FromBody] ReservationReasonRequestDto request, [UserId] Guid userId)
         {
-            var userId = User.GetUserId();
-            if (userId == null)
-                return Unauthorized();
-
-            var result = await _reservationService.ForceCancelAsync(reservationId, reason: request.Reason, cancelledById: (Guid)userId);
+            var result = await _reservationService.ForceCancelAsync(reservationId, reason: request.Reason, cancelledById: userId);
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
@@ -141,13 +117,9 @@ namespace RoomReservation.Api.Controllers
 
         [HttpDelete("{reservationId:guid}")]
         [RequireCompletedProfile]
-        public async Task<ActionResult> Delete(Guid reservationId)
+        public async Task<ActionResult> Delete(Guid reservationId, [UserId] Guid userId)
         {
-            var userId = User.GetUserId();
-            if (userId == null)
-                return Unauthorized();
-
-            var result = await _reservationService.DeleteAsync(reservationId, requestingUserId: (Guid)userId);
+            var result = await _reservationService.DeleteAsync(reservationId, requestingUserId: userId);
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
@@ -155,14 +127,10 @@ namespace RoomReservation.Api.Controllers
         }
 
         [HttpPut("{reservationId:guid}")]
-        public async Task<ActionResult<ReservationResponseDto>> Update(Guid reservationId, [FromBody] UpdateReservationRequestDto request)
+        public async Task<ActionResult<ReservationResponseDto>> Update(Guid reservationId, [FromBody] UpdateReservationRequestDto request, [UserId] Guid userId)
         {
-            var userId = User.GetUserId();
-            if (userId == null)
-                return Unauthorized();
-
             var result = await _reservationService.UpdateAsync(
-                requestingUserId: (Guid)userId,
+                requestingUserId: userId,
                 reservationId: reservationId,
                 startTime: request.StartTime,
                 endTime: request.EndTime,

@@ -77,6 +77,17 @@ namespace RoomReservation.Api.Controllers
             return NoContent();
         }
 
+        [RequirePermission(Permissions.RoleAssign)]
+        [HttpPost("{roleId:guid}/assign")]
+        public async Task<ActionResult> Assign([FromRoute] Guid roleId, [FromQuery] Guid userId, [UserId] Guid requestingUserId)
+        {
+            var result = await _roleService.AssignRoleAsync(roleId, userId, requestingUserId);
+            if (!result.IsSuccess)
+                return result.Error.ToActionResult();
+
+            return NoContent();
+        }
+
         private static RoleModel ToRoleRequest(RoleRequestDto request)
         {
             return new RoleModel(
