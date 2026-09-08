@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using RoomReservation.Api.Attributes;
 using RoomReservation.Api.Dtos.Users.Requests;
 using RoomReservation.Api.Dtos.Users.Responses;
@@ -13,6 +14,7 @@ using RoomReservation.Core.Results.Common;
 namespace RoomReservation.Api.Controllers
 {
     [Authorize]
+    [EnableRateLimiting("default")]
     [ApiController]
     [Route("[controller]")]
     public class UsersController(IUserService _userService) : ControllerBase

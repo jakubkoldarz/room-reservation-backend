@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using RoomReservation.Api.Attributes;
 using RoomReservation.Api.Dtos;
 using RoomReservation.Api.Dtos.Auth.Requests;
@@ -12,6 +13,7 @@ using System.Net;
 
 namespace RoomReservation.Api.Controllers
 {
+    [EnableRateLimiting("default")]
     [Route("[controller]")]
     [ApiController]
     public class AuthController(
@@ -20,6 +22,7 @@ namespace RoomReservation.Api.Controllers
         IPermissionService _permissionService,
         IRefreshTokenService _refreshTokenService) : ControllerBase
     {
+        [EnableRateLimiting("strict")]
         [HttpPost("register")]
         public async Task<ActionResult<JwtTokenResponseDto>> Register(RegisterRequestDto request)
         {
@@ -34,6 +37,7 @@ namespace RoomReservation.Api.Controllers
             return Ok(new JwtTokenResponseDto(result.Value.JwtToken));
         }
 
+        [EnableRateLimiting("strict")]
         [Authorize]
         [HttpPost("email/confirmation/verify")]
         public async Task<IActionResult> ConfirmEmail([UserId] Guid userId, VerificationCodedRequestDto request)
@@ -46,6 +50,7 @@ namespace RoomReservation.Api.Controllers
             return NoContent();
         }
 
+        [EnableRateLimiting("strict")]
         [HttpPost("login")]
         public async Task<ActionResult<LoginResponseDto>> Login(LoginRequestDto request)
         {
@@ -62,6 +67,7 @@ namespace RoomReservation.Api.Controllers
             return Ok(new LoginResponseDto(false, JwtToken: result.Value.JwtToken));
         }
 
+        [EnableRateLimiting("strict")]
         [HttpPost("login/2fa")]
         public async Task<ActionResult<JwtTokenResponseDto>> Verify2fa(VerificationRequestDto request)
         {
@@ -96,6 +102,7 @@ namespace RoomReservation.Api.Controllers
         }
 
         [Authorize]
+        [EnableRateLimiting("strict")]
         [HttpPost("logout")]
         public async Task<IActionResult> Logout([UserId] Guid userId)
         {
@@ -131,6 +138,7 @@ namespace RoomReservation.Api.Controllers
             return NoContent();
         }
 
+        [EnableRateLimiting("strict")]
         [HttpPost("refresh")]
         public async Task<ActionResult<JwtTokenResponseDto>> Refresh()
         {
@@ -150,7 +158,8 @@ namespace RoomReservation.Api.Controllers
 
         [Authorize]
         [RequireCompletedProfile]
-        [HttpPost("password")]
+        [EnableRateLimiting("strict")]
+        [HttpPatch("password")]
         public async Task<IActionResult> ChangePassword([UserId] Guid userId, ChangePasswordRequestDto request)
         {
             var result = await _authService.ChangePasswordAsync(userId, request.OldPassword, request.NewPassword);
@@ -162,7 +171,8 @@ namespace RoomReservation.Api.Controllers
 
         [Authorize]
         [RequireCompletedProfile]
-        [HttpPost("email")]
+        [EnableRateLimiting("strict")]
+        [HttpPatch("email")]
         public async Task<ActionResult<VerificationIdResponseDto>> ChangeEmail([UserId] Guid userId, EmailRequestDto request)
         {
             var result = await _authService.IssueChangeEmailAsync(userId, request.EmailAddress);
@@ -174,6 +184,7 @@ namespace RoomReservation.Api.Controllers
 
         [Authorize]
         [RequireCompletedProfile]
+        [EnableRateLimiting("strict")]
         [HttpPost("2fa/enable")]
         public async Task<ActionResult<VerificationIdResponseDto>> Enable2fa([UserId] Guid userId)
         {
@@ -185,6 +196,7 @@ namespace RoomReservation.Api.Controllers
         }
 
         [Authorize]
+        [EnableRateLimiting("strict")]
         [RequireCompletedProfile]
         [HttpPost("2fa/disable")]
         public async Task<ActionResult<VerificationIdResponseDto>> Disable2fa([UserId] Guid userId)
@@ -197,6 +209,7 @@ namespace RoomReservation.Api.Controllers
         }
 
         [Authorize]
+        [EnableRateLimiting("strict")]
         [HttpPost("email/verify")]
         public async Task<IActionResult> ConfirmEmailChange(VerificationRequestDto request)
         {
@@ -208,6 +221,7 @@ namespace RoomReservation.Api.Controllers
         }
 
         [Authorize]
+        [EnableRateLimiting("strict")]
         [HttpPost("email/confirmation")]
         public async Task<ActionResult<VerificationIdResponseDto>> SendEmailConfirmation([UserId] Guid userId)
         {
@@ -217,8 +231,6 @@ namespace RoomReservation.Api.Controllers
 
             return Ok(new VerificationIdResponseDto(result.Value));
         }
-
-
         private (string? ipAddress, string? userAgent) GetUserInfo()
         {
             var userAgent = Request.Headers.UserAgent.ToString();
