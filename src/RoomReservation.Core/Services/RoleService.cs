@@ -9,6 +9,25 @@ namespace RoomReservation.Core.Services
 {
     public class RoleService(IRoleRepository _roles, IUserRepository _users) : IRoleService
     {
+        public async Task<Result> AssignRoleAsync(Guid roleId, Guid userId, Guid requestingUserId)
+        {
+            if(userId == requestingUserId)
+                return new Error("You cannot assign a role to yourself.", ErrorType.BadRequest);
+
+            var user = await _users.GetByIdAsync(userId);
+            if(user is null)
+                return new Error("User not found.", ErrorType.NotFound);
+
+            var role = await _roles.GetByIdAsync(roleId);
+            if(role is null)
+                return new Error("Role not found.", ErrorType.NotFound);
+
+            user.RoleId = roleId;
+            await _users.UpdateAsync(user);
+
+            return Result.Success();
+        }
+
         public async Task<ResultT<Role>> CreateAsync(RoleModel request, bool force = false)
         {
             var result = await EnsureOnlyOneDefault(request, force);

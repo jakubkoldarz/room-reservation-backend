@@ -1,4 +1,6 @@
-﻿using RoomReservation.Core.Enums;
+﻿using RoomReservation.Core.Entities;
+using RoomReservation.Core.Enums;
+using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Results.Common;
 
@@ -27,9 +29,10 @@ namespace RoomReservation.Core.Services
             return await _permissions.UserHasPermissionAsync(userId, permission);
         }
 
-        public async Task<IReadOnlyList<string>> GetAllPermissionsAsync()
+        public async Task<PagedResult<Permission>> GetAllPermissionsAsync(PermissionFilter filters)
         {
-            return await _permissions.GetAllAsync();
+            var (Permissions, TotalCount) = await _permissions.GetFilteredAsync(filters);
+            return PagedResult<Permission>.Success(Permissions, TotalCount, filters.Page, filters.PageSize);
         }
     }
 }

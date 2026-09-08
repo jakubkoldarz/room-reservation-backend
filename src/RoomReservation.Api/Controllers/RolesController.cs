@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using RoomReservation.Api.Attributes;
 using RoomReservation.Api.Dtos.Roles.Requests;
 using RoomReservation.Api.Dtos.Roles.Responses;
@@ -13,6 +14,7 @@ using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Api.Controllers
 {
+    [EnableRateLimiting("default")]
     [Authorize]
     [Route("[controller]")]
     [ApiController]
@@ -71,6 +73,17 @@ namespace RoomReservation.Api.Controllers
         public async Task<ActionResult> Delete([FromRoute] Guid roleId)
         {
             var result = await _roleService.DeleteAsync(roleId);
+            if (!result.IsSuccess)
+                return result.Error.ToActionResult();
+
+            return NoContent();
+        }
+
+        [RequirePermission(Permissions.RoleAssign)]
+        [HttpPost("{roleId:guid}/assign")]
+        public async Task<ActionResult> Assign([FromRoute] Guid roleId, [FromQuery] Guid userId, [UserId] Guid requestingUserId)
+        {
+            var result = await _roleService.AssignRoleAsync(roleId, userId, requestingUserId);
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
