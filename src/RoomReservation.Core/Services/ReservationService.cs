@@ -1,4 +1,5 @@
 ﻿using Org.BouncyCastle.Asn1.Ocsp;
+using RoomReservation.Core.Emails;
 using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Filters;
@@ -226,88 +227,67 @@ namespace RoomReservation.Core.Services
 
         private async Task<Result> SendCancelNotification(User recipient, string cancelledByName, Reservation reservation)
         {
-            var subject = "Rezerwacja anulowana";
             var title = "Twoja rezerwacja została anulowana";
 
-            var messageResult = await _emailService.GetMessageAsync("CancelReservation", new Dictionary<string, string>
-            {
-                ["Title"] = title,
-                ["RoomName"] = reservation.Room.Identifier,
-                ["BuildingName"] = GetBuildingName(reservation.Room.Building.Name, reservation.Room.Building.Identifier),
-                ["Date"] = reservation.Date.ToString("dd-MM-yyyy"),
-                ["StartTime"] = reservation.StartTime.ToString("HH:mm"),
-                ["EndTime"] = reservation.EndTime.ToString("HH:mm"),
-                ["CancelReason"] = reservation.Reason ?? "Brak powodu podanego przez administratora",
-                ["CanceledBy"] = cancelledByName,
-                ["CancelledAt"] = reservation.CanceledAt!.Value.ToString("dd-MM-yyyy HH:mm"),
-            });
-
-            if (!messageResult.IsSuccess)
-                return messageResult.Error;
-
-            return await _emailService.SendEmailAsync(new EmailMessage
+            var messageToSend = new ReservationCancelledEmail
             {
                 To = recipient.Email,
-                Subject = subject,
-                HtmlMessage = messageResult.Value,
-            });
+                ActionUrl = "#",
+                Title = title,
+                RoomName = reservation.Room.Identifier,
+                BuildingName = GetBuildingName(reservation.Room.Building.Name, reservation.Room.Building.Identifier),
+                Date = reservation.Date,
+                StartTime = reservation.StartTime,
+                EndTime = reservation.EndTime,
+                CancelReason = reservation.Reason ?? "Brak powodu podanego przez administratora",
+                CancelledBy = cancelledByName,
+                CancelledAt = reservation.CanceledAt!.Value
+            };
+
+            return await _emailService.EnqueueEmailAsync(messageToSend);
         }
 
         private async Task<Result> SendRejectNotification(User recipient, string rejectedByName, Reservation reservation)
         {
-            var subject = "Rezerwacja odrzucona";
             var title = "Twoja prośba o rezerwacje została odrzucona";
 
-            var messageResult = await _emailService.GetMessageAsync("RejectReservation", new Dictionary<string, string>
-            {
-                ["Title"] = title,
-                ["RoomName"] = reservation.Room.Identifier,
-                ["BuildingName"] = GetBuildingName(reservation.Room.Building.Name, reservation.Room.Building.Identifier),
-                ["Date"] = reservation.Date.ToString("dd-MM-yyyy"),
-                ["StartTime"] = reservation.StartTime.ToString("HH:mm"),
-                ["EndTime"] = reservation.EndTime.ToString("HH:mm"),
-                ["RejectReason"] = reservation.Reason ?? "Brak powodu podanego przez administratora",
-                ["RejectedBy"] = rejectedByName,
-                ["RejectedAt"] = reservation.RejectedAt!.Value.ToString("dd-MM-yyyy HH:mm"),
-            });
-
-            if (!messageResult.IsSuccess)
-                return messageResult.Error;
-
-            return await _emailService.SendEmailAsync(new EmailMessage
+            var messageToSend = new ReservationRejectedEmail
             {
                 To = recipient.Email,
-                Subject = subject,
-                HtmlMessage = messageResult.Value,
-            });
+                ActionUrl = "#",
+                Title = title,
+                RoomName = reservation.Room.Identifier,
+                BuildingName = GetBuildingName(reservation.Room.Building.Name, reservation.Room.Building.Identifier),
+                Date = reservation.Date,
+                StartTime = reservation.StartTime,
+                EndTime = reservation.EndTime,
+                RejectReason = reservation.Reason ?? "Brak powodu podanego przez administratora",
+                RejectedBy = rejectedByName,
+                RejectedAt = reservation.RejectedAt!.Value
+            };
+
+            return await _emailService.EnqueueEmailAsync(messageToSend);
         }
 
         private async Task<Result> SendApproveNotification(User recipient, string approvedByName, Reservation reservation)
         {
-            var subject = "Rezerwacja zaakceptowana";
             var title = "Twoja rezerwacja została potwierdzona";
 
-            var messageResult = await _emailService.GetMessageAsync("ApproveReservation", new Dictionary<string, string>
-            {
-                ["Title"] = title,
-                ["RoomName"] = reservation.Room.Identifier,
-                ["BuildingName"] = GetBuildingName(reservation.Room.Building.Name, reservation.Room.Building.Identifier),
-                ["Date"] = reservation.Date.ToString("dd-MM-yyyy"),
-                ["StartTime"] = reservation.StartTime.ToString("HH:mm"),
-                ["EndTime"] = reservation.EndTime.ToString("HH:mm"),
-                ["ApprovedBy"] = approvedByName,
-                ["ApprovedAt"] = reservation.ApprovedAt!.Value.ToString("dd-MM-yyyy HH:mm"),
-            });
-
-            if (!messageResult.IsSuccess)
-                return messageResult.Error;
-
-            return await _emailService.SendEmailAsync(new EmailMessage
+            var messageToSend = new ReservationApprovedEmail
             {
                 To = recipient.Email,
-                Subject = subject,
-                HtmlMessage = messageResult.Value,
-            });
+                ActionUrl = "#",
+                Title = title,
+                RoomName = reservation.Room.Identifier,
+                BuildingName = GetBuildingName(reservation.Room.Building.Name, reservation.Room.Building.Identifier),
+                Date = reservation.Date,
+                StartTime = reservation.StartTime,
+                EndTime = reservation.EndTime,
+                ApprovedAt = reservation.ApprovedAt!.Value,
+                ApprovedBy = approvedByName
+            };
+
+            return await _emailService.EnqueueEmailAsync(messageToSend);
         }
 
         private static string GetBuildingName(string buildingName, string? buildingIdentifier) => $"{buildingName}" + $"{(buildingIdentifier != null ? $" ({buildingIdentifier})" : "")}";

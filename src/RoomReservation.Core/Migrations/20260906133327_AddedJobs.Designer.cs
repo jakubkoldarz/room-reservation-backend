@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RoomReservation.Core.Data;
@@ -11,9 +12,11 @@ using RoomReservation.Core.Data;
 namespace RoomReservation.Core.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260906133327_AddedJobs")]
+    partial class AddedJobs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -185,7 +188,7 @@ namespace RoomReservation.Core.Migrations
                     b.Property<int>("MaxAttempts")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("NextAttemptAt")
+                    b.Property<DateTime?>("NextAttemptAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Payload")

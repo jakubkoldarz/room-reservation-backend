@@ -13,11 +13,12 @@ services:
       - SMTP__Port=${SMTP_PORT}
       - SMTP__Email=${SMTP_EMAIL}
       - SMTP__Password=${SMTP_PASSWORD}
-      - ASPNETCORE_ENVIRONMENT=Development # Setting the environment to Development for local development
+      - ASPNETCORE_ENVIRONMENT=Development
     ports:
       - "5000:8080"
     depends_on:
-      - postgres-db
+      postgres-db:
+        condition: service_healthy
 
   postgres-db:
     image: postgres:16-alpine
@@ -27,7 +28,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     volumes:
-      - room_data:/var/lib/postgresql/
+      - room_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
@@ -44,10 +45,26 @@ services:
     ports:
       - "${PGADMIN_PORT}:80" 
     depends_on:
-      - postgres-db
+      postgres-db:
+        condition: service_healthy
     volumes:
       - pgadmin_data:/var/lib/pgadmin
- 
+
+  roomreservation.worker:
+    image: ${DOCKER_REGISTRY-}roomreservationworker
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres-db;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}
+      - SMTP__Host=${SMTP_HOST}
+      - SMTP__Port=${SMTP_PORT}
+      - SMTP__Email=${SMTP_EMAIL}
+      - SMTP__Password=${SMTP_PASSWORD}
+    build:
+      context: .
+      dockerfile: src/RoomReservation.Worker/Dockerfile
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+
 volumes:
   room_data:
   pgadmin_data:
