@@ -67,7 +67,6 @@ namespace RoomReservation.Core.Services
             mimeMessage.Body = new TextPart("html") { Text = renderResult.Value };
 
             using var client = new SmtpClient();
-            //client.AuthenticationMechanisms.Remove("GSSAPI");
             try
             {
                 await client.ConnectAsync(_smtpHost, _smtpPort, SecureSocketOptions.StartTls);

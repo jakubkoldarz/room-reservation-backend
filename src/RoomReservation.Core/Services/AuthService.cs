@@ -3,7 +3,6 @@ using RoomReservation.Core.Emails;
 using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Interfaces;
-using RoomReservation.Core.Models;
 using RoomReservation.Core.Results;
 using RoomReservation.Core.Results.Common;
 

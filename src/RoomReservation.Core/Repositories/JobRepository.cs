@@ -28,8 +28,8 @@ namespace RoomReservation.Core.Repositories
                         ""Attempts"" = ""Attempts"" + 1
                     WHERE ""Id"" = (
                         SELECT ""Id"" FROM jobs_queue
-                        WHERE ""Status"" = {JobStatus.Pending.ToString()}
-                          AND (""NextAttemptAt"" IS NULL OR ""NextAttemptAt"" <= now())
+                        WHERE (""Status"" = {JobStatus.Pending.ToString()} OR (""Status"" = {JobStatus.Failed.ToString()} AND ""Attempts"" < ""MaxAttempts""))
+                          AND (""NextAttemptAt"" <= now())
                         ORDER BY ""CreatedAt""
                         LIMIT 1
                         FOR UPDATE SKIP LOCKED
