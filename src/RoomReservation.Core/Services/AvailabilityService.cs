@@ -146,7 +146,7 @@ namespace RoomReservation.Core.Services
             return conflictingRooms;
         }
 
-        public async Task<ResultT<IReadOnlyList<Availability>>> ReplaceIfValidForRoomAsync(Room room, IReadOnlyList<AvailabilityModel> models, bool force = false)
+        public async Task<ResultT<IReadOnlyList<Reservation>>> ReplaceIfValidForRoomAsync(Room room, IReadOnlyList<AvailabilityModel> models, bool force = false)
         {
             var newAvailabilities = models.Select(a => new Availability
             {
@@ -169,7 +169,7 @@ namespace RoomReservation.Core.Services
             }
 
             await _availabilities.ReplaceForRoomAsync(room.Id, newAvailabilities);
-            return ResultT<IReadOnlyList<Availability>>.Success(newAvailabilities);
+            return ResultT<IReadOnlyList<Reservation>>.Success(conflicts);
         }
 
         public async Task<ResultT<IReadOnlyList<Availability>>> ReplaceIfValidForBuildingAsync(Building building, IReadOnlyList<AvailabilityModel> availabilityModels)
