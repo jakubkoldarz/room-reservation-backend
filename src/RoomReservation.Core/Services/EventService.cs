@@ -1,4 +1,5 @@
-﻿using RoomReservation.Core.Entities;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models.Events;
@@ -97,6 +98,7 @@ namespace RoomReservation.Core.Services
             }
 
             await _events.DeleteAsync(existingEvent);
+            await _reservationService.BulkForceCancelAsync(conflicts, "Zmiany administracyjne w dostępnosci sal");
             return Result.Success();
         }
 
@@ -166,6 +168,8 @@ namespace RoomReservation.Core.Services
             toUpdate.Rooms = [.. rooms];
 
             await _events.UpdateAsync(toUpdate);
+            await _reservationService.BulkForceCancelAsync(conflictingReservations, "Zmiany administracyjne");
+
             return ResultT<Event>.Success(toUpdate);
         }
 

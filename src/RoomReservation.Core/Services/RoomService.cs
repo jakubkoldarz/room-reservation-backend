@@ -11,6 +11,7 @@ namespace RoomReservation.Core.Services
     public class RoomService(
         IRoomRepository _rooms,
         IAvailabilityService _availabilityService,
+        IReservationService _reservationService,
         IReservationRepository _reservations,
         IBuildingRepository _buildings,
         IEquipmentRepository _equipment) : IRoomService
@@ -116,16 +117,19 @@ namespace RoomReservation.Core.Services
             if (existingRoom)
                 return new Error("Room with the same identifier already exists in the building", ErrorType.Conflict);
 
+            var replacementResult = await _availabilityService.ReplaceIfValidForRoomAsync(toUpdate, model.Availabilities, force);
+            if (!replacementResult.IsSuccess)
+                return replacementResult.Error;
+
+            if(replacementResult.Value.Any() && force)
+                await _reservationService.BulkForceCancelAsync(replacementResult.Value, "Zmiany administracyjne w godzinach dostępności sal");
+
             toUpdate.Identifier = model.Identifier;
             toUpdate.RequiresApproval = model.RequiresApproval;
             toUpdate.BuildingId = model.BuildingId;
             toUpdate.Floor = model.Floor;
             toUpdate.Capacity = model.Capacity;
             toUpdate.RoomEquipment = [.. model.EquipmentIds.Select(equipmentId => new RoomEquipment { EquipmentId = equipmentId })];
-
-            var replacementResult = await _availabilityService.ReplaceIfValidForRoomAsync(toUpdate, model.Availabilities, force);
-            if (!replacementResult.IsSuccess)
-                return replacementResult.Error;
 
             await _rooms.UpdateAsync(toUpdate);
             return ResultT<Room>.Success(toUpdate);

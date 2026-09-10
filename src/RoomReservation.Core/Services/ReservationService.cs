@@ -1,10 +1,8 @@
-﻿using Org.BouncyCastle.Asn1.Ocsp;
-using RoomReservation.Core.Emails;
+﻿using RoomReservation.Core.Emails;
 using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
-using RoomReservation.Core.Models;
 using RoomReservation.Core.Models.Availability;
 using RoomReservation.Core.Results.Common;
 
@@ -201,7 +199,7 @@ namespace RoomReservation.Core.Services
             return ResultT<Reservation>.Success(updatedReservation);
         }
 
-        public async Task<Result> ForceCancelAsync(Guid reservationId, string? reason, Guid cancelledById)
+        public async Task<Result> ForceCancelAsync(Guid reservationId, string? reason, Guid? cancelledById = null)
         {
             var reservationToUpdate = await _reservations.GetByIdAsync(reservationId);
             if (reservationToUpdate == null)
@@ -218,7 +216,10 @@ namespace RoomReservation.Core.Services
 
             if (reservationToUpdate.CreatedBy != null)
             {
-                var cancellingUser = await _users.GetByIdAsync(cancelledById);
+                User? cancellingUser = null;
+                if (cancelledById.HasValue)
+                    cancellingUser = await _users.GetByIdAsync(cancelledById.Value);
+
                 await SendCancelNotification(reservationToUpdate.CreatedBy, cancellingUser?.Firstname ?? "System", reservationToUpdate);
             }
 
@@ -316,13 +317,22 @@ namespace RoomReservation.Core.Services
             var activeReservations = await _reservations.GetActiveFutureByRoomIdsAsync([.. ev.Rooms.Select(rm => rm.Id)]);
             var relevantReservations = activeReservations.Where(r => ev.StartDate <= r.Date && r.Date <= ev.EndDate);
 
-            if(ev.IsClosed)
+            if (ev.IsClosed)
                 return [.. relevantReservations];
 
             var conflictingReservations = relevantReservations
                 .Where(r => !(ev.StartTime <= r.StartTime && r.EndTime <= ev.EndTime));
 
             return [.. conflictingReservations];
+        }
+
+        public async Task<Result> BulkForceCancelAsync(IReadOnlyList<Reservation> reservations, string? reason, Guid? cancelledById = null)
+        {
+            foreach (var reservation in reservations)
+            {
+                await ForceCancelAsync(reservation.Id, reason, cancelledById);
+            }
+            return Result.Success();
         }
     }
 }
