@@ -11,6 +11,7 @@ builder.Services.AddRateLimiterPolicies();
 builder.Services.AddCore(builder.Configuration);
 builder.Services.AddExceptionHandler<ExceptionHandler>();
 builder.Services.AddProblemDetails();
+builder.Services.AddCorsConfiguration(builder.Configuration);
 
 var app = builder.Build();
 app.UseExceptionHandler();
@@ -52,14 +53,12 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseCors("CorsPolicy");
+
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
-var names = typeof(EmailMessage).Assembly.GetManifestResourceNames();
-foreach (var name in names)
-    Console.WriteLine(name);
 
 app.Run();
 
