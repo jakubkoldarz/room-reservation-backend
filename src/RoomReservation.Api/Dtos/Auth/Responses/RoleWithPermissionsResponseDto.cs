@@ -1,7 +1,8 @@
 ﻿namespace RoomReservation.Api.Dtos.Auth.Responses
 {
-    public record RoleWithPermissionsResponseDto(
-        string Role,
-        string[] Permissions
-    );
+    public class RoleWithPermissionsResponseDto
+    {
+        public string Role { get; init; } = string.Empty;
+        public string[] Permissions { get; init; } = [];
+    }
 }

@@ -13,7 +13,7 @@ namespace RoomReservation.Api
             httpContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
             httpContext.Response.ContentType = "application/json";
 
-            var response = new ErrorResponse("Unexpected error occurred.", HttpStatusCode.InternalServerError);
+            var response = new ErrorResponse { Message = "Unexpected error occurred.", StatusCode = HttpStatusCode.InternalServerError };
 
             await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
             return true;

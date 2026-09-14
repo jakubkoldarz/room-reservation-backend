@@ -1,7 +1,7 @@
 ﻿namespace RoomReservation.Api.Dtos.Auth.Responses
 {
-    public record JwtTokenResponseDto
-    (
-        string JwtToken
-    );
+    public class JwtTokenResponseDto
+    {
+        public string JwtToken { get; init; } = string.Empty;
+    }
 }

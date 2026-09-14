@@ -2,9 +2,9 @@
 
 namespace RoomReservation.Api.Dtos.Equipment.Requests
 {
-    public record EquipmentRequestDto
-    (
-        [Required, MaxLength(50)] string Name,
-        [Required, MaxLength(50)] string Icon
-    );
+    public class EquipmentRequestDto
+    {
+        [Required, MaxLength(50)] public string Name { get; init; } = string.Empty;
+        [Required, MaxLength(50)] public string Icon { get; init; } = string.Empty;
+    }
 }

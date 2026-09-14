@@ -3,11 +3,11 @@ using RoomReservation.Api.Dtos.RefreshTokens.Responses;
 
 namespace RoomReservation.Api.Dtos.Users.Responses
 {
-    public record UserDetailsResponseDto
-    (
-        BasicUserResponseDto UserInfo,
-        UserAccountStatusResponseDto AccountStatus,
-        RoleWithPermissionsResponseDto RoleInfo,
-        IEnumerable<RefreshTokenResponseDto> RefreshTokens
-    );
+    public class UserDetailsResponseDto
+    {
+        public BasicUserResponseDto UserInfo { get; init; } = null!;
+        public UserAccountStatusResponseDto AccountStatus { get; init; } = null!;
+        public RoleWithPermissionsResponseDto RoleInfo { get; init; } = null!;
+        public IEnumerable<RefreshTokenResponseDto> RefreshTokens { get; init; } = [];
+    }
 }

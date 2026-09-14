@@ -2,7 +2,8 @@
 
 namespace RoomReservation.Api.Dtos.Auth.Requests
 {
-    public record EmailRequestDto(
-        [Required, EmailAddress] string EmailAddress
-    );
+    public class EmailRequestDto
+    {
+        [Required, EmailAddress] public required string EmailAddress { get; init; }
+    }
 }

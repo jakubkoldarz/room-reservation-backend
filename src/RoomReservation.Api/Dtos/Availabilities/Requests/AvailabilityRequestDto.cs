@@ -2,9 +2,11 @@
 
 namespace RoomReservation.Api.Dtos.Availabilities.Requests
 {
-    public record AvailabilityRequestDto(
-        [Required] DayOfWeek DayOfWeek,
-        [Required] TimeOnly StartTime,
-        [Required] TimeOnly EndTime
-    );
+    public class AvailabilityRequestDto
+    {
+        [Required] public required DayOfWeek DayOfWeek { get; init; }
+        [Required] public required TimeOnly StartTime { get; init; }
+        [Required] public required TimeOnly EndTime { get; init; }
+    }
 }
+    

@@ -7,12 +7,14 @@ namespace RoomReservation.Api.Extensions.Mappers
     {
         public static RoleResponseDto ToDto(this Role role)
         {
-            return new RoleResponseDto(
-                Id: role.Id, 
-                Name: role.Name, 
-                IsDefault: role.IsDefault, 
-                IsSuperAdmin: role.IsSuperAdmin,
-                Permissions: [.. role.RolePermissions.Select(rp => rp.Permission.Name)]);
+            return new RoleResponseDto
+            {
+                Id = role.Id,
+                Name = role.Name,
+                IsDefault = role.IsDefault,
+                IsSuperAdmin = role.IsSuperAdmin,
+                Permissions = [.. role.RolePermissions.Select(rp => rp.Permission.Name)]
+            };
         }
     }
 }

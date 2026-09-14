@@ -90,10 +90,11 @@ namespace RoomReservation.Api.Extensions
                         .Select(x => x.ErrorMessage)
                         .FirstOrDefault() ?? "Validation error";
 
-                    var response = new ErrorResponse(
-                        error,
-                        HttpStatusCode.BadRequest
-                    );
+                    var response = new ErrorResponse
+                    {
+                        Message = error,
+                        StatusCode = HttpStatusCode.BadRequest
+                    };
 
                     return new BadRequestObjectResult(response);
                 };

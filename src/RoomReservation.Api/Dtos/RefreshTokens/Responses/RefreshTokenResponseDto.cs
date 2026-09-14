@@ -1,11 +1,11 @@
 ﻿namespace RoomReservation.Api.Dtos.RefreshTokens.Responses
 {
-    public record RefreshTokenResponseDto
-    (
-        Guid Id,
-        DateTime Created,
-        DateTime Expires,
-        string? IpAddress = null,
-        string? UserAgent = null
-    );
+    public class RefreshTokenResponseDto
+    {
+        public Guid Id { get; init; }
+        public DateTime Created { get; init; }
+        public DateTime Expires { get; init; }
+        public string? IpAddress { get; init; }
+        public string? UserAgent { get; init; }
+    }
 }

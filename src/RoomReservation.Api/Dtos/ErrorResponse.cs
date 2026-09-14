@@ -2,9 +2,11 @@
 
 namespace RoomReservation.Api.Dtos
 {
-    public record ErrorResponse(
-        string Message,
-        HttpStatusCode StatusCode,
-        IEnumerable<object>? ConflictingItems = null
-    );
+    public class ErrorResponse
+    {
+        public required string Message { get; set; }
+        public HttpStatusCode StatusCode { get; set; }
+        public IEnumerable<object>? ConflictingItems { get; set; } = null;
+    }
+
 }

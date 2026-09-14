@@ -1,9 +1,9 @@
 ﻿namespace RoomReservation.Api.Dtos.Users.Responses
 {
-    public record UserAccountStatusResponseDto
-    (
-        bool HasProfileCompleted,
-        bool HasEmailVerified,
-        bool Has2faEnabled
-    );
+    public class UserAccountStatusResponseDto
+    {
+        public bool HasProfileCompleted { get; init; }
+        public bool HasEmailVerified { get; init; }
+        public bool Has2faEnabled { get; init; }
+    }
 }

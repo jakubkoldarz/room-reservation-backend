@@ -8,11 +8,11 @@ namespace RoomReservation.Api.Extensions.Mappers
         public static AvailabilityResponseDto ToDto(this Availability availability)
         {
             return new AvailabilityResponseDto
-            (
-                DayOfWeek: availability.DayOfWeek,
-                StartTime: availability.StartTime,
-                EndTime: availability.EndTime
-            );
+            { 
+                DayOfWeek = availability.DayOfWeek,
+                StartTime = availability.StartTime,
+                EndTime = availability.EndTime
+            };
         }
     }
 }

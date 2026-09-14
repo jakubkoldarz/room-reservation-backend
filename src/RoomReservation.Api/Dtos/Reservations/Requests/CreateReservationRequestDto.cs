@@ -2,12 +2,12 @@
 
 namespace RoomReservation.Api.Dtos.Reservations.Requests
 {
-    public record CreateReservationRequestDto
-    (
-        [Required] Guid RoomId,
-        [Required] DateOnly Date,
-        [Required] TimeOnly StartTime,
-        [Required] TimeOnly EndTime,
-        [MaxLength(100)] string? Purpose
-    );
+    public class CreateReservationRequestDto
+    {
+        [Required] public Guid RoomId { get; init; }
+        [Required] public DateOnly Date { get; init; }
+        [Required] public TimeOnly StartTime { get; init; }
+        [Required] public TimeOnly EndTime { get; init; }
+        [MaxLength(100)] public string? Purpose { get; init; }
+    }
 }

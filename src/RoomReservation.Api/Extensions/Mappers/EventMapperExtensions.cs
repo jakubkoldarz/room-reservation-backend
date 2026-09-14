@@ -7,9 +7,17 @@ namespace RoomReservation.Api.Extensions.Mappers
     {
         public static EventResponseDto ToDto(this Event ev)
         {
-            return new EventResponseDto(
-                ev.Id, ev.Name, ev.StartDate, ev.EndDate, ev.IsClosed, ev.StartTime, ev.EndTime,
-                [.. ev.Rooms.Select(r => r.ToBasicDto())]);
+            return new EventResponseDto 
+            {
+                Id = ev.Id,
+                Name = ev.Name,
+                StartDate = ev.StartDate,
+                EndDate = ev.EndDate,
+                IsClosed = ev.IsClosed,
+                StartTime = ev.StartTime,
+                EndTime = ev.EndTime,
+                Rooms = [.. ev.Rooms.Select(r => r.ToBasicDto())]
+            };
         }
     }
 }

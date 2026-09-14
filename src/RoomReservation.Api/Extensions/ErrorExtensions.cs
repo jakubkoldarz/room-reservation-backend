@@ -23,11 +23,11 @@ namespace RoomReservation.Api.Extensions
             object body;
             if(error is IConflictError conflictingError)
             {
-                body = new ErrorResponse(message, statusCode, conflictingError.ConflictingItems);
+                body = new ErrorResponse { Message = message, StatusCode = statusCode, ConflictingItems = conflictingError.ConflictingItems };
             }
             else
             {
-                body = new ErrorResponse(message, statusCode);
+                body = new ErrorResponse { Message = message, StatusCode = statusCode };
             }
 
             return new ObjectResult(body)
