@@ -4,11 +4,11 @@ using RoomReservation.Api.Dtos.Reservations.Responses;
 
 namespace RoomReservation.Api.Dtos.Rooms.Responses
 {
-    public record RoomDetailsResponseDto
-    (
-        RoomResponseDto Details,
-        IReadOnlyList<ReservationResponseDto> Reservations,
-        IReadOnlyList<AvailabilityResponseDto> Availabilities,
-        IReadOnlyList<EventResponseDto> Events
-    );
+    public class RoomDetailsResponseDto
+    {
+        public RoomResponseDto Details { get; init; } = null!;
+        public IReadOnlyList<ReservationResponseDto> Reservations { get; init; } = [];
+        public IReadOnlyList<AvailabilityResponseDto> Availabilities { get; init; } = [];
+        public IReadOnlyList<EventResponseDto> Events { get; init; } = [];
+    }
 }

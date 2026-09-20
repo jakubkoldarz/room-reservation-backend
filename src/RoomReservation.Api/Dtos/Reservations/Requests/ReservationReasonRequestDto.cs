@@ -2,8 +2,8 @@
 
 namespace RoomReservation.Api.Dtos.Reservations.Requests
 {
-    public record ReservationReasonRequestDto
-    (
-        [MaxLength(100)] string? Reason
-    );
+    public class ReservationReasonRequestDto
+    {
+        [MaxLength(100)] public string? Reason { get; init; }
+    }
 }

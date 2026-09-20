@@ -2,9 +2,9 @@
 
 namespace RoomReservation.Api.Dtos.Reservations.Responses
 {
-    public record ReservationActorResponseDto
-    (
-        DateTime At,
-        BasicUserResponseDto By
-    );
+    public class ReservationActorResponseDto
+    {
+        public DateTime At { get; init; }
+        public BasicUserResponseDto By { get; init; }
+    }
 }

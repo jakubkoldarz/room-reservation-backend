@@ -17,7 +17,7 @@ namespace RoomReservation.Api.Extensions
                         factory: _ => new SlidingWindowRateLimiterOptions
                         {
                             Window = TimeSpan.FromMinutes(1),
-                            PermitLimit = 5,
+                            PermitLimit = 10,
                             SegmentsPerWindow = 4,
                             QueueLimit = 0
                         }

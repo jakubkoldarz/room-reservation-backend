@@ -1,8 +1,9 @@
 ﻿namespace RoomReservation.Api.Dtos.Auth.Responses
 {
-    public record LoginResponseDto(
-        bool Requires2FA,
-        Guid? VerificationId = null,
-        string? JwtToken = null
-    );
+    public class LoginResponseDto
+    {
+        public bool Requires2FA { get; init; }
+        public Guid? VerificationId { get; init; }
+        public string? JwtToken { get; init; }
+    }
 }

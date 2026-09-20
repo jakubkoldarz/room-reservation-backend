@@ -2,11 +2,12 @@
 
 namespace RoomReservation.Api.Dtos.Roles.Requests
 {
-    public record RoleRequestDto(
-        [Required, MaxLength(50)] string Name,
-        [MaxLength(200)] string? Description,
-        [Required] bool IsDefault,
-        [Required] bool IsSuperAdmin,
-        [Required] IReadOnlyList<Guid> PermissionIds
-    );
+    public class RoleRequestDto
+    {
+        [Required, MaxLength(50)] public string Name { get; init; } = string.Empty;
+        [MaxLength(200)] public string? Description { get; init; }
+        [Required] public bool IsDefault { get; init; }
+        [Required] public bool IsSuperAdmin { get; init; }
+        [Required] public IReadOnlyList<Guid> PermissionIds { get; init; } = [];
+    }
 }

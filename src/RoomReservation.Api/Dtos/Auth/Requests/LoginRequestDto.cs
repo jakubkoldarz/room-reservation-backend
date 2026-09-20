@@ -1,12 +1,10 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
-using System.Runtime.InteropServices;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace RoomReservation.Api.Dtos.Auth.Requests
 {
-    public record LoginRequestDto
-    (
-        [Required, EmailAddress] string Email,
-        [Required] string Password
-    );
+    public class LoginRequestDto
+    {
+        [Required, EmailAddress] public required string Email { get; init; }
+        [Required] public required string Password { get; init; }
+    }
 }

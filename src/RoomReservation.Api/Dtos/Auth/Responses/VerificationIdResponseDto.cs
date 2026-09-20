@@ -1,7 +1,7 @@
 ﻿namespace RoomReservation.Api.Dtos.Auth.Responses
 {
-    public record VerificationIdResponseDto
-    (
-        Guid VerificationId
-    );
+    public class VerificationIdResponseDto
+    {
+        public Guid VerificationId { get; init; }
+    }
 }

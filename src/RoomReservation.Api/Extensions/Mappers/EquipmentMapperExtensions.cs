@@ -8,11 +8,11 @@ namespace RoomReservation.Api.Extensions.Mappers
         public static EquipmentResponseDto ToBasicDto(this Equipment equipment)
         {
             return new EquipmentResponseDto
-            (
-                equipment.Id,
-                equipment.Name,
-                equipment.Icon
-            );
+            { 
+                Id = equipment.Id,
+                Name = equipment.Name,
+                Icon = equipment.Icon
+            };
         }
     }
 }

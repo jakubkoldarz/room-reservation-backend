@@ -7,13 +7,14 @@ namespace RoomReservation.Api.Extensions.Mappers
     {
         public static RefreshTokenResponseDto ToDto(this RefreshToken refreshToken)
         {
-            return new RefreshTokenResponseDto(
-                refreshToken.Id,
-                refreshToken.CreatedAt,
-                refreshToken.ExpiresAt,
-                refreshToken.IpAddress,
-                refreshToken.UserAgent
-            );
+            return new RefreshTokenResponseDto
+            {
+                Id = refreshToken.Id,
+                Created = refreshToken.CreatedAt,
+                Expires = refreshToken.ExpiresAt,
+                IpAddress = refreshToken.IpAddress,
+                UserAgent = refreshToken.UserAgent
+            };
         }
     }
 }

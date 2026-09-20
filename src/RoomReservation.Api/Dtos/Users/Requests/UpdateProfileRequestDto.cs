@@ -2,9 +2,9 @@
 
 namespace RoomReservation.Api.Dtos.Users.Requests
 {
-    public record UpdateProfileRequestDto
-    (
-        [Required, MinLength(3), MaxLength(50)] string Firstname,
-        [Required, MaxLength(100)] string Lastname
-    );
+    public class UpdateProfileRequestDto
+    {
+        [Required, MinLength(3), MaxLength(50)] public required string Firstname { get; init; }
+        [Required, MaxLength(100)] public required string Lastname { get; init; } 
+    }
 }

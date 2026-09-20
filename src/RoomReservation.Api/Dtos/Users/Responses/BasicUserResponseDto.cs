@@ -1,9 +1,9 @@
 ﻿namespace RoomReservation.Api.Dtos.Users.Responses
 {
-    public record BasicUserResponseDto
-    (
-        Guid Id,
-        string? Firstname, 
-        string? Lastname
-    );
+    public class BasicUserResponseDto
+    {
+        public Guid Id { get; init; }
+        public string? Firstname { get; init; }
+        public string? Lastname { get; init; }
+    }
 }

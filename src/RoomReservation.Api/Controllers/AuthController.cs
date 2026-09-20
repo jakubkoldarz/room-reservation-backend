@@ -20,7 +20,8 @@ namespace RoomReservation.Api.Controllers
         IAuthService _authService,
         IUserService _userService,
         IPermissionService _permissionService,
-        IRefreshTokenService _refreshTokenService) : ControllerBase
+        IRefreshTokenService _refreshTokenService,
+        IWebHostEnvironment _webHostEnvironment) : ControllerBase
     {
         [EnableRateLimiting("strict")]
         [HttpPost("register")]
@@ -33,8 +34,8 @@ namespace RoomReservation.Api.Controllers
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
-            Response.Cookies.AppendRefreshToken(result.Value.RefreshToken);
-            return Ok(new JwtTokenResponseDto(result.Value.JwtToken));
+            Response.Cookies.AppendRefreshToken(result.Value.RefreshToken, _webHostEnvironment.IsDevelopment());
+            return Ok(new JwtTokenResponseDto { JwtToken = result.Value.JwtToken });
         }
 
         [EnableRateLimiting("strict")]
@@ -61,10 +62,10 @@ namespace RoomReservation.Api.Controllers
                 return result.Error.ToActionResult();
 
             if (result.Value.Requires2FA)
-                return Accepted(new LoginResponseDto(true, VerificationId: result.Value.VerificationId));
+                return Accepted(new LoginResponseDto { Requires2FA = true, VerificationId = result.Value.VerificationId });
 
-            Response.Cookies.AppendRefreshToken(result.Value.RefreshToken);
-            return Ok(new LoginResponseDto(false, JwtToken: result.Value.JwtToken));
+            Response.Cookies.AppendRefreshToken(result.Value.RefreshToken, _webHostEnvironment.IsDevelopment());
+            return Ok(new LoginResponseDto { Requires2FA = false, JwtToken = result.Value.JwtToken });
         }
 
         [EnableRateLimiting("strict")]
@@ -81,8 +82,8 @@ namespace RoomReservation.Api.Controllers
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
-            Response.Cookies.AppendRefreshToken(result.Value.RefreshToken);
-            return Ok(new JwtTokenResponseDto(result.Value.JwtToken));
+            Response.Cookies.AppendRefreshToken(result.Value.RefreshToken, _webHostEnvironment.IsDevelopment());
+            return Ok(new JwtTokenResponseDto { JwtToken = result.Value.JwtToken });
         }
 
         [Authorize]
@@ -108,11 +109,11 @@ namespace RoomReservation.Api.Controllers
         {
             var cookieExist = Request.Cookies.TryGetValue("refreshToken", out var refreshToken);
             if (!cookieExist || string.IsNullOrEmpty(refreshToken))
-                return BadRequest(new ErrorResponse("You are not logged in", HttpStatusCode.BadRequest));
+                return BadRequest(new ErrorResponse { Message = "You are not logged in", StatusCode = HttpStatusCode.BadRequest });
 
             await _refreshTokenService.RevokeAsync(userId, refreshToken);
 
-            Response.Cookies.DeleteRefreshToken();
+            Response.Cookies.DeleteRefreshToken(_webHostEnvironment.IsDevelopment());
             return NoContent();
         }
 
@@ -144,16 +145,16 @@ namespace RoomReservation.Api.Controllers
         {
             var cookieExist = Request.Cookies.TryGetValue("refreshToken", out var refreshToken);
             if (!cookieExist || string.IsNullOrEmpty(refreshToken))
-                return Unauthorized(new ErrorResponse("You are not logged in", HttpStatusCode.Unauthorized));
+                return Unauthorized(new ErrorResponse { Message = "You are not logged in", StatusCode = HttpStatusCode.Unauthorized });
 
             var (ipAddress, userAgent) = GetUserInfo();
 
             var tokensResponse = await _refreshTokenService.RotateTokenAsync(refreshToken, ipAddress, userAgent);
             if (!tokensResponse.IsSuccess)
                 return tokensResponse.Error.ToActionResult();
-            Response.Cookies.AppendRefreshToken(tokensResponse.Value.refreshToken);
+            Response.Cookies.AppendRefreshToken(tokensResponse.Value.refreshToken, _webHostEnvironment.IsDevelopment());
 
-            return Ok(new JwtTokenResponseDto(tokensResponse.Value.jwtToken));
+            return Ok(new JwtTokenResponseDto { JwtToken = tokensResponse.Value.jwtToken });
         }
 
         [Authorize]
@@ -179,7 +180,7 @@ namespace RoomReservation.Api.Controllers
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
-            return Ok(new VerificationIdResponseDto(result.Value.Id));
+            return Ok(new VerificationIdResponseDto { VerificationId = result.Value.Id });
         }
 
         [Authorize]
@@ -229,7 +230,7 @@ namespace RoomReservation.Api.Controllers
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
-            return Ok(new VerificationIdResponseDto(result.Value));
+            return Ok(new VerificationIdResponseDto { VerificationId = result.Value });
         }
         private (string? ipAddress, string? userAgent) GetUserInfo()
         {

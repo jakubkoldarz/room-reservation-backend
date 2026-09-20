@@ -1,9 +1,9 @@
 ﻿namespace RoomReservation.Api.Dtos.Availabilities.Responses
 {
-    public record AvailabilityResponseDto
-    (
-        DayOfWeek DayOfWeek,
-        TimeOnly StartTime,
-        TimeOnly EndTime
-    );
+    public class AvailabilityResponseDto
+    {
+        public DayOfWeek DayOfWeek { get; init; }
+        public TimeOnly StartTime { get; init; }
+        public TimeOnly EndTime { get; init; }
+    }
 }

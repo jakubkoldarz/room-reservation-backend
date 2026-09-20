@@ -2,14 +2,17 @@
 
 namespace RoomReservation.Api.Dtos.Events.Responses
 {
-    public record EventResponseDto(
-        Guid Id,
-        string Name,
-        DateOnly StartDate,
-        DateOnly EndDate,
-        bool IsClosed,
-        TimeOnly? StartTime,
-        TimeOnly? EndTime,
-        IReadOnlyList<BasicRoomResponseDto> Rooms
-    );
+    public class EventResponseDto
+    {
+        public Guid Id { get; init; }
+        public string Name { get; init; } = string.Empty;
+        public DateOnly StartDate { get; init; }
+        public DateOnly EndDate { get; init; }
+        public bool IsClosed { get; init; }
+        public TimeOnly? StartTime { get; init; }
+        public TimeOnly? EndTime { get; init; }
+        public IReadOnlyList<BasicRoomResponseDto> Rooms { get; init; } = [];
+
+    }
+
 }

@@ -7,7 +7,11 @@ namespace RoomReservation.Api.Extensions.Mappers
     {
         public static PermissionResponseDto ToDto(this Permission permission)
         {
-            return new(permission.Id, permission.Name);
+            return new()
+            {
+                Id = permission.Id,
+                Name = permission.Name
+            };
         }
     }
 }
