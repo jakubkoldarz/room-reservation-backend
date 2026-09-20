@@ -97,7 +97,7 @@ namespace RoomReservation.Core.Services
                 var codeResult = await _verificationCodeService.GenerateCodeAsync(user.Id, VerificationCodeType.TwoFactorLogin);
                 if (!codeResult.IsSuccess)
                     return new Error(
-                        $"Verification code failed to generate: ${codeResult.Error.ErrorMessage}",
+                        $"Verification code failed to generate: {codeResult.Error.ErrorMessage}",
                         ErrorType.Internal
                     );
 
@@ -236,7 +236,7 @@ namespace RoomReservation.Core.Services
                 VerificationCodeType.TwoFactorLogin);
 
             if (!validationResult.IsSuccess)
-                return new Error($"Verification failed: ${validationResult.Error}", ErrorType.BadRequest);
+                return new Error($"Verification failed: {validationResult.Error}", ErrorType.BadRequest);
 
             var tokensResult = await IssueTokensAsync(validationResult.Value.UserId, ipAddress, userAgent);
             return tokensResult;

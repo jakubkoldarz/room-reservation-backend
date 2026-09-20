@@ -20,7 +20,8 @@ namespace RoomReservation.Api.Controllers
         IAuthService _authService,
         IUserService _userService,
         IPermissionService _permissionService,
-        IRefreshTokenService _refreshTokenService) : ControllerBase
+        IRefreshTokenService _refreshTokenService,
+        IWebHostEnvironment _webHostEnvironment) : ControllerBase
     {
         [EnableRateLimiting("strict")]
         [HttpPost("register")]
@@ -33,7 +34,7 @@ namespace RoomReservation.Api.Controllers
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
-            Response.Cookies.AppendRefreshToken(result.Value.RefreshToken);
+            Response.Cookies.AppendRefreshToken(result.Value.RefreshToken, _webHostEnvironment.IsDevelopment());
             return Ok(new JwtTokenResponseDto { JwtToken = result.Value.JwtToken });
         }
 
@@ -63,7 +64,7 @@ namespace RoomReservation.Api.Controllers
             if (result.Value.Requires2FA)
                 return Accepted(new LoginResponseDto { Requires2FA = true, VerificationId = result.Value.VerificationId });
 
-            Response.Cookies.AppendRefreshToken(result.Value.RefreshToken);
+            Response.Cookies.AppendRefreshToken(result.Value.RefreshToken, _webHostEnvironment.IsDevelopment());
             return Ok(new LoginResponseDto { Requires2FA = false, JwtToken = result.Value.JwtToken });
         }
 
@@ -81,7 +82,7 @@ namespace RoomReservation.Api.Controllers
             if (!result.IsSuccess)
                 return result.Error.ToActionResult();
 
-            Response.Cookies.AppendRefreshToken(result.Value.RefreshToken);
+            Response.Cookies.AppendRefreshToken(result.Value.RefreshToken, _webHostEnvironment.IsDevelopment());
             return Ok(new JwtTokenResponseDto { JwtToken = result.Value.JwtToken });
         }
 
@@ -112,7 +113,7 @@ namespace RoomReservation.Api.Controllers
 
             await _refreshTokenService.RevokeAsync(userId, refreshToken);
 
-            Response.Cookies.DeleteRefreshToken();
+            Response.Cookies.DeleteRefreshToken(_webHostEnvironment.IsDevelopment());
             return NoContent();
         }
 
@@ -151,7 +152,7 @@ namespace RoomReservation.Api.Controllers
             var tokensResponse = await _refreshTokenService.RotateTokenAsync(refreshToken, ipAddress, userAgent);
             if (!tokensResponse.IsSuccess)
                 return tokensResponse.Error.ToActionResult();
-            Response.Cookies.AppendRefreshToken(tokensResponse.Value.refreshToken);
+            Response.Cookies.AppendRefreshToken(tokensResponse.Value.refreshToken, _webHostEnvironment.IsDevelopment());
 
             return Ok(new JwtTokenResponseDto { JwtToken = tokensResponse.Value.jwtToken });
         }

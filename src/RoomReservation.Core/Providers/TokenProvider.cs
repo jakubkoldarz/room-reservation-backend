@@ -22,7 +22,7 @@ namespace RoomReservation.Core.Providers
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new(JwtRegisteredClaimNames.Iss, issuer!),
                 new(JwtRegisteredClaimNames.Aud, audience!),
             };
