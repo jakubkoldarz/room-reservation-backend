@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using RoomReservation.Api.Dtos;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Results.Common;
-using System.Net;
 
 namespace RoomReservation.Api.Extensions
 {
@@ -10,30 +9,33 @@ namespace RoomReservation.Api.Extensions
     {
         public static ActionResult ToActionResult(this Error error)
         {
-            var (message, statusCode) = error.ErrorType switch
+            var statusCode = error.ErrorType switch
             {
-                ErrorType.BadRequest => (error.ErrorMessage, HttpStatusCode.BadRequest),
-                ErrorType.NotFound => (error.ErrorMessage, HttpStatusCode.NotFound),
-                ErrorType.Unauthorized => (error.ErrorMessage, HttpStatusCode.Unauthorized),
-                ErrorType.Forbidden => (error.ErrorMessage, HttpStatusCode.Forbidden),
-                ErrorType.Conflict => (error.ErrorMessage, HttpStatusCode.Conflict),
-                _ => ("Internal server error", HttpStatusCode.InternalServerError)
+                ErrorType.BadRequest => StatusCodes.Status400BadRequest,
+                ErrorType.NotFound => StatusCodes.Status404NotFound,
+                ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
+                ErrorType.Forbidden => StatusCodes.Status403Forbidden,
+                ErrorType.Conflict => StatusCodes.Status409Conflict,
+                _ => StatusCodes.Status500InternalServerError
             };
 
-            object body;
-            if(error is IConflictError conflictingError)
+            var problem = new ProblemDetails
             {
-                body = new ErrorResponse { Message = message, StatusCode = statusCode, ConflictingItems = conflictingError.ConflictingItems };
-            }
-            else
-            {
-                body = new ErrorResponse { Message = message, StatusCode = statusCode };
-            }
-
-            return new ObjectResult(body)
-            {
-                StatusCode = (int)statusCode
+                Status = statusCode,
+                Title = ReasonPhrases.GetReasonPhrase(statusCode),
+                Detail = statusCode == StatusCodes.Status500InternalServerError ? "Internal server error" : error.ErrorMessage
             };
+
+            if (error is IConflictError conflictError)
+                problem.Extensions["conflictingItems"] = conflictError.ConflictingItems;
+
+            return new ObjectResult(problem) { StatusCode = statusCode };
         }
+
+        public static ActionResult ToActionResult(this Result result, Func<ActionResult> onSuccess)
+            => result.IsSuccess ? onSuccess() : result.Error.ToActionResult();
+
+        public static ActionResult ToActionResult<T>(this ResultT<T> result, Func<T, ActionResult> onSuccess)
+            => result.IsSuccess ? onSuccess(result.Value) : result.Error.ToActionResult();
     }
 }

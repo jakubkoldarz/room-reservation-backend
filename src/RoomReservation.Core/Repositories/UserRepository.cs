@@ -1,62 +1,52 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using RoomReservation.Core.Data;
 using RoomReservation.Core.Entities;
+using RoomReservation.Core.Extensions;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using RoomReservation.Core.Models;
 
 namespace RoomReservation.Core.Repositories
 {
-    public class UserRepository(AppDbContext _db) : IUserRepository
+    public class UserRepository(AppDbContext db, TimeProvider timeProvider) : IUserRepository
     {
         public void Add(User user)
-            => _db.Users.Add(user);
+            => db.Users.Add(user);
         public async Task<User?> GetByEmailAsync(string email)
         {
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+            var user = await db.Users.FirstOrDefaultAsync(u => u.Email == email);
             return user;
         }
         public async Task<User?> GetByIdAsync(Guid userId)
         {
-            var user = await _db.Users
-                .Include(u => u.RefreshTokens.Where(rt => (rt.RevokedAt == null) && !(DateTime.UtcNow >= rt.ExpiresAt)))
+            var now = timeProvider.UtcNow();
+            var user = await db.Users
+                .Include(u => u.RefreshTokens.Where(rt => rt.RevokedAt == null && rt.ExpiresAt > now))
                 .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Id == userId);
             return user;
         }
-        public async Task<(IReadOnlyList<User> Users, int TotalCount)> GetFilteredAsync(UserFilter filters)
+        public async Task<PagedList<User>> GetFilteredAsync(UserFilter filters)
         {
-            var users = _db.Users.AsQueryable();
+            var users = db.Users.AsNoTracking();
 
             if (!string.IsNullOrEmpty(filters.Firstname))
                 users = users.Where(u => !string.IsNullOrEmpty(u.Firstname) && EF.Functions.ILike(u.Firstname, $"%{filters.Firstname.Trim()}%"));
 
-            if (!string.IsNullOrEmpty(filters.Lastname)) 
+            if (!string.IsNullOrEmpty(filters.Lastname))
                 users = users.Where(u => !string.IsNullOrEmpty(u.Lastname) && EF.Functions.ILike(u.Lastname, $"%{filters.Lastname.Trim()}%"));
 
-            if (!string.IsNullOrEmpty(filters.Email)) 
+            if (!string.IsNullOrEmpty(filters.Email))
                 users = users.Where(u => EF.Functions.ILike(u.Email, $"%{filters.Email.Trim()}%"));
 
             if(filters.RoleId.HasValue)
                 users = users.Where(u => u.RoleId == filters.RoleId.Value);
 
-            var totalCount = await users.CountAsync();
-
-            var filteredUsers = await users
-                .Skip((filters.Page - 1) * filters.PageSize)
-                .Take(filters.PageSize)
-                .ToListAsync();
-
-            return (filteredUsers, totalCount);
-        }
-        public async Task<bool> IsProfileCompletedAsync(Guid userId)
-        {
-            return await _db.Users
-                .Where(u => u.Id == userId)
-                .Select(u => u.IsProfileComplete)
-                .SingleOrDefaultAsync();
+            return await users
+                .OrderBy(u => u.Lastname)
+                .ThenBy(u => u.Firstname)
+                .ThenBy(u => u.Id)
+                .ToPagedListAsync(filters);
         }
     }
 }

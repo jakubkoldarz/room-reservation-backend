@@ -2,9 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using RoomReservation.Api;
 using RoomReservation.Api.Extensions;
 using RoomReservation.Core.Data;
-using RoomReservation.Core.Emails;
 using Scalar.AspNetCore;
-using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,37 +12,28 @@ builder.Services.AddExceptionHandler<ExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddCorsConfiguration(builder.Configuration);
 
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
-});
-
 var app = builder.Build();
 app.UseExceptionHandler();
+app.UseStatusCodePages();
 
 using (var scope = app.Services.CreateScope())
 {
-    var services = scope.ServiceProvider;
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {
-        var context = services.GetRequiredService<AppDbContext>();
-        context.Database.Migrate();
-        Console.WriteLine("--> Migration executed successfully.");
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await context.Database.MigrateAsync();
+        logger.LogInformation("Database migrations applied successfully");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"--> Migration error: {ex.Message}");
+        logger.LogCritical(ex, "Database migration failed, application will stop");
+        throw;
     }
 }
 
 if (app.Environment.IsDevelopment())
 {
-    using (var scope = app.Services.CreateScope())
-    {
-        //var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        //await new DatabaseSeeder(context).SeedAsync();
-    }
-
     app.MapOpenApi();
     app.MapScalarApiReference(options =>
     {
@@ -67,5 +56,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
-

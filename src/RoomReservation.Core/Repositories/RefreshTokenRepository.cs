@@ -1,36 +1,38 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using RoomReservation.Core.Data;
 using RoomReservation.Core.Entities;
+using RoomReservation.Core.Extensions;
 using RoomReservation.Core.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace RoomReservation.Core.Repositories
 {
-    public class RefreshTokenRepository(AppDbContext _db) : IRefreshTokenRepository
+    public class RefreshTokenRepository(AppDbContext db, TimeProvider timeProvider) : IRefreshTokenRepository
     {
         public void Add(RefreshToken token)
-            => _db.RefreshTokens.Add(token);
+            => db.RefreshTokens.Add(token);
         public async Task DeleteExpiredForUserAsync(Guid userId)
         {
-            await _db.RefreshTokens
-                .Where(rt => rt.UserId == userId && rt.ExpiresAt <= DateTime.UtcNow)
+            var now = timeProvider.UtcNow();
+            await db.RefreshTokens
+                .Where(rt => rt.UserId == userId && rt.ExpiresAt <= now)
                 .ExecuteDeleteAsync();
         }
         public async Task DeleteExpiredOlderThanAsync(TimeSpan age)
         {
-            var cutoff = DateTime.UtcNow - age;
-            await _db.RefreshTokens.Where(rt => rt.ExpiresAt < cutoff).ExecuteDeleteAsync();
+            var cutoff = timeProvider.UtcNow() - age;
+            await db.RefreshTokens.Where(rt => rt.ExpiresAt < cutoff).ExecuteDeleteAsync();
         }
-        public async Task<RefreshToken?> GetByHashAsync(string tokenHash) 
-            => await _db.RefreshTokens.Include(rt => rt.User)
+        public async Task<RefreshToken?> GetByHashAsync(string tokenHash)
+            => await db.RefreshTokens.Include(rt => rt.User)
                 .FirstOrDefaultAsync(rt => rt.TokenHash == tokenHash);
         public async Task<RefreshToken?> GetById(Guid refreshTokenId)
-            => await _db.RefreshTokens.FindAsync(refreshTokenId);
+            => await db.RefreshTokens.FindAsync(refreshTokenId);
         public async Task RevokeAllForUserAsync(Guid userId)
-            => await _db.RefreshTokens
+        {
+            var now = timeProvider.UtcNow();
+            await db.RefreshTokens
                 .Where(rt => rt.UserId == userId)
-                .ExecuteUpdateAsync(x => x.SetProperty(r => r.RevokedAt, DateTime.UtcNow));
+                .ExecuteUpdateAsync(x => x.SetProperty(r => r.RevokedAt, now));
+        }
     }
 }

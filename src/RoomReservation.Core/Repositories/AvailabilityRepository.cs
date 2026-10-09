@@ -5,11 +5,11 @@ using RoomReservation.Core.Interfaces;
 
 namespace RoomReservation.Core.Repositories
 {
-    public class AvailabilityRepository(AppDbContext _db) : IAvailabilityRepository
+    public class AvailabilityRepository(AppDbContext db) : IAvailabilityRepository
     {
         public async Task<IReadOnlyList<Availability>> GetByBuildingAsync(Guid buildingId)
         {
-            var availabilities = await _db.Availabilities
+            var availabilities = await db.Availabilities
                 .Where(a => a.BuildingId == buildingId)
                 .ToListAsync();
 
@@ -18,7 +18,7 @@ namespace RoomReservation.Core.Repositories
 
         public async Task<IReadOnlyList<Availability>> GetByRoomAsync(Guid roomId)
         {
-            var availabilities = await _db.Availabilities
+            var availabilities = await db.Availabilities
                 .Where(a => a.RoomId == roomId)
                 .ToListAsync();
 
@@ -27,7 +27,7 @@ namespace RoomReservation.Core.Repositories
 
         public async Task<IReadOnlyList<Availability>> GetByRoomIdsAsync(IReadOnlyList<Guid> roomIds)
         {
-            var availabilities = await _db.Availabilities
+            var availabilities = await db.Availabilities
                 .Where(a => roomIds.Contains(a.RoomId!.Value))
                 .ToListAsync();
 
@@ -36,22 +36,22 @@ namespace RoomReservation.Core.Repositories
 
         public async Task ReplaceForRoomAsync(Guid roomId, IReadOnlyList<Availability> availabilities)
         {
-            var existing = await _db.Availabilities
+            var existing = await db.Availabilities
                 .Where(a => a.RoomId == roomId)
                 .ToListAsync();
 
-            _db.Availabilities.RemoveRange(existing);
-            _db.Availabilities.AddRange(availabilities);
+            db.Availabilities.RemoveRange(existing);
+            db.Availabilities.AddRange(availabilities);
         }
 
         public async Task ReplaceForBuildingAsync(Guid buildingId, IReadOnlyList<Availability> availabilities)
         {
-            var existing = await _db.Availabilities
+            var existing = await db.Availabilities
                 .Where(a => a.BuildingId == buildingId)
                 .ToListAsync();
 
-            _db.Availabilities.RemoveRange(existing);
-            _db.Availabilities.AddRange(availabilities);
+            db.Availabilities.RemoveRange(existing);
+            db.Availabilities.AddRange(availabilities);
         }
     }
 }

@@ -1,58 +1,56 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RoomReservation.Core.Data;
 using RoomReservation.Core.Entities;
+using RoomReservation.Core.Extensions;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
+using RoomReservation.Core.Models;
 
 namespace RoomReservation.Core.Repositories
 {
-    public class EquipmentRepository(AppDbContext _db) : IEquipmentRepository
+    public class EquipmentRepository(AppDbContext db) : IEquipmentRepository
     {
         public void Add(Equipment equipment)
-            => _db.Equipment.Add(equipment);
+            => db.Equipment.Add(equipment);
 
         public void Remove(Equipment equipment)
-            => _db.Equipment.Remove(equipment);
+            => db.Equipment.Remove(equipment);
 
         public async Task<bool> AllExistAsync(IReadOnlyList<Guid> equipmentIds)
         {
             if (equipmentIds.Count == 0) return true;
-            var existingCount = await _db.Equipment.CountAsync(e => equipmentIds.Contains(e.Id));
+            var existingCount = await db.Equipment.CountAsync(e => equipmentIds.Contains(e.Id));
             return existingCount == equipmentIds.Count;
         }
 
         public async Task<bool> ExistsByNameAsync(string name)
         {
-            return await _db.Equipment.AnyAsync(e => e.Name == name);
+            return await db.Equipment.AnyAsync(e => e.Name == name);
         }
 
-        public async Task<(IReadOnlyList<Equipment> Equipments, int TotalCount)> GetAllAsync(EquipmentFilter filters)
+        public async Task<PagedList<Equipment>> GetAllAsync(EquipmentFilter filters)
         {
-            var equipmentQuery = _db.Equipment.AsQueryable();
+            var equipmentQuery = db.Equipment.AsNoTracking();
 
             if(!string.IsNullOrEmpty(filters.Name))
             {
                 equipmentQuery = equipmentQuery.Where(e => EF.Functions.ILike(e.Name, $"%{filters.Name}%"));
             }
 
-            var totalCount = await equipmentQuery.CountAsync();
-
-            var filteredEquipments = await equipmentQuery
-                .Skip((filters.Page - 1) * filters.PageSize)
-                .Take(filters.PageSize)
-                .ToListAsync();
-
-            return (filteredEquipments, totalCount);
+            return await equipmentQuery
+                .OrderBy(e => e.Name)
+                .ThenBy(e => e.Id)
+                .ToPagedListAsync(filters);
         }
 
         public async Task<Equipment?> GetByIdAsync(Guid equipmentId)
         {
-            return await _db.Equipment.FindAsync(equipmentId);
+            return await db.Equipment.FindAsync(equipmentId);
         }
 
         public async Task<Equipment?> GetByNameAsync(string name)
         {
-            return await _db.Equipment.FirstOrDefaultAsync(e => e.Name == name);
+            return await db.Equipment.FirstOrDefaultAsync(e => e.Name == name);
         }
     }
 }

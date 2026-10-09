@@ -1,13 +1,14 @@
-﻿using RoomReservation.Core.Entities;
+using RoomReservation.Core.Entities;
 using RoomReservation.Core.Filters;
+using RoomReservation.Core.Models;
 
 namespace RoomReservation.Core.Interfaces
 {
     public interface IPermissionRepository
     {
-        Task<bool> UserHasPermissionAsync(Guid userId, string permission);
+        Task<UserAccessModel?> GetUserAccessAsync(Guid userId);
         Task<IReadOnlyList<string>> GetUserPermissionsAsync(Guid userId);
         Task<IReadOnlyList<string>> GetAllAsync();
-        Task<(IReadOnlyList<Permission> Permissions, int TotalCount)> GetFilteredAsync(PermissionFilter filters);
+        Task<PagedList<Permission>> GetFilteredAsync(PermissionFilter filters);
     }
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RoomReservation.Api.Attributes;
@@ -16,24 +16,21 @@ namespace RoomReservation.Api.Controllers
     [Authorize]
     [Route("[controller]")]
     [ApiController]
-    public class EventsController(IEventService _eventService) : ControllerBase
+    public class EventsController(IEventService eventService) : ControllerBase
     {
         [RequirePermission(Permissions.EventView)]
         [HttpGet("{eventId:guid}")]
         public async Task<ActionResult<EventResponseDto>> GetSingle([FromRoute] Guid eventId)
         {
-            var ev = await _eventService.GetByIdAsync(eventId);
-            if (!ev.IsSuccess)
-                return ev.Error.ToActionResult();
-
-            return Ok(ev.Value.ToDto());
+            var result = await eventService.GetByIdAsync(eventId);
+            return result.ToActionResult(ev => Ok(ev.ToDto()));
         }
 
         [RequirePermission(Permissions.EventView)]
         [HttpGet("rooms/{roomId:guid}")]
         public async Task<ActionResult<IReadOnlyList<EventResponseDto>>> GetActiveForRoom([FromRoute] Guid roomId)
         {
-            var events = await _eventService.GetActiveForRoomAsync(roomId);
+            var events = await eventService.GetActiveForRoomAsync(roomId);
             return Ok(events.Select(e => e.ToDto()).ToList());
         }
 
@@ -41,13 +38,9 @@ namespace RoomReservation.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<EventResponseDto>> Create([FromBody] EventRequestDto request, [FromQuery] bool force = false)
         {
-            var eventRequest = ToEventRequest(request);
-
-            var result = await _eventService.CreateAsync(request.RoomIds, eventRequest, force);
-            if (!result.IsSuccess)
-                return result.Error.ToActionResult();
-
-            return CreatedAtAction(nameof(GetSingle), new { eventId = result.Value.Id }, result.Value.ToDto());
+            var result = await eventService.CreateAsync(request.RoomIds, ToEventRequest(request), force);
+            return result.ToActionResult(ev =>
+                CreatedAtAction(nameof(GetSingle), new { eventId = ev.Id }, ev.ToDto()));
         }
 
         [RequirePermission(Permissions.EventEdit)]
@@ -57,24 +50,16 @@ namespace RoomReservation.Api.Controllers
             [FromBody] EventRequestDto request,
             [FromQuery] bool force = false)
         {
-            var eventRequest = ToEventRequest(request);
-
-            var result = await _eventService.UpdateAsync(eventId, request.RoomIds, eventRequest, force);
-            if (!result.IsSuccess)
-                return result.Error.ToActionResult();
-
-            return Ok(result.Value.ToDto());
+            var result = await eventService.UpdateAsync(eventId, request.RoomIds, ToEventRequest(request), force);
+            return result.ToActionResult(ev => Ok(ev.ToDto()));
         }
 
         [RequirePermission(Permissions.EventDelete)]
         [HttpDelete("{eventId:guid}")]
-        public async Task<ActionResult> Delete([FromRoute] Guid eventId, [FromQuery] bool force = false)
+        public async Task<IActionResult> Delete([FromRoute] Guid eventId, [FromQuery] bool force = false)
         {
-            var result = await _eventService.DeleteAsync(eventId, force);
-            if (!result.IsSuccess)
-                return result.Error.ToActionResult();
-
-            return NoContent();
+            var result = await eventService.DeleteAsync(eventId, force);
+            return result.ToActionResult(NoContent);
         }
 
         private static EventModel ToEventRequest(EventRequestDto request)

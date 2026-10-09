@@ -11,7 +11,7 @@ namespace RoomReservation.Core.Interfaces
         Task<ResultT<Role>> UpdateAsync(Guid roleId, RoleModel request, bool force = false);
         Task<Result> DeleteAsync(Guid roleId);
         Task<ResultT<Role>> GetByIdAsync(Guid roleId);
-        Task<PagedResult<Role>> GetAllAsync(RoleFilter filters);
+        Task<ResultT<PagedList<Role>>> GetAllAsync(RoleFilter filters);
         Task<Result> AssignRoleAsync(Guid roleId, Guid userId, Guid requestingUserId);
     }
 }

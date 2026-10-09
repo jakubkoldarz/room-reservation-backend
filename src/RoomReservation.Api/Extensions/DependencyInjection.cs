@@ -1,18 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RoomReservation.Api.Authorization;
 using RoomReservation.Api.Authorization.Handlers;
-using RoomReservation.Api.Dtos;
-using RoomReservation.Core.Authorization.Handlers;
 using RoomReservation.Core.Data;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Providers;
 using RoomReservation.Core.Repositories;
 using RoomReservation.Core.Services;
-using System.Net;
-using System.Text.Json;
 
 namespace RoomReservation.Api.Extensions
 {
@@ -24,7 +18,10 @@ namespace RoomReservation.Api.Extensions
             services.AddSwagger();
             services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 
+            services.AddSingleton(TimeProvider.System);
+
             services.AddSingleton<IAuthorizationPolicyProvider, CustomPolicyProvider>();
+            services.AddScoped<UserAccessProvider>();
             services.AddScoped<IAuthorizationHandler, PermissionHandler>();
             services.AddScoped<IAuthorizationHandler, ProfileCompletedHandler>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -40,7 +37,7 @@ namespace RoomReservation.Api.Extensions
             services.AddScoped<IVerificationCodeService, VerificationCodeService>();
 
             services.AddScoped<ITokenProvider, TokenProvider>();
-            services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IEmailQueue, EmailQueue>();
 
             services.AddScoped<IPermissionRepository, PermissionRepository>();
             services.AddScoped<IPermissionService, PermissionService>();
@@ -74,32 +71,8 @@ namespace RoomReservation.Api.Extensions
                 options.UseNpgsql(config.GetConnectionString("DefaultConnection"));
             });
 
-            services.AddJwtConfiguration(config);
-            services.AddControllers(options =>
-            {
-                options.ValueProviderFactories.Add(new FormValueProviderFactory());
-            }).AddJsonOptions(options =>
-            {
-                options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-            }).ConfigureApiBehaviorOptions(options =>
-            {
-                options.InvalidModelStateResponseFactory = (context) =>
-                {
-                    var error = context.ModelState
-                        .Where(x => x.Value?.Errors.Count > 0)
-                        .SelectMany(x => x.Value!.Errors)
-                        .Select(x => x.ErrorMessage)
-                        .FirstOrDefault() ?? "Validation error";
-
-                    var response = new ErrorResponse
-                    {
-                        Message = error,
-                        StatusCode = HttpStatusCode.BadRequest
-                    };
-
-                    return new BadRequestObjectResult(response);
-                };
-            });
+            services.AddJwtConfiguration();
+            services.AddControllers();
 
             return services;
         }

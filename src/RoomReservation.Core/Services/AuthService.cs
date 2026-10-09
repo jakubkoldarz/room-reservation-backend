@@ -1,6 +1,7 @@
 using RoomReservation.Core.Emails;
 using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
+using RoomReservation.Core.Extensions;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Results;
 using RoomReservation.Core.Results.Common;
@@ -8,17 +9,18 @@ using RoomReservation.Core.Results.Common;
 namespace RoomReservation.Core.Services
 {
     public class AuthService(
-        IUserRepository _users,
-        ITokenProvider _tokenProvider,
-        IRefreshTokenService _refreshTokenService,
-        IVerificationCodeService _verificationCodeService,
-        IRoleRepository _roles,
-        IEmailService _emailService,
-        IUnitOfWork _unitOfWork) : IAuthService
+        IUserRepository userRepository,
+        ITokenProvider tokenProvider,
+        IRefreshTokenService refreshTokenService,
+        IVerificationCodeService verificationCodeService,
+        IRoleRepository roleRepository,
+        IEmailQueue emailQueue,
+        IUnitOfWork unitOfWork,
+        TimeProvider timeProvider) : IAuthService
     {
         public async Task<Result> ChangePasswordAsync(Guid userId, string oldPassword, string newPassword)
         {
-            var user = await _users.GetByIdAsync(userId);
+            var user = await userRepository.GetByIdAsync(userId);
             if (user is null)
                 return new Error("User not found", ErrorType.NotFound);
 
@@ -28,48 +30,54 @@ namespace RoomReservation.Core.Services
 
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
             EnqueuePasswordNotification(user);
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
-            await _refreshTokenService.RevokeAllAsync(userId);
+            await refreshTokenService.RevokeAllAsync(userId);
             return Result.Success();
         }
-        public async Task<Result> Disable2faAsync(Guid userId)
+        public async Task<Result> Disable2faAsync(Guid userId, string password)
         {
-            var user = await _users.GetByIdAsync(userId);
-            if (user == null)
-                return Result.Failure("User not found", ErrorType.NotFound);
+            var user = await userRepository.GetByIdAsync(userId);
+            if (user is null)
+                return new Error("User not found", ErrorType.NotFound);
+
+            var passwordMatch = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
+            if (!passwordMatch)
+                return new Error("Invalid credentials", ErrorType.BadRequest);
 
             user.Is2faEnabled = false;
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             return Result.Success();
         }
         public async Task<Result> Enable2faAsync(Guid userId)
         {
-            var user = await _users.GetByIdAsync(userId);
-            if (user == null) return Result.Failure("User not found", ErrorType.NotFound);
+            var user = await userRepository.GetByIdAsync(userId);
+            if (user is null)
+                return new Error("User not found", ErrorType.NotFound);
+
             user.Is2faEnabled = true;
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             return Result.Success();
         }
         public async Task<ResultT<VerificationCode>> IssueChangeEmailAsync(Guid userId, string newEmail)
         {
-            var user = await _users.GetByIdAsync(userId);
+            var user = await userRepository.GetByIdAsync(userId);
             if (user is null)
                 return new Error("User not found", ErrorType.NotFound);
 
-            var emailExists = await _users.GetByEmailAsync(newEmail);
+            var emailExists = await userRepository.GetByEmailAsync(newEmail);
             if (emailExists is not null)
                 return new Error("Email is already taken", ErrorType.BadRequest);
 
-            var codeResult = await _verificationCodeService.GenerateCodeAsync(userId, VerificationCodeType.ChangeEmail);
+            var codeResult = await verificationCodeService.GenerateCodeAsync(userId, VerificationCodeType.ChangeEmail);
             if (!codeResult.IsSuccess)
                 return codeResult.Error;
 
             user.PendingEmail = newEmail;
             EnqueueVerificationCode(codeResult.Value, newEmail);
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             return ResultT<VerificationCode>.Success(codeResult.Value);
         }
@@ -79,17 +87,17 @@ namespace RoomReservation.Core.Services
             string? ipAddress = null,
             string? userAgent = null)
         {
-            var user = await _users.GetByEmailAsync(email);
+            var user = await userRepository.GetByEmailAsync(email);
             if (user is null)
-                return new Error("Invalid credentials", ErrorType.BadRequest);
+                return new Error("Invalid credentials", ErrorType.Unauthorized);
 
             var passwordMatch = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
             if (!passwordMatch)
-                return new Error("Invalid credentials", ErrorType.BadRequest);
+                return new Error("Invalid credentials", ErrorType.Unauthorized);
 
             if (user.Is2faEnabled)
             {
-                var codeResult = await _verificationCodeService.GenerateCodeAsync(user.Id, VerificationCodeType.TwoFactorLogin);
+                var codeResult = await verificationCodeService.GenerateCodeAsync(user.Id, VerificationCodeType.TwoFactorLogin);
                 if (!codeResult.IsSuccess)
                     return new Error(
                         $"Verification code failed to generate: {codeResult.Error.ErrorMessage}",
@@ -97,7 +105,7 @@ namespace RoomReservation.Core.Services
                     );
 
                 EnqueueVerificationCode(codeResult.Value, user.Email);
-                await _unitOfWork.SaveChangesAsync();
+                await unitOfWork.SaveChangesAsync();
 
                 return ResultT<LoginResult>.Success(new()
                 {
@@ -110,7 +118,7 @@ namespace RoomReservation.Core.Services
             if (!tokensResult.IsSuccess)
                 return tokensResult.Error;
 
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             return ResultT<LoginResult>.Success(new()
             {
@@ -121,11 +129,11 @@ namespace RoomReservation.Core.Services
         }
         public async Task<ResultT<(string JwtToken, string RefreshToken)>> RegisterAsync(string email, string password, string? ipAddress = null, string? userAgent = null)
         {
-            var user = await _users.GetByEmailAsync(email);
+            var user = await userRepository.GetByEmailAsync(email);
             if (user is not null)
                 return new Error("Email is already taken", ErrorType.BadRequest);
 
-            var defaultRole = await _roles.GetDefaultRoleAsync();
+            var defaultRole = await roleRepository.GetDefaultRoleAsync();
             if (defaultRole is null)
                 return new Error("Unexpected error: Default role not found", ErrorType.Internal);
 
@@ -135,42 +143,42 @@ namespace RoomReservation.Core.Services
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
                 RoleId = defaultRole.Id,
             };
-            _users.Add(userToCreate);
+            userRepository.Add(userToCreate);
 
-            var codeResult = await _verificationCodeService.GenerateCodeAsync(userToCreate.Id, VerificationCodeType.EmailActivation);
+            var codeResult = await verificationCodeService.GenerateCodeAsync(userToCreate.Id, VerificationCodeType.EmailActivation);
             if (!codeResult.IsSuccess)
                 return codeResult.Error;
 
-            var refreshToken = _refreshTokenService.CreateToken(userToCreate.Id, ipAddress, userAgent);
-            var jwtToken = _tokenProvider.GenerateJwtToken(userToCreate);
+            var refreshToken = refreshTokenService.CreateToken(userToCreate.Id, ipAddress, userAgent);
+            var jwtToken = tokenProvider.GenerateJwtToken(userToCreate);
 
             EnqueueVerificationCode(codeResult.Value, userToCreate.Email);
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             return ResultT<(string, string)>.Success((jwtToken, refreshToken));
         }
         public async Task<ResultT<Guid>> IssueEmailVerificationAsync(Guid userId)
         {
-            var user = await _users.GetByIdAsync(userId);
+            var user = await userRepository.GetByIdAsync(userId);
             if (user is null)
                 return new Error("User not found", ErrorType.NotFound);
 
             if (user.IsEmailVerified)
                 return new Error("Email is already confirmed", ErrorType.BadRequest);
 
-            var codeResult = await _verificationCodeService.GenerateCodeAsync(user.Id, VerificationCodeType.EmailActivation);
+            var codeResult = await verificationCodeService.GenerateCodeAsync(user.Id, VerificationCodeType.EmailActivation);
 
             if (!codeResult.IsSuccess)
                 return codeResult.Error;
 
             EnqueueVerificationCode(codeResult.Value, user.Email);
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             return ResultT<Guid>.Success(codeResult.Value.Id);
         }
         public async Task<Result> ConfirmEmailChangeAsync(Guid verificationId, string code)
         {
-            var validationResult = await _verificationCodeService.ValidateCodeAsync(
+            var validationResult = await verificationCodeService.ValidateCodeAsync(
                 verificationId,
                 code,
                 VerificationCodeType.ChangeEmail);
@@ -183,27 +191,27 @@ namespace RoomReservation.Core.Services
             if (user.PendingEmail is null)
                 return new Error("Pending email is null", ErrorType.BadRequest);
 
-            var emailExists = await _users.GetByEmailAsync(user.PendingEmail);
+            var emailExists = await userRepository.GetByEmailAsync(user.PendingEmail);
             if (emailExists is not null)
                 return new Error("Email is already taken", ErrorType.BadRequest);
 
             user.Email = user.PendingEmail;
             user.PendingEmail = null;
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             return Result.Success();
         }
         public async Task<Result> ConfirmEmailAsync(Guid userId, string code)
         {
-            var user = await _users.GetByIdAsync(userId);
+            var user = await userRepository.GetByIdAsync(userId);
             if (user is null)
                 return new Error("User not found", ErrorType.NotFound);
 
-            var verificationCodeResult = await _verificationCodeService.GetActiveByUserIdAsync(userId, VerificationCodeType.EmailActivation);
+            var verificationCodeResult = await verificationCodeService.GetActiveByUserIdAsync(userId, VerificationCodeType.EmailActivation);
             if (!verificationCodeResult.IsSuccess)
                 return verificationCodeResult.Error;
 
-            var validationResult = await _verificationCodeService.ValidateCodeAsync(
+            var validationResult = await verificationCodeService.ValidateCodeAsync(
                 verificationCodeResult.Value.Id,
                 code,
                 VerificationCodeType.EmailActivation);
@@ -212,13 +220,13 @@ namespace RoomReservation.Core.Services
                 return validationResult.Error;
 
             user.IsEmailVerified = true;
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             return Result.Success();
         }
         public async Task<ResultT<(string JwtToken, string RefreshToken)>> Verify2faAsync(Guid verificationId, string code, string? ipAddress = null, string? userAgent = null)
         {
-            var validationResult = await _verificationCodeService.ValidateCodeAsync(
+            var validationResult = await verificationCodeService.ValidateCodeAsync(
                 verificationId,
                 code,
                 VerificationCodeType.TwoFactorLogin);
@@ -230,7 +238,7 @@ namespace RoomReservation.Core.Services
             if (!tokensResult.IsSuccess)
                 return tokensResult.Error;
 
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
             return tokensResult;
         }
 
@@ -240,19 +248,19 @@ namespace RoomReservation.Core.Services
             string? ipAddress = null,
             string? userAgent = null)
         {
-            var user = await _users.GetByIdAsync(userId);
+            var user = await userRepository.GetByIdAsync(userId);
             if (user is null)
                 return new Error("User not found", ErrorType.NotFound);
 
-            await _refreshTokenService.DeleteExpiredAsync(userId);
-            var refreshToken = _refreshTokenService.CreateToken(userId, ipAddress, userAgent);
-            var jwtToken = _tokenProvider.GenerateJwtToken(user);
+            await refreshTokenService.DeleteExpiredAsync(userId);
+            var refreshToken = refreshTokenService.CreateToken(userId, ipAddress, userAgent);
+            var jwtToken = tokenProvider.GenerateJwtToken(user);
 
             return ResultT<(string, string)>.Success((jwtToken, refreshToken));
         }
         private void EnqueueVerificationCode(VerificationCode verificationCode, string to)
         {
-            TimeSpan expirationMinutes = verificationCode.ExpiresAt - DateTime.UtcNow;
+            TimeSpan expirationMinutes = verificationCode.ExpiresAt - timeProvider.UtcNow();
 
             var (subject, title, purpose) = verificationCode.Type switch
             {
@@ -271,13 +279,13 @@ namespace RoomReservation.Core.Services
                 ExpirationMinutes = (int)Math.Ceiling(expirationMinutes.TotalMinutes),
             };
 
-            _emailService.EnqueueEmail(messageToSend);
+            emailQueue.Enqueue(messageToSend);
         }
         private void EnqueuePasswordNotification(User user)
         {
-            var title = "Alert bezpieczeństa - Zmiana hasła";
+            var title = "Alert bezpieczeństwa - Zmiana hasła";
             var messageToSend = new PasswordChangeEmail { Title = title, To = user.Email };
-            _emailService.EnqueueEmail(messageToSend);
+            emailQueue.Enqueue(messageToSend);
         }
     }
 }

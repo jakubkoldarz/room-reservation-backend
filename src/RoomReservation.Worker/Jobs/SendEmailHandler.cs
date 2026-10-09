@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace RoomReservation.Worker.Jobs
 {
-    internal class SendEmailHandler(IEmailService _emailService) : IJobHandler
+    internal class SendEmailHandler(IEmailService emailService) : IJobHandler
     {
         private static readonly Dictionary<string, Type> _registry = typeof(EmailMessage).Assembly
                 .GetTypes()
@@ -17,7 +17,7 @@ namespace RoomReservation.Worker.Jobs
         public async Task<Result> HandleAsync(string payload, CancellationToken ct)
         {
             var message = DeserializeMessage(payload);
-            var result = await _emailService.SendEmailAsync(message);
+            var result = await emailService.SendEmailAsync(message);
             if (!result.IsSuccess)
             {
                 throw new InvalidOperationException(result.Error.ErrorMessage);

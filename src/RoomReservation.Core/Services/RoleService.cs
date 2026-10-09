@@ -7,23 +7,23 @@ using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Core.Services
 {
-    public class RoleService(IRoleRepository _roles, IUserRepository _users, IUnitOfWork _unitOfWork) : IRoleService
+    public class RoleService(IRoleRepository roleRepository, IUserRepository userRepository, IUnitOfWork unitOfWork) : IRoleService
     {
         public async Task<Result> AssignRoleAsync(Guid roleId, Guid userId, Guid requestingUserId)
         {
             if(userId == requestingUserId)
                 return new Error("You cannot assign a role to yourself.", ErrorType.BadRequest);
 
-            var user = await _users.GetByIdAsync(userId);
+            var user = await userRepository.GetByIdAsync(userId);
             if(user is null)
                 return new Error("User not found.", ErrorType.NotFound);
 
-            var role = await _roles.GetByIdAsync(roleId);
+            var role = await roleRepository.GetByIdAsync(roleId);
             if(role is null)
                 return new Error("Role not found.", ErrorType.NotFound);
 
             user.RoleId = roleId;
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
 
             return Result.Success();
         }
@@ -46,36 +46,36 @@ namespace RoomReservation.Core.Services
                 RoleId = toCreate.Id
             })];
 
-            _roles.Add(toCreate);
-            await _unitOfWork.SaveChangesAsync();
+            roleRepository.Add(toCreate);
+            await unitOfWork.SaveChangesAsync();
 
             return ResultT<Role>.Success(toCreate);
         }
 
         public async Task<Result> DeleteAsync(Guid roleId)
         {
-            var toDelete = await _roles.GetByIdAsync(roleId);
+            var toDelete = await roleRepository.GetByIdAsync(roleId);
             if (toDelete is null)
                 return new Error("Role not found.", ErrorType.NotFound);
 
-            var usersWithRole = await _users.GetFilteredAsync(new UserFilter { RoleId = roleId, Page = 1, PageSize = 1 });
+            var usersWithRole = await userRepository.GetFilteredAsync(new UserFilter { RoleId = roleId, Page = 1, PageSize = 1 });
             if(usersWithRole.TotalCount > 0)
                 return new Error("Cannot delete role with assigned users.", ErrorType.Conflict);
 
-            _roles.Remove(toDelete);
-            await _unitOfWork.SaveChangesAsync();
+            roleRepository.Remove(toDelete);
+            await unitOfWork.SaveChangesAsync();
             return Result.Success();
         }
 
-        public async Task<PagedResult<Role>> GetAllAsync(RoleFilter filters)
+        public async Task<ResultT<PagedList<Role>>> GetAllAsync(RoleFilter filters)
         {
-            var (Roles, TotalCount) = await _roles.GetFilteredAsync(filters);
-            return PagedResult<Role>.Success(Roles, TotalCount, filters.Page, filters.PageSize);
+            var roles = await roleRepository.GetFilteredAsync(filters);
+            return ResultT<PagedList<Role>>.Success(roles);
         }
 
         public async Task<ResultT<Role>> GetByIdAsync(Guid roleId)
         {
-            var role = await _roles.GetByIdAsync(roleId);
+            var role = await roleRepository.GetByIdAsync(roleId);
             if (role is null)
                 return new Error("Role not found.", ErrorType.NotFound);
             return ResultT<Role>.Success(role);
@@ -83,7 +83,7 @@ namespace RoomReservation.Core.Services
 
         public async Task<ResultT<Role>> UpdateAsync(Guid roleId, RoleModel request, bool force = false)
         {
-            var toUpdate = await _roles.GetByIdAsync(roleId);
+            var toUpdate = await roleRepository.GetByIdAsync(roleId);
             if (toUpdate is null)
                 return new Error("Role not found.", ErrorType.NotFound);
 
@@ -96,7 +96,7 @@ namespace RoomReservation.Core.Services
             toUpdate.IsSuperAdmin = request.IsSuperAdmin;
             ReplacePermissions(toUpdate, request.PermissionIds);
 
-            await _unitOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
             return ResultT<Role>.Success(toUpdate);
         }
 
@@ -115,7 +115,7 @@ namespace RoomReservation.Core.Services
         {
             if (!toCheck.IsDefault) return Result.Success();
 
-            var existingDefaultRole = await _roles.GetDefaultRoleAsync();
+            var existingDefaultRole = await roleRepository.GetDefaultRoleAsync();
             if (existingDefaultRole is null || existingDefaultRole.Id == excludeRoleId)
                 return Result.Success();
 

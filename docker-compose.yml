@@ -9,10 +9,6 @@ services:
       - Jwt__Secret=${JWT_SECRET}
       - Jwt__Issuer=${JWT_ISSUER}
       - Jwt__Audience=${JWT_AUDIENCE}
-      - SMTP__Host=${SMTP_HOST}
-      - SMTP__Port=${SMTP_PORT}
-      - SMTP__Email=${SMTP_EMAIL}
-      - SMTP__Password=${SMTP_PASSWORD}
       - CORS__ALLOWED_ORIGINS__0=${CORS__ALLOWED_ORIGINS__0}
       - ASPNETCORE_ENVIRONMENT=Development
     ports:

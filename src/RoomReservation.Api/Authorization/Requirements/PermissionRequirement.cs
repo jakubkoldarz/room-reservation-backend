@@ -1,9 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.AspNetCore.Authorization;
 
-namespace RoomReservation.Core.Authorization.Requirements
+namespace RoomReservation.Api.Authorization.Requirements
 {
     public class PermissionRequirement(string permission) : IAuthorizationRequirement
     {

@@ -2,7 +2,7 @@
 
 namespace RoomReservation.Api.Extensions
 {
-    public static class ClaimsPrincipalExtension
+    public static class ClaimsPrincipalExtensions
     {
         public static Guid? GetUserId(this ClaimsPrincipal principal)
         {

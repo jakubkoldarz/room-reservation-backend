@@ -1,22 +1,27 @@
-﻿using Microsoft.AspNetCore.Diagnostics;
-using RoomReservation.Api.Dtos;
-using System.Net;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 
 namespace RoomReservation.Api
 {
-    public class ExceptionHandler(ILogger<ExceptionHandler> _logger) : IExceptionHandler
+    public class ExceptionHandler(ILogger<ExceptionHandler> logger, IProblemDetailsService problemDetailsService) : IExceptionHandler
     {
         public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
         {
-            _logger.LogError(exception, "An error occurred while processing the request.");
+            logger.LogError(exception, "An error occurred while processing the request.");
 
-            httpContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-            httpContext.Response.ContentType = "application/json";
+            httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
-            var response = new ErrorResponse { Message = "Unexpected error occurred.", StatusCode = HttpStatusCode.InternalServerError };
-
-            await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
-            return true;
+            return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+            {
+                HttpContext = httpContext,
+                Exception = exception,
+                ProblemDetails = new ProblemDetails
+                {
+                    Status = StatusCodes.Status500InternalServerError,
+                    Title = "Internal Server Error",
+                    Detail = "Unexpected error occurred."
+                }
+            });
         }
     }
 }

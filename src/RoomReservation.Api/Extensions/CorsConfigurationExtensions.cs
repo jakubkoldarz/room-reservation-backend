@@ -1,6 +1,6 @@
 ﻿namespace RoomReservation.Api.Extensions
 {
-    public static class CorsConfigurationExtesnions
+    public static class CorsConfigurationExtensions
     {
         public static IServiceCollection AddCorsConfiguration(this IServiceCollection services, IConfiguration configuration)
         {

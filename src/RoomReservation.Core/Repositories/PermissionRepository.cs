@@ -1,46 +1,57 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using RoomReservation.Core.Data;
 using RoomReservation.Core.Entities;
+using RoomReservation.Core.Extensions;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
+using RoomReservation.Core.Models;
 
 namespace RoomReservation.Core.Repositories
 {
-    public class PermissionRepository(AppDbContext _db) : IPermissionRepository
+    public class PermissionRepository(AppDbContext db) : IPermissionRepository
     {
+        public async Task<UserAccessModel?> GetUserAccessAsync(Guid userId)
+        {
+            var access = await db.Users
+                .Where(u => u.Id == userId)
+                .Select(u => new
+                {
+                    u.IsProfileComplete,
+                    u.Role.IsSuperAdmin,
+                    Permissions = u.Role.RolePermissions.Select(rp => rp.Permission.Name).ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            if (access is null)
+                return null;
+
+            return new UserAccessModel(access.IsProfileComplete, access.IsSuperAdmin, access.Permissions.ToHashSet());
+        }
+
         public async Task<IReadOnlyList<string>> GetUserPermissionsAsync(Guid userId)
         {
-            return await _db.Users.Where(u => u.Id == userId)
+            return await db.Users.Where(u => u.Id == userId)
                 .SelectMany(u => u.Role.RolePermissions.Select(rp => rp.Permission.Name))
                 .ToListAsync();
         }
 
-        public async Task<bool> UserHasPermissionAsync(Guid userId, string permission)
+        public async Task<PagedList<Permission>> GetFilteredAsync(PermissionFilter filters)
         {
-            return await _db.Users.Where(u => u.Id == userId)
-                .AnyAsync(u => u.Role.IsSuperAdmin || u.Role.RolePermissions.Any(rp => rp.Permission.Name == permission));
-        }
-
-        public async Task<(IReadOnlyList<Permission> Permissions, int TotalCount)> GetFilteredAsync(PermissionFilter filters)
-        {
-            var query = _db.Permissions.AsQueryable();
+            var query = db.Permissions.AsNoTracking();
             if(!string.IsNullOrEmpty(filters.Name))
             {
                 query = query.Where(p => EF.Functions.ILike(p.Name, $"%{filters.Name}%"));
             }
-            
-            var totalCount = await query.CountAsync();
-            var items = await query
-                .Skip((filters.Page - 1) * filters.PageSize)
-                .Take(filters.PageSize)
-                .ToListAsync();
 
-            return (items, totalCount);
+            return await query
+                .OrderBy(p => p.Name)
+                .ThenBy(p => p.Id)
+                .ToPagedListAsync(filters);
         }
 
         public async Task<IReadOnlyList<string>> GetAllAsync()
         {
-            var permissions = await _db.Permissions.Select(p => p.Name).ToListAsync();
+            var permissions = await db.Permissions.Select(p => p.Name).ToListAsync();
             return permissions;
         }
     }

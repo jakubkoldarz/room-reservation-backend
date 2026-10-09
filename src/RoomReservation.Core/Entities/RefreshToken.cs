@@ -17,11 +17,7 @@ namespace RoomReservation.Core.Entities
         public string? UserAgent { get; set; }
 
         [NotMapped]
-        public bool IsExpired => DateTime.UtcNow >= ExpiresAt;
-        [NotMapped]
-        public bool IsActive => RevokedAt == null && !IsExpired;
-        [NotMapped]
-        public bool IsRevoked => RevokedAt != null;
+        public bool IsRevoked => RevokedAt is not null;
 
         public required Guid UserId { get; set; }
         public User User { get; set; } = null!;

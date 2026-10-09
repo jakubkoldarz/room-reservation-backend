@@ -3,7 +3,7 @@ using RoomReservation.Core.Entities;
 
 namespace RoomReservation.Api.Extensions.Mappers
 {
-    public static class BuildingMapperExtension
+    public static class BuildingMapperExtensions
     {
         public static BasicBuildingResponseDto ToBasicDto(this Building building)
         {

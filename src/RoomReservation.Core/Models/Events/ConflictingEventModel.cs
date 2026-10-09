@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using RoomReservation.Core.Entities;
 
 namespace RoomReservation.Core.Models.Events
 {
@@ -10,5 +8,9 @@ namespace RoomReservation.Core.Models.Events
         string Name,
         DateOnly StartDate,
         DateOnly EndDate
-    );
+    )
+    {
+        public static ConflictingEventModel From(Event ev)
+            => new(ev.Id, ev.Name, ev.StartDate, ev.EndDate);
+    }
 }

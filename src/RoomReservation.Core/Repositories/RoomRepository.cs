@@ -1,22 +1,25 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using RoomReservation.Core.Data;
 using RoomReservation.Core.Entities;
+using RoomReservation.Core.Enums;
+using RoomReservation.Core.Extensions;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
+using RoomReservation.Core.Models;
 
 namespace RoomReservation.Core.Repositories
 {
-    public class RoomRepository(AppDbContext _db) : IRoomRepository
+    public class RoomRepository(AppDbContext db, TimeProvider timeProvider) : IRoomRepository
     {
         public void Add(Room room)
-            => _db.Rooms.Add(room);
+            => db.Rooms.Add(room);
 
         public void Remove(Room room)
-            => _db.Rooms.Remove(room);
+            => db.Rooms.Remove(room);
 
         public async Task<bool> ExistsByIdentifierAsync(Guid buildingId, string identifier, Guid? excludeId = null)
         {
-            var query = _db.Rooms.Where(r => r.BuildingId == buildingId && r.Identifier == identifier);
+            var query = db.Rooms.Where(r => r.BuildingId == buildingId && r.Identifier == identifier);
             if (excludeId.HasValue)
             {
                 query = query.Where(r => r.Id != excludeId.Value);
@@ -26,26 +29,35 @@ namespace RoomReservation.Core.Repositories
 
         public async Task<Room?> GetByIdAsync(Guid roomId)
         {
-            return await _db.Rooms.Include(r => r.Building)
-                                  .Include(r => r.RoomEquipment)
+            var today = timeProvider.WarsawToday();
+
+            return await db.Rooms.Include(r => r.Building)
+                                 .Include(r => r.RoomEquipment)
                                     .ThenInclude(re => re.Equipment)
-                                  .Include(r => r.Availabilities)
-                                  .Include(r => r.Reservations)
-                                  .FirstOrDefaultAsync(r => r.Id == roomId);
+                                 .Include(r => r.Availabilities)
+                                 .Include(r => r.Reservations.Where(res =>
+                                        res.Date >= today &&
+                                        (res.Status == ReservationStatus.Approved || res.Status == ReservationStatus.Pending)))
+                                    .ThenInclude(res => res.CreatedBy)
+                                 .Include(r => r.Events.Where(e => e.EndDate >= today))
+                                    .ThenInclude(e => e.Rooms)
+                                 .AsSplitQuery()
+                                 .FirstOrDefaultAsync(r => r.Id == roomId);
         }
 
         public async Task<Room?> GetByIdentifierAsync(Guid buildingId, string identifier)
         {
-            return await _db.Rooms.FirstOrDefaultAsync(r => r.BuildingId == buildingId && r.Identifier == identifier);
+            return await db.Rooms.FirstOrDefaultAsync(r => r.BuildingId == buildingId && r.Identifier == identifier);
         }
 
-        public async Task<(IReadOnlyList<Room> Rooms, int TotalCount)> GetFilteredAsync(RoomFilter filters)
+        public async Task<PagedList<Room>> GetFilteredAsync(RoomFilter filters)
         {
-            var rooms = _db.Rooms.Include(r => r.Building)
-                                  .Include(r => r.RoomEquipment)
+            var rooms = db.Rooms.AsNoTracking()
+                                .Include(r => r.Building)
+                                .Include(r => r.RoomEquipment)
                                     .ThenInclude(re => re.Equipment)
-                                  .Include(r => r.Availabilities)
-                                  .AsQueryable();
+                                .Include(r => r.Availabilities)
+                                .AsSplitQuery();
 
             if (filters.BuildingId.HasValue)
                 rooms = rooms.Where(r => r.BuildingId == filters.BuildingId.Value);
@@ -64,21 +76,20 @@ namespace RoomReservation.Core.Repositories
                     (!filters.EndTime.HasValue || ra.EndTime >= filters.EndTime.Value)));
             }
 
-            if(filters.EquipmentIds != null && filters.EquipmentIds.Any())
+            if (filters.EquipmentIds is { Count: > 0 })
             {
                 rooms = rooms.Where(r => filters.EquipmentIds.All(eid => r.RoomEquipment.Any(re => re.EquipmentId == eid)));
             }
 
-            var total = await rooms.CountAsync();
-            var pagedRooms = await rooms.Skip((filters.Page - 1) * filters.PageSize)
-                                       .Take(filters.PageSize)
-                                       .ToListAsync();
-            return (pagedRooms, total);
+            return await rooms
+                .OrderBy(r => r.Identifier)
+                .ThenBy(r => r.Id)
+                .ToPagedListAsync(filters);
         }
 
         public async Task<IReadOnlyList<Room>> GetByIdsAsync(IReadOnlyList<Guid> roomIds)
         {
-            var rooms = await _db.Rooms
+            var rooms = await db.Rooms
                 .Include(r => r.Building)
                 .Where(r => roomIds.Contains(r.Id))
                 .ToListAsync();
@@ -87,7 +98,7 @@ namespace RoomReservation.Core.Repositories
 
         public async Task<IReadOnlyList<Room>> GetByBuildingIdAsync(Guid buildingId)
         {
-            var rooms = await _db.Rooms
+            var rooms = await db.Rooms
                 .Include(r => r.Availabilities)
                 .Where(r => r.BuildingId == buildingId)
                 .ToListAsync();

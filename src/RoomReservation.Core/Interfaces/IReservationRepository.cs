@@ -1,5 +1,6 @@
 ﻿using RoomReservation.Core.Entities;
 using RoomReservation.Core.Filters;
+using RoomReservation.Core.Models;
 
 namespace RoomReservation.Core.Interfaces
 {
@@ -7,7 +8,7 @@ namespace RoomReservation.Core.Interfaces
     {
         Task<Reservation?> GetByIdAsync(Guid reservationId);
         Task<IReadOnlyList<Reservation>> GetByIdsAsync(IReadOnlyList<Guid> reservationIds);
-        Task<(IReadOnlyList<Reservation> Reservations, int TotalCount)> GetFilteredAsync(ReservationFilter filters);
+        Task<PagedList<Reservation>> GetFilteredAsync(ReservationFilter filters);
         Task<IReadOnlyList<Reservation>> GetActiveByRoomAndDateAsync(Guid roomId, DateOnly date);
         Task LockRoomAsync(Guid roomId);
         void Add(Reservation reservation);

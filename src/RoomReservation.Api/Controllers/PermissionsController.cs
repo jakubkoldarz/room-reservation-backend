@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RoomReservation.Api.Attributes;
+using RoomReservation.Api.Dtos;
 using RoomReservation.Api.Dtos.Permissions.Responses;
 using RoomReservation.Api.Extensions;
 using RoomReservation.Api.Extensions.Mappers;
@@ -15,17 +16,14 @@ namespace RoomReservation.Api.Controllers
     [Authorize]
     [ApiController]
     [Route("[controller]")]
-    public class PermissionsController(IPermissionService _permissionService) : ControllerBase
+    public class PermissionsController(IPermissionService permissionService) : ControllerBase
     {
         [HttpGet]
         [RequirePermission(Permissions.PermissionList)]
-        public async Task<ActionResult<IReadOnlyList<PermissionResponseDto>>> GetAll([FromQuery] PermissionFilter filters)
+        public async Task<ActionResult<PagedResponseDto<PermissionResponseDto>>> GetAll([FromQuery] PermissionFilter filters)
         {
-            var result = await _permissionService.GetAllPermissionsAsync(filters);
-            if (!result.IsSuccess)
-                return result.Error.ToActionResult();
-
-            return Ok(result.ToDto(p => p.ToDto()));
+            var result = await permissionService.GetAllPermissionsAsync(filters);
+            return result.ToActionResult(page => Ok(page.ToPagedDto(p => p.ToDto())));
         }
     }
 }

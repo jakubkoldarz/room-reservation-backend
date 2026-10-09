@@ -1,31 +1,38 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using RoomReservation.Core.Options;
 using System.Text;
 
 namespace RoomReservation.Api.Extensions
 {
     public static class JwtConfiguration
     {
-        public static IServiceCollection AddJwtConfiguration(this IServiceCollection services, IConfiguration config) 
+        public static IServiceCollection AddJwtConfiguration(this IServiceCollection services)
         {
-            var jwtKey = config["Jwt:Secret"]     ?? throw new InvalidOperationException("Missing config: Jwt:Secret");
-            var issuer = config["Jwt:Issuer"]     ?? throw new InvalidOperationException("Missing config: Jwt:Issuer");
-            var audience = config["Jwt:Audience"] ?? throw new InvalidOperationException("Missing config: Jwt:Audience");
+            services.AddOptions<JwtOptions>()
+                .BindConfiguration(JwtOptions.SectionName)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
 
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options =>
+            services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+                .Configure<IOptions<JwtOptions>>((options, jwtOptions) =>
                 {
+                    var jwt = jwtOptions.Value;
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateAudience = true,
                         ValidateIssuer = true,
                         ValidateLifetime = true,
                         ValidateIssuerSigningKey = true,
-                        ValidIssuer = issuer,
-                        ValidAudience = audience,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!))
+                        ValidIssuer = jwt.Issuer,
+                        ValidAudience = jwt.Audience,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Secret))
                     };
                 });
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer();
 
             return services;
         }

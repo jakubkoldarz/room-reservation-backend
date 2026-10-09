@@ -1,5 +1,6 @@
 ﻿using RoomReservation.Core.Entities;
 using RoomReservation.Core.Filters;
+using RoomReservation.Core.Models;
 
 namespace RoomReservation.Core.Interfaces
 {
@@ -7,7 +8,7 @@ namespace RoomReservation.Core.Interfaces
     {
         Task<Building?> GetByIdAsync(Guid buildingId);
         Task<Building?> GetByNameAsync(string name);
-        Task<(IReadOnlyList<Building> Buildings, int TotalCount)> GetFilteredAsync(BuildingFilter filters);
+        Task<PagedList<Building>> GetFilteredAsync(BuildingFilter filters);
         Task<IReadOnlyList<Building>> GetAllAsync();
         Task<bool> ExistsByNameAsync(string name);
         void Add(Building building);

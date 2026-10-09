@@ -1,37 +1,37 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RoomReservation.Core.Data;
 using RoomReservation.Core.Entities;
+using RoomReservation.Core.Extensions;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
+using RoomReservation.Core.Models;
 
 namespace RoomReservation.Core.Repositories
 {
-    public class RoleRepository(AppDbContext _db) : IRoleRepository
+    public class RoleRepository(AppDbContext db) : IRoleRepository
     {
         public void Add(Role role)
-            => _db.Roles.Add(role);
+            => db.Roles.Add(role);
 
         public void Remove(Role role)
-            => _db.Roles.Remove(role);
+            => db.Roles.Remove(role);
 
-        public async Task<(IReadOnlyList<Role> Roles, int TotalCount)> GetFilteredAsync(RoleFilter filters)
+        public async Task<PagedList<Role>> GetFilteredAsync(RoleFilter filters)
         {
-            var query = _db.Roles.AsQueryable();
+            var query = db.Roles.AsNoTracking();
 
             if(!string.IsNullOrEmpty(filters.Name))
                 query = query.Where(r => r.Name.Contains(filters.Name));
 
-            var totalCount = await query.CountAsync();
-            var filtered = await query.Skip((filters.Page - 1) * filters.PageSize)
-                                .Take(filters.PageSize)
-                                .ToListAsync();
-
-            return (filtered, totalCount);
+            return await query
+                .OrderBy(r => r.Name)
+                .ThenBy(r => r.Id)
+                .ToPagedListAsync(filters);
         }
 
         public async Task<Role?> GetByIdAsync(Guid roleId)
         {
-            var role = await _db.Roles
+            var role = await db.Roles
                 .Include(r => r.RolePermissions)
                     .ThenInclude(rp => rp.Permission)
                 .FirstOrDefaultAsync(r => r.Id == roleId);
@@ -40,7 +40,7 @@ namespace RoomReservation.Core.Repositories
 
         public async Task<Role?> GetDefaultRoleAsync()
         {
-            var defaultRole = await _db.Roles
+            var defaultRole = await db.Roles
                 .Include(r => r.RolePermissions)
                     .ThenInclude(rp => rp.Permission)
                 .FirstOrDefaultAsync(r => r.IsDefault);

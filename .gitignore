@@ -45,6 +45,7 @@ Generated\ Files/
 
 # MSTest test Results
 [Tt]est[Rr]esult*/
+CoverageReport/
 [Bb]uild[Ll]og.*
 
 # NUnit
