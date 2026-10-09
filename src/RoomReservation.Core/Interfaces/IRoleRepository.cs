@@ -8,8 +8,7 @@ namespace RoomReservation.Core.Interfaces
         Task<Role?> GetByIdAsync(Guid roleId);
         Task<Role?> GetDefaultRoleAsync();
         Task<(IReadOnlyList<Role> Roles, int TotalCount)> GetFilteredAsync(RoleFilter filters);
-        Task UpdateAsync(Role role);
-        Task AddAsync(Role role);
-        Task DeleteAsync(Role role);
+        void Add(Role role);
+        void Remove(Role role);
     }
 }

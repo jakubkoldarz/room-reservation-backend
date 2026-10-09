@@ -8,17 +8,11 @@ namespace RoomReservation.Core.Repositories
 {
     public class RoomRepository(AppDbContext _db) : IRoomRepository
     {
-        public async Task AddAsync(Room room)
-        {
-            _db.Rooms.Add(room);
-            await _db.SaveChangesAsync();
-        }
+        public void Add(Room room)
+            => _db.Rooms.Add(room);
 
-        public async Task DeleteAsync(Room room)
-        {
-            _db.Rooms.Remove(room);
-            await _db.SaveChangesAsync();
-        }
+        public void Remove(Room room)
+            => _db.Rooms.Remove(room);
 
         public async Task<bool> ExistsByIdentifierAsync(Guid buildingId, string identifier, Guid? excludeId = null)
         {
@@ -43,12 +37,6 @@ namespace RoomReservation.Core.Repositories
         public async Task<Room?> GetByIdentifierAsync(Guid buildingId, string identifier)
         {
             return await _db.Rooms.FirstOrDefaultAsync(r => r.BuildingId == buildingId && r.Identifier == identifier);
-        }
-
-        public async Task UpdateAsync(Room room)
-        {
-            _db.Rooms.Update(room);
-            await _db.SaveChangesAsync();
         }
 
         public async Task<(IReadOnlyList<Room> Rooms, int TotalCount)> GetFilteredAsync(RoomFilter filters)

@@ -22,7 +22,7 @@ namespace RoomReservation.Core.Services
                 Code = GenerateCodeValue(),
                 ExpiresAt = DateTime.UtcNow.AddMinutes(GetExpirationMinutes(type))
             };
-            await _verificationCodes.AddAsync(codeToCreate);
+            _verificationCodes.Add(codeToCreate);
 
             return ResultT<VerificationCode>.Success(codeToCreate);
         }
@@ -55,6 +55,7 @@ namespace RoomReservation.Core.Services
                 || verificationCode.Type != type)
                 return new Error("Invalid code provided", ErrorType.BadRequest);
 
+            verificationCode.IsUsed = true;
             return ResultT<VerificationCode>.Success(verificationCode);
         }
 

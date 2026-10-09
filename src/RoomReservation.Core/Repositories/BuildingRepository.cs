@@ -8,17 +8,11 @@ namespace RoomReservation.Core.Repositories
 {
     public class BuildingRepository(AppDbContext _db) : IBuildingRepository
     {
-        public async Task AddAsync(Building building)
-        {
-            _db.Buildings.Add(building);
-            await _db.SaveChangesAsync();
-        }
+        public void Add(Building building)
+            => _db.Buildings.Add(building);
 
-        public async Task DeleteAsync(Building building)
-        {
-            _db.Buildings.Remove(building);
-            await _db.SaveChangesAsync();
-        }
+        public void Remove(Building building)
+            => _db.Buildings.Remove(building);
 
         public Task<bool> ExistsByNameAsync(string name)
         {
@@ -69,11 +63,6 @@ namespace RoomReservation.Core.Repositories
             return await _db.Buildings
                 .Where(b => EF.Functions.ILike(b.Name, $"%{name.Trim()}%"))
                 .ToListAsync();
-        }
-        public async Task UpdateAsync(Building building)
-        {
-            _db.Buildings.Update(building);
-            await _db.SaveChangesAsync();
         }
     }
 }

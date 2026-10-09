@@ -7,17 +7,11 @@ namespace RoomReservation.Core.Repositories
 {
     public class EventRepository(AppDbContext _db) : IEventRepository
     {
-        public async Task AddAsync(Event ev)
-        {
-            _db.Events.Add(ev);
-            await _db.SaveChangesAsync();
-        }
+        public void Add(Event ev)
+            => _db.Events.Add(ev);
 
-        public async Task DeleteAsync(Event ev)
-        {
-            _db.Events.Remove(ev);
-            await _db.SaveChangesAsync();
-        }
+        public void Remove(Event ev)
+            => _db.Events.Remove(ev);
 
         public async Task<IReadOnlyList<Event>> GetActiveByRoomAsync(Guid roomId)
         {
@@ -43,12 +37,6 @@ namespace RoomReservation.Core.Repositories
         {
             var ev = await _db.Events.Include(e => e.Rooms).FirstOrDefaultAsync(e => e.Id == id);
             return ev;
-        }
-
-        public async Task UpdateAsync(Event ev)
-        {
-            _db.Events.Update(ev);
-            await _db.SaveChangesAsync();
         }
     }
 }

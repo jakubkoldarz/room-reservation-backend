@@ -11,11 +11,8 @@ namespace RoomReservation.Core.Repositories
 {
     public class VerificationCodeRepository(AppDbContext _db) : IVerificationCodeRepository
     {
-        public async Task AddAsync(VerificationCode code)
-        {
-            await _db.VerificationCodes.AddAsync(code);
-            await _db.SaveChangesAsync();
-        }
+        public void Add(VerificationCode code)
+            => _db.VerificationCodes.Add(code);
         public async Task<VerificationCode?> GetByIdAsync(Guid verificationId)
             => await _db.VerificationCodes
             .Include(vc => vc.User)
@@ -35,11 +32,6 @@ namespace RoomReservation.Core.Repositories
                      && vc.IsUsed == false
                      && vc.ExpiresAt > DateTime.UtcNow)
                 .ExecuteUpdateAsync(vc => vc.SetProperty(x => x.IsUsed, true));
-        }
-        public async Task MarkAsUsedAsync(VerificationCode code)
-        {
-            code.IsUsed = true;
-            await _db.SaveChangesAsync();
         }
     }
 }

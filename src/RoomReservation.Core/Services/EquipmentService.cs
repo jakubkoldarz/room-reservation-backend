@@ -6,7 +6,7 @@ using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Core.Services
 {
-    public class EquipmentService(IEquipmentRepository _equipment) : IEquipmentService
+    public class EquipmentService(IEquipmentRepository _equipment, IUnitOfWork _unitOfWork) : IEquipmentService
     {
         public async Task<ResultT<Equipment>> CreateAsync(string name, string icon)
         {
@@ -20,7 +20,8 @@ namespace RoomReservation.Core.Services
                 Icon = icon
             };
 
-            await _equipment.AddAsync(equipmentToAdd);
+            _equipment.Add(equipmentToAdd);
+            await _unitOfWork.SaveChangesAsync();
             return ResultT<Equipment>.Success(equipmentToAdd);
         }
 
@@ -30,7 +31,8 @@ namespace RoomReservation.Core.Services
             if (existingEquipment is null)
                 return new Error("Equipment not found.", ErrorType.NotFound);
 
-            await _equipment.DeleteAsync(existingEquipment);
+            _equipment.Remove(existingEquipment);
+            await _unitOfWork.SaveChangesAsync();
             return Result.Success();
         }
 
@@ -62,7 +64,7 @@ namespace RoomReservation.Core.Services
             equipmentToUpdate.Name = name;
             equipmentToUpdate.Icon = icon;
 
-            await _equipment.UpdateAsync(equipmentToUpdate);
+            await _unitOfWork.SaveChangesAsync();
             return ResultT<Equipment>.Success(equipmentToUpdate);
         }
     }

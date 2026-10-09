@@ -5,7 +5,7 @@ namespace RoomReservation.Core.Interfaces
 {
     public interface IEmailService
     {
-        Task<Result> EnqueueEmailAsync(EmailMessage message);
+        void EnqueueEmail(EmailMessage message);
         Task<Result> SendEmailAsync(EmailMessage message);
     }
 }

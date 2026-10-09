@@ -10,7 +10,8 @@ namespace RoomReservation.Core.Services
     public class BuildingService(
         IBuildingRepository _buildings,
         IRoomRepository _rooms,
-        IAvailabilityService _availabilityService) : IBuildingService
+        IAvailabilityService _availabilityService,
+        IUnitOfWork _unitOfWork) : IBuildingService
     {
         public async Task<ResultT<Building>> CreateAsync(BuildingModel model)
         {
@@ -39,7 +40,9 @@ namespace RoomReservation.Core.Services
                 FloorsCount = model.FloorsCount,
                 Availabilities = availabilityEntities
             };
-            await _buildings.AddAsync(buildingToCreate);
+            _buildings.Add(buildingToCreate);
+            await _unitOfWork.SaveChangesAsync();
+
             return ResultT<Building>.Success(buildingToCreate);
         }
         public async Task<Result> DeleteAsync(Guid buildingId)
@@ -52,7 +55,9 @@ namespace RoomReservation.Core.Services
             if (hasRooms.TotalCount > 0)
                 return new Error("Cannot delete building with associated rooms", ErrorType.Conflict);
 
-            await _buildings.DeleteAsync(existingBuilding);
+            _buildings.Remove(existingBuilding);
+            await _unitOfWork.SaveChangesAsync();
+
             return Result.Success();
         }
         public async Task<ResultT<IReadOnlyList<Building>>> GetAllAsync()
@@ -94,7 +99,7 @@ namespace RoomReservation.Core.Services
             if (!replacementResult.IsSuccess)
                 return replacementResult.Error;
 
-            await _buildings.UpdateAsync(buildingToUpdate);
+            await _unitOfWork.SaveChangesAsync();
             return ResultT<Building>.Success(buildingToUpdate);
         }
     }

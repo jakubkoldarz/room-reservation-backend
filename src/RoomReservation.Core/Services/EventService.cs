@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using RoomReservation.Core.Entities;
+﻿using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models.Events;
@@ -13,7 +12,8 @@ namespace RoomReservation.Core.Services
         IAvailabilityRepository _availabilities,
         IAvailabilityService _availabilityService,
         IReservationService _reservationService,
-        IRoomRepository _rooms) : IEventService
+        IRoomRepository _rooms,
+        IUnitOfWork _unitOfWork) : IEventService
     {
         public IReadOnlyList<Event> GetConflictingEvents(IReadOnlyList<Guid> roomIds, DateOnly startDate, DateOnly endDate, IReadOnlyList<Event> existingEvents, Guid? excludeEventId = null)
         {
@@ -72,7 +72,10 @@ namespace RoomReservation.Core.Services
                 return new ConflictError<ConflictingReservationModel>("Conflicting reservations found", conflictingModels);
             }
 
-            await _events.AddAsync(newEvent);
+            _events.Add(newEvent);
+            await _reservationService.BulkForceCancelAsync(conflictingReservations, "Zmiany administracyjne");
+            await _unitOfWork.SaveChangesAsync();
+
             return ResultT<Event>.Success(newEvent);
         }
 
@@ -97,8 +100,10 @@ namespace RoomReservation.Core.Services
                 return new ConflictError<ConflictingReservationModel>("Conflicting reservations found", conflictingModels);
             }
 
-            await _events.DeleteAsync(existingEvent);
+            _events.Remove(existingEvent);
             await _reservationService.BulkForceCancelAsync(conflicts, "Zmiany administracyjne w dostępnosci sal");
+            await _unitOfWork.SaveChangesAsync();
+
             return Result.Success();
         }
 
@@ -167,8 +172,8 @@ namespace RoomReservation.Core.Services
             toUpdate.EndTime = request.EndTime;
             toUpdate.Rooms = [.. rooms];
 
-            await _events.UpdateAsync(toUpdate);
             await _reservationService.BulkForceCancelAsync(conflictingReservations, "Zmiany administracyjne");
+            await _unitOfWork.SaveChangesAsync();
 
             return ResultT<Event>.Success(toUpdate);
         }

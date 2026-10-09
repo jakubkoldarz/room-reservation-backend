@@ -37,21 +37,10 @@ namespace RoomReservation.Core.Services
             _logger = logger;
         }
 
-        public async Task<Result> EnqueueEmailAsync(EmailMessage message)
+        public void EnqueueEmail(EmailMessage message)
         {
             var job = new JobModel(JobTypes.SendEmail, message.ToJsonPayload());
-
-            try
-            {
-                await _jobService.EnqueueJobAsync(job);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to enqueue email job for {Recipient}", message.To);
-                return Result.Failure("Nie udało się zakolejkować wiadomości email", ErrorType.Internal);
-            }
-
-            return Result.Success();
+            _jobService.Enqueue(job);
         }
 
         public async Task<Result> SendEmailAsync(EmailMessage message)

@@ -6,7 +6,7 @@ using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Core.Services
 {
-    public class UserService(IUserRepository _users) : IUserService
+    public class UserService(IUserRepository _users, IUnitOfWork _unitOfWork) : IUserService
     {
         public async Task<ResultT<User>> GetUserDetailsAsync(Guid userId)
         {
@@ -31,7 +31,7 @@ namespace RoomReservation.Core.Services
             userToUpdate.Lastname = lastname;
             userToUpdate.IsProfileComplete = true;
 
-            await _users.UpdateAsync(userToUpdate);
+            await _unitOfWork.SaveChangesAsync();
             return ResultT<User>.Success(userToUpdate);
         }
     }

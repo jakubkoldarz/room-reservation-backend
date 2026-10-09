@@ -9,9 +9,8 @@ namespace RoomReservation.Core.Interfaces
         Task<Equipment?> GetByIdAsync(Guid equipmentId);
         Task<Equipment?> GetByNameAsync(string name);
         Task<(IReadOnlyList<Equipment> Equipments, int TotalCount)> GetAllAsync(EquipmentFilter filters);
-        Task AddAsync(Equipment equipment);
-        Task UpdateAsync(Equipment equipment);
-        Task DeleteAsync(Equipment equipment);
+        void Add(Equipment equipment);
+        void Remove(Equipment equipment);
         Task<bool> AllExistAsync(IReadOnlyList<Guid> equipmentIds);
     }
 }

@@ -8,11 +8,11 @@ namespace RoomReservation.Core.Repositories
 {
     public class RoleRepository(AppDbContext _db) : IRoleRepository
     {
-        public async Task DeleteAsync(Role role)
-        {
-            _db.Roles.Remove(role);
-            await _db.SaveChangesAsync();
-        }
+        public void Add(Role role)
+            => _db.Roles.Add(role);
+
+        public void Remove(Role role)
+            => _db.Roles.Remove(role);
 
         public async Task<(IReadOnlyList<Role> Roles, int TotalCount)> GetFilteredAsync(RoleFilter filters)
         {
@@ -45,18 +45,6 @@ namespace RoomReservation.Core.Repositories
                     .ThenInclude(rp => rp.Permission)
                 .FirstOrDefaultAsync(r => r.IsDefault);
             return defaultRole;
-        }
-
-        public async Task UpdateAsync(Role role)
-        {
-            _db.Roles.Update(role);
-            await _db.SaveChangesAsync();
-        }
-
-        public async Task AddAsync(Role role)
-        {
-            _db.Roles.Add(role);
-            await _db.SaveChangesAsync();
         }
     }
 }

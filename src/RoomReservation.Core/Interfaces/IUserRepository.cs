@@ -7,9 +7,8 @@ namespace RoomReservation.Core.Interfaces
     {
         Task<User?> GetByEmailAsync(string email);
         Task<User?> GetByIdAsync(Guid userId);
-        Task<User> CreateAsync(User user);
+        void Add(User user);
         Task<bool> IsProfileCompletedAsync(Guid userId);
         Task<(IReadOnlyList<User> Users, int TotalCount)> GetFilteredAsync(UserFilter filters);
-        Task UpdateAsync(User user);
     }
 }

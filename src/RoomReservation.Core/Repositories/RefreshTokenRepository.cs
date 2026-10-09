@@ -10,12 +10,8 @@ namespace RoomReservation.Core.Repositories
 {
     public class RefreshTokenRepository(AppDbContext _db) : IRefreshTokenRepository
     {
-        public async Task<RefreshToken> CreateAsync(RefreshToken token)
-        {
-            _db.RefreshTokens.Add(token);
-            await _db.SaveChangesAsync();
-            return token;
-        }
+        public void Add(RefreshToken token)
+            => _db.RefreshTokens.Add(token);
         public async Task DeleteExpiredForUserAsync(Guid userId)
         {
             await _db.RefreshTokens
@@ -36,10 +32,5 @@ namespace RoomReservation.Core.Repositories
             => await _db.RefreshTokens
                 .Where(rt => rt.UserId == userId)
                 .ExecuteUpdateAsync(x => x.SetProperty(r => r.RevokedAt, DateTime.UtcNow));
-        public async Task UpdateAsync(RefreshToken token)
-        {
-            _db.RefreshTokens.Update(token);
-            await _db.SaveChangesAsync();
-        }
     }
 }

@@ -1,19 +1,17 @@
-﻿using RoomReservation.Core.Data;
 using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Providers;
 using RoomReservation.Core.Results.Common;
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Text;
 
 namespace RoomReservation.Core.Services
 {
-    public class RefreshTokenService(ITokenProvider _tokenProvider, IRefreshTokenRepository _refreshTokens) : IRefreshTokenService
+    public class RefreshTokenService(
+        ITokenProvider _tokenProvider,
+        IRefreshTokenRepository _refreshTokens,
+        IUnitOfWork _unitOfWork) : IRefreshTokenService
     {
-        public async Task<ResultT<string>> CreateTokenAsync(
+        public string CreateToken(
             Guid userId,
             string? ipAddress = null,
             string? userAgent = null)
@@ -30,8 +28,8 @@ namespace RoomReservation.Core.Services
                 UserAgent = userAgent
             };
 
-            await _refreshTokens.CreateAsync(tokenToCreate);
-            return ResultT<string>.Success(tokenValue);
+            _refreshTokens.Add(tokenToCreate);
+            return tokenValue;
         }
 
         public async Task<Result> DeleteExpiredAsync(Guid userId)
@@ -53,8 +51,8 @@ namespace RoomReservation.Core.Services
                 return Result.Failure("Refresh token was not found", ErrorType.NotFound);
 
             token.RevokedAt = DateTime.UtcNow;
-            await _refreshTokens.UpdateAsync(token);
-            
+            await _unitOfWork.SaveChangesAsync();
+
             return Result.Success();
         }
 
@@ -65,7 +63,7 @@ namespace RoomReservation.Core.Services
                 return Result.Failure("Refresh token was not found", ErrorType.NotFound);
 
             token.RevokedAt = DateTime.UtcNow;
-            await _refreshTokens.UpdateAsync(token);
+            await _unitOfWork.SaveChangesAsync();
 
             return Result.Success();
         }
@@ -99,10 +97,10 @@ namespace RoomReservation.Core.Services
                 UserAgent = userAgent,
             };
 
-            var createdToken = await _refreshTokens.CreateAsync(tokenToCreate);
+            _refreshTokens.Add(tokenToCreate);
             existingToken.RevokedAt = DateTime.UtcNow;
-            existingToken.ReplacedByTokenId = createdToken.Id;
-            await _refreshTokens.UpdateAsync(existingToken);
+            existingToken.ReplacedByTokenId = tokenToCreate.Id;
+            await _unitOfWork.SaveChangesAsync();
 
             var jwtToken = _tokenProvider.GenerateJwtToken(existingToken.User);
 

@@ -41,9 +41,7 @@ namespace RoomReservation.Core.Repositories
                 .ToListAsync();
 
             _db.Availabilities.RemoveRange(existing);
-            await _db.Availabilities.AddRangeAsync(availabilities);
-
-            await _db.SaveChangesAsync();
+            _db.Availabilities.AddRange(availabilities);
         }
 
         public async Task ReplaceForBuildingAsync(Guid buildingId, IReadOnlyList<Availability> availabilities)
@@ -53,9 +51,7 @@ namespace RoomReservation.Core.Repositories
                 .ToListAsync();
 
             _db.Availabilities.RemoveRange(existing);
-            await _db.Availabilities.AddRangeAsync(availabilities);
-
-            await _db.SaveChangesAsync();
+            _db.Availabilities.AddRange(availabilities);
         }
     }
 }

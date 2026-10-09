@@ -14,7 +14,8 @@ namespace RoomReservation.Core.Services
         IReservationService _reservationService,
         IReservationRepository _reservations,
         IBuildingRepository _buildings,
-        IEquipmentRepository _equipment) : IRoomService
+        IEquipmentRepository _equipment,
+        IUnitOfWork _unitOfWork) : IRoomService
     {
         public async Task<ResultT<Room>> CreateAsync(RoomModel model)
         {
@@ -55,7 +56,9 @@ namespace RoomReservation.Core.Services
                 })]
             };
 
-            await _rooms.AddAsync(roomToCreate);
+            _rooms.Add(roomToCreate);
+            await _unitOfWork.SaveChangesAsync();
+
             var createdRoom = await _rooms.GetByIdAsync(roomToCreate.Id);
             return ResultT<Room>.Success(createdRoom!);
         }
@@ -71,7 +74,10 @@ namespace RoomReservation.Core.Services
             if (!force && activeReservations.Any())
                 return new Error("Room has active reservations and cannot be deleted", ErrorType.Conflict);
 
-            await _rooms.DeleteAsync(existingRoom);
+            await _reservationService.BulkForceCancelAsync(activeReservations, "Sala została usunięta");
+            _rooms.Remove(existingRoom);
+            await _unitOfWork.SaveChangesAsync();
+
             return Result.Success();
         }
 
@@ -117,22 +123,32 @@ namespace RoomReservation.Core.Services
             if (existingRoom)
                 return new Error("Room with the same identifier already exists in the building", ErrorType.Conflict);
 
-            var replacementResult = await _availabilityService.ReplaceIfValidForRoomAsync(toUpdate, model.Availabilities, force);
-            if (!replacementResult.IsSuccess)
-                return replacementResult.Error;
-
-            if(replacementResult.Value.Any() && force)
-                await _reservationService.BulkForceCancelAsync(replacementResult.Value, "Zmiany administracyjne w godzinach dostępności sal");
-
             toUpdate.Identifier = model.Identifier;
             toUpdate.RequiresApproval = model.RequiresApproval;
             toUpdate.BuildingId = model.BuildingId;
             toUpdate.Floor = model.Floor;
             toUpdate.Capacity = model.Capacity;
-            toUpdate.RoomEquipment = [.. model.EquipmentIds.Select(equipmentId => new RoomEquipment { EquipmentId = equipmentId })];
+            ReplaceEquipment(toUpdate, model.EquipmentIds);
 
-            await _rooms.UpdateAsync(toUpdate);
+            var replacementResult = await _availabilityService.ReplaceIfValidForRoomAsync(toUpdate, model.Availabilities, force);
+            if (!replacementResult.IsSuccess)
+                return replacementResult.Error;
+
+            await _reservationService.BulkForceCancelAsync(replacementResult.Value, "Zmiany administracyjne w godzinach dostępności sal");
+            await _unitOfWork.SaveChangesAsync();
+
             return ResultT<Room>.Success(toUpdate);
+        }
+
+        private static void ReplaceEquipment(Room room, IReadOnlyList<Guid> equipmentIds)
+        {
+            var toRemove = room.RoomEquipment.Where(re => !equipmentIds.Contains(re.EquipmentId)).ToList();
+            foreach (var roomEquipment in toRemove)
+                room.RoomEquipment.Remove(roomEquipment);
+
+            var toAdd = equipmentIds.Where(id => room.RoomEquipment.All(re => re.EquipmentId != id));
+            foreach (var equipmentId in toAdd)
+                room.RoomEquipment.Add(new RoomEquipment { EquipmentId = equipmentId });
         }
 
         private async Task<Result> AreEquipmentsValid(IReadOnlyList<Guid> equipmentIds)

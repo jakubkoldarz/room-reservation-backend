@@ -1,4 +1,3 @@
-﻿using Microsoft.AspNetCore.Cors.Infrastructure;
 using RoomReservation.Core.Emails;
 using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
@@ -14,7 +13,8 @@ namespace RoomReservation.Core.Services
         IRefreshTokenService _refreshTokenService,
         IVerificationCodeService _verificationCodeService,
         IRoleRepository _roles,
-        IEmailService _emailService) : IAuthService
+        IEmailService _emailService,
+        IUnitOfWork _unitOfWork) : IAuthService
     {
         public async Task<Result> ChangePasswordAsync(Guid userId, string oldPassword, string newPassword)
         {
@@ -26,13 +26,11 @@ namespace RoomReservation.Core.Services
             if (!passwordMatch)
                 return new Error("Invalid credentials", ErrorType.BadRequest);
 
-            await _refreshTokenService.RevokeAllAsync(userId);
-            var sendResult = await SendPasswordNotification(user);
-            if (!sendResult.IsSuccess)
-                return sendResult.Error;
-
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
-            await _users.UpdateAsync(user);
+            EnqueuePasswordNotification(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            await _refreshTokenService.RevokeAllAsync(userId);
             return Result.Success();
         }
         public async Task<Result> Disable2faAsync(Guid userId)
@@ -42,7 +40,7 @@ namespace RoomReservation.Core.Services
                 return Result.Failure("User not found", ErrorType.NotFound);
 
             user.Is2faEnabled = false;
-            await _users.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
 
             return Result.Success();
         }
@@ -51,7 +49,7 @@ namespace RoomReservation.Core.Services
             var user = await _users.GetByIdAsync(userId);
             if (user == null) return Result.Failure("User not found", ErrorType.NotFound);
             user.Is2faEnabled = true;
-            await _users.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
 
             return Result.Success();
         }
@@ -70,11 +68,8 @@ namespace RoomReservation.Core.Services
                 return codeResult.Error;
 
             user.PendingEmail = newEmail;
-            await _users.UpdateAsync(user);
-
-            var sendResult = await SendVerificationCodeAsync(codeResult.Value, user.PendingEmail);
-            if (!sendResult.IsSuccess)
-                return sendResult.Error;
+            EnqueueVerificationCode(codeResult.Value, newEmail);
+            await _unitOfWork.SaveChangesAsync();
 
             return ResultT<VerificationCode>.Success(codeResult.Value);
         }
@@ -101,9 +96,8 @@ namespace RoomReservation.Core.Services
                         ErrorType.Internal
                     );
 
-                var sendResult = await SendVerificationCodeAsync(codeResult.Value);
-                if (!sendResult.IsSuccess)
-                    return new Error($"An error occurred while sending the email: {sendResult.Error}", ErrorType.Internal);
+                EnqueueVerificationCode(codeResult.Value, user.Email);
+                await _unitOfWork.SaveChangesAsync();
 
                 return ResultT<LoginResult>.Success(new()
                 {
@@ -115,6 +109,8 @@ namespace RoomReservation.Core.Services
             var tokensResult = await IssueTokensAsync(user.Id, ipAddress, userAgent);
             if (!tokensResult.IsSuccess)
                 return tokensResult.Error;
+
+            await _unitOfWork.SaveChangesAsync();
 
             return ResultT<LoginResult>.Success(new()
             {
@@ -139,26 +135,19 @@ namespace RoomReservation.Core.Services
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
                 RoleId = defaultRole.Id,
             };
+            _users.Add(userToCreate);
 
-            var createdUser = await _users.CreateAsync(userToCreate);
-
-            var codeResult = await _verificationCodeService.GenerateCodeAsync(createdUser.Id, VerificationCodeType.EmailActivation);
+            var codeResult = await _verificationCodeService.GenerateCodeAsync(userToCreate.Id, VerificationCodeType.EmailActivation);
             if (!codeResult.IsSuccess)
                 return codeResult.Error;
 
-            var refreshTokenResult = await _refreshTokenService.CreateTokenAsync(createdUser.Id, ipAddress, userAgent);
-            if (!refreshTokenResult.IsSuccess)
-                return refreshTokenResult.Error;
+            var refreshToken = _refreshTokenService.CreateToken(userToCreate.Id, ipAddress, userAgent);
+            var jwtToken = _tokenProvider.GenerateJwtToken(userToCreate);
 
-            var jwtToken = _tokenProvider.GenerateJwtToken(createdUser);
+            EnqueueVerificationCode(codeResult.Value, userToCreate.Email);
+            await _unitOfWork.SaveChangesAsync();
 
-            var verificationCode = codeResult.Value;
-            var sendResult = await SendVerificationCodeAsync(verificationCode);
-
-            if (!sendResult.IsSuccess)
-                return sendResult.Error;
-
-            return ResultT<(string, string)>.Success((jwtToken, refreshTokenResult.Value));
+            return ResultT<(string, string)>.Success((jwtToken, refreshToken));
         }
         public async Task<ResultT<Guid>> IssueEmailVerificationAsync(Guid userId)
         {
@@ -174,9 +163,8 @@ namespace RoomReservation.Core.Services
             if (!codeResult.IsSuccess)
                 return codeResult.Error;
 
-            var sendResult = await SendVerificationCodeAsync(codeResult.Value);
-            if (!sendResult.IsSuccess)
-                return sendResult.Error;
+            EnqueueVerificationCode(codeResult.Value, user.Email);
+            await _unitOfWork.SaveChangesAsync();
 
             return ResultT<Guid>.Success(codeResult.Value.Id);
         }
@@ -201,7 +189,7 @@ namespace RoomReservation.Core.Services
 
             user.Email = user.PendingEmail;
             user.PendingEmail = null;
-            await _users.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
 
             return Result.Success();
         }
@@ -224,7 +212,7 @@ namespace RoomReservation.Core.Services
                 return validationResult.Error;
 
             user.IsEmailVerified = true;
-            await _users.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
 
             return Result.Success();
         }
@@ -239,6 +227,10 @@ namespace RoomReservation.Core.Services
                 return new Error($"Verification failed: {validationResult.Error}", ErrorType.BadRequest);
 
             var tokensResult = await IssueTokensAsync(validationResult.Value.UserId, ipAddress, userAgent);
+            if (!tokensResult.IsSuccess)
+                return tokensResult.Error;
+
+            await _unitOfWork.SaveChangesAsync();
             return tokensResult;
         }
 
@@ -248,20 +240,17 @@ namespace RoomReservation.Core.Services
             string? ipAddress = null,
             string? userAgent = null)
         {
-            var tokenResult = await _refreshTokenService.CreateTokenAsync(userId, ipAddress, userAgent);
-            if (!tokenResult.IsSuccess)
-                return tokenResult.Error;
-
             var user = await _users.GetByIdAsync(userId);
             if (user is null)
                 return new Error("User not found", ErrorType.NotFound);
 
             await _refreshTokenService.DeleteExpiredAsync(userId);
+            var refreshToken = _refreshTokenService.CreateToken(userId, ipAddress, userAgent);
             var jwtToken = _tokenProvider.GenerateJwtToken(user);
 
-            return ResultT<(string, string)>.Success((jwtToken, tokenResult.Value));
+            return ResultT<(string, string)>.Success((jwtToken, refreshToken));
         }
-        private async Task<Result> SendVerificationCodeAsync(VerificationCode verificationCode, string? to = null)
+        private void EnqueueVerificationCode(VerificationCode verificationCode, string to)
         {
             TimeSpan expirationMinutes = verificationCode.ExpiresAt - DateTime.UtcNow;
 
@@ -275,23 +264,20 @@ namespace RoomReservation.Core.Services
 
             var messageToSend = new VerificationCodeEmail
             {
-                To = to ?? verificationCode.User.Email,
+                To = to,
                 Title = title,
                 Code = verificationCode.Code,
                 CodePurpose = purpose,
                 ExpirationMinutes = (int)Math.Ceiling(expirationMinutes.TotalMinutes),
             };
 
-            var sendResult = await _emailService.EnqueueEmailAsync(messageToSend);
-            return sendResult;
+            _emailService.EnqueueEmail(messageToSend);
         }
-        private async Task<Result> SendPasswordNotification(User user)
+        private void EnqueuePasswordNotification(User user)
         {
             var title = "Alert bezpieczeństa - Zmiana hasła";
             var messageToSend = new PasswordChangeEmail { Title = title, To = user.Email };
-            var sendResult = await _emailService.EnqueueEmailAsync(messageToSend);
-
-            return sendResult;
+            _emailService.EnqueueEmail(messageToSend);
         }
     }
 }

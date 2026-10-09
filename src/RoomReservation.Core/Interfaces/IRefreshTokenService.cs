@@ -1,7 +1,4 @@
-﻿using RoomReservation.Core.Results.Common;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Core.Interfaces
 {
@@ -11,11 +8,11 @@ namespace RoomReservation.Core.Interfaces
             string refreshToken,
             string? ipAddress = null,
             string? userAgent = null);
-        Task<ResultT<string>> CreateTokenAsync(
+        string CreateToken(
             Guid userId,
             string? ipAddress = null,
-            string? userAgent = null); 
-        Task<Result> RevokeAsync(Guid userId, string refreshToken);  
+            string? userAgent = null);
+        Task<Result> RevokeAsync(Guid userId, string refreshToken);
         Task<Result> RevokeAsync(Guid userId, Guid refreshTokenId);
         Task<Result> RevokeAllAsync(Guid userId);
         Task<Result> DeleteExpiredAsync(Guid userId);

@@ -1,4 +1,4 @@
-﻿using RoomReservation.Core.Entities;
+using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models;
@@ -6,9 +6,9 @@ using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Core.Services
 {
-    public class JobService(IJobRepository _jobs) : IJobService
+    public class JobService(IJobRepository _jobs, IUnitOfWork _unitOfWork) : IJobService
     {
-        public async Task<Result> EnqueueJobAsync(JobModel model)
+        public void Enqueue(JobModel model)
         {
             var nextAttemptAt = model.Delay.HasValue ? DateTime.UtcNow.Add(model.Delay.Value) : DateTime.UtcNow;
 
@@ -20,8 +20,7 @@ namespace RoomReservation.Core.Services
                 NextAttemptAt = nextAttemptAt
             };
 
-            await _jobs.AddAsync(job);
-            return Result.Success();
+            _jobs.Add(job);
         }
 
         public async Task<ResultT<Job>> GetByIdAsync(Guid jobId)
@@ -35,7 +34,7 @@ namespace RoomReservation.Core.Services
         public async Task<Result> MarkAsCompletedAsync(Job job)
         {
             job.Status = JobStatus.Completed;
-            await _jobs.UpdateAsync(job);
+            await _unitOfWork.SaveChangesAsync();
             return Result.Success();
         }
 
@@ -43,14 +42,14 @@ namespace RoomReservation.Core.Services
         {
             job.Status = JobStatus.Failed;
             job.LastError = errorMessage;
-            await _jobs.UpdateAsync(job);
+            await _unitOfWork.SaveChangesAsync();
             return Result.Success();
         }
 
         public async Task<Result> MarkAsPendingAsync(Job job)
         {
             job.Status = JobStatus.Pending;
-            await _jobs.UpdateAsync(job);
+            await _unitOfWork.SaveChangesAsync();
             return Result.Success();
         }
 

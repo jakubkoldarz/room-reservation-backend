@@ -8,11 +8,8 @@ namespace RoomReservation.Core.Repositories
 {
     public class JobRepository(AppDbContext _db) : IJobRepository
     {
-        public async Task AddAsync(Job job)
-        {
-            _db.Add(job);
-            await _db.SaveChangesAsync();
-        }
+        public void Add(Job job)
+            => _db.Jobs.Add(job);
 
         public async Task<Job?> GetByIdAsync(Guid jobId)
         {
@@ -39,12 +36,6 @@ namespace RoomReservation.Core.Repositories
                 .ToListAsync();
 
             return jobs.SingleOrDefault();
-        }
-
-        public async Task UpdateAsync(Job job)
-        {
-            _db.Update(job);
-            await _db.SaveChangesAsync();
         }
     }
 }

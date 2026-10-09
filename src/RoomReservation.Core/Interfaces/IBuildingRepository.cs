@@ -10,8 +10,7 @@ namespace RoomReservation.Core.Interfaces
         Task<(IReadOnlyList<Building> Buildings, int TotalCount)> GetFilteredAsync(BuildingFilter filters);
         Task<IReadOnlyList<Building>> GetAllAsync();
         Task<bool> ExistsByNameAsync(string name);
-        Task AddAsync(Building building);
-        Task UpdateAsync(Building building);
-        Task DeleteAsync(Building building);
+        void Add(Building building);
+        void Remove(Building building);
     }
 }

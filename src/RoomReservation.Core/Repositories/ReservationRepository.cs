@@ -9,16 +9,26 @@ namespace RoomReservation.Core.Repositories
 {
     public class ReservationRepository(AppDbContext _db) : IReservationRepository
     {
-        public async Task AddAsync(Reservation reservation)
+        public void Add(Reservation reservation)
+            => _db.Reservations.Add(reservation);
+
+        public void Remove(Reservation reservation)
+            => _db.Reservations.Remove(reservation);
+
+        public async Task LockRoomAsync(Guid roomId)
+            => await _db.Database.ExecuteSqlInterpolatedAsync(
+                $@"SELECT 1 FROM ""Rooms"" WHERE ""Id"" = {roomId} FOR UPDATE");
+
+        public async Task<IReadOnlyList<Reservation>> GetByIdsAsync(IReadOnlyList<Guid> reservationIds)
         {
-            _db.Reservations.Add(reservation);
-            await _db.SaveChangesAsync();
+            return await _db.Reservations
+                .Include(r => r.Room)
+                    .ThenInclude(rm => rm.Building)
+                .Include(r => r.CreatedBy)
+                .Where(r => reservationIds.Contains(r.Id))
+                .ToListAsync();
         }
-        public async Task DeleteAsync(Reservation reservation)
-        {
-            _db.Reservations.Remove(reservation);
-            await _db.SaveChangesAsync();
-        }
+
         public async Task<Reservation?> GetByIdAsync(Guid reservationId)
         {
             var reservation = await _db.Reservations
@@ -83,12 +93,6 @@ namespace RoomReservation.Core.Repositories
                 .ToListAsync();
 
             return (reservations, totalCount);
-        }
-
-        public async Task UpdateAsync(Reservation reservation)
-        {
-            _db.Reservations.Update(reservation);
-            await _db.SaveChangesAsync();
         }
 
         public async Task<IReadOnlyList<Reservation>> GetActiveFutureByRoomAsync(Guid roomId)

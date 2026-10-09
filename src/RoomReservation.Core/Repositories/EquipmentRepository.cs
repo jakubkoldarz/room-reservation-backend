@@ -8,23 +8,17 @@ namespace RoomReservation.Core.Repositories
 {
     public class EquipmentRepository(AppDbContext _db) : IEquipmentRepository
     {
-        public async Task AddAsync(Equipment equipment)
-        {
-            _db.Equipment.Add(equipment);
-            await _db.SaveChangesAsync();
-        }
+        public void Add(Equipment equipment)
+            => _db.Equipment.Add(equipment);
+
+        public void Remove(Equipment equipment)
+            => _db.Equipment.Remove(equipment);
 
         public async Task<bool> AllExistAsync(IReadOnlyList<Guid> equipmentIds)
         {
             if (equipmentIds.Count == 0) return true;
             var existingCount = await _db.Equipment.CountAsync(e => equipmentIds.Contains(e.Id));
             return existingCount == equipmentIds.Count;
-        }
-
-        public async Task DeleteAsync(Equipment equipment)
-        {
-            _db.Equipment.Remove(equipment);
-            await _db.SaveChangesAsync();
         }
 
         public async Task<bool> ExistsByNameAsync(string name)
@@ -59,12 +53,6 @@ namespace RoomReservation.Core.Repositories
         public async Task<Equipment?> GetByNameAsync(string name)
         {
             return await _db.Equipment.FirstOrDefaultAsync(e => e.Name == name);
-        }
-
-        public async Task UpdateAsync(Equipment equipment)
-        {
-            _db.Equipment.Update(equipment);
-            await _db.SaveChangesAsync();
         }
     }
 }

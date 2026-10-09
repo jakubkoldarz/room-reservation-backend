@@ -11,12 +11,8 @@ namespace RoomReservation.Core.Repositories
 {
     public class UserRepository(AppDbContext _db) : IUserRepository
     {
-        public async Task<User> CreateAsync(User user)
-        {
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync();
-            return user;
-        }
+        public void Add(User user)
+            => _db.Users.Add(user);
         public async Task<User?> GetByEmailAsync(string email)
         {
             var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
@@ -61,11 +57,6 @@ namespace RoomReservation.Core.Repositories
                 .Where(u => u.Id == userId)
                 .Select(u => u.IsProfileComplete)
                 .SingleOrDefaultAsync();
-        }
-        public async Task UpdateAsync(User user)
-        {
-            _db.Users.Update(user);
-            await _db.SaveChangesAsync();
         }
     }
 }

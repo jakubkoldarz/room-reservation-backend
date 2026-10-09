@@ -27,6 +27,7 @@ namespace RoomReservation.Api.Extensions
             services.AddSingleton<IAuthorizationPolicyProvider, CustomPolicyProvider>();
             services.AddScoped<IAuthorizationHandler, PermissionHandler>();
             services.AddScoped<IAuthorizationHandler, ProfileCompletedHandler>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IAuthService, AuthService>();
 
             services.AddScoped<IUserService, UserService>();
