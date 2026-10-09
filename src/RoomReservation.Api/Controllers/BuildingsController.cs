@@ -24,10 +24,21 @@ namespace RoomReservation.Api.Controllers
     {
         [HttpGet]
         [RequirePermission(Permissions.BuildingList)]
-        public async Task<ActionResult<PagedResult<BasicBuildingResponseDto>>> GetAll([FromQuery] BuildingFilter filters)
+        public async Task<ActionResult<PagedResult<BasicBuildingResponseDto>>> GetFiltered([FromQuery] BuildingFilter filters)
         {
             var result = await _buildingService.GetAllAsync(filters);
             return Ok(result.ToDto(b => b.ToBasicDto()));
+        }
+
+        [HttpGet("lookup")]
+        [RequirePermission(Permissions.BuildingList)]
+        public async Task<ActionResult<IReadOnlyList<BasicBuildingResponseDto>>> GetAll()
+        {
+            var result = await _buildingService.GetAllAsync();
+            if (!result.IsSuccess)
+                return result.Error.ToActionResult();
+
+            return Ok(result.Value.Select(b => b.ToBasicDto()).ToList());
         }
 
         [HttpGet("{buildingId:guid}")]

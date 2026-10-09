@@ -4,6 +4,7 @@ using RoomReservation.Api.Extensions;
 using RoomReservation.Core.Data;
 using RoomReservation.Core.Emails;
 using Scalar.AspNetCore;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +13,11 @@ builder.Services.AddCore(builder.Configuration);
 builder.Services.AddExceptionHandler<ExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddCorsConfiguration(builder.Configuration);
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+});
 
 var app = builder.Build();
 app.UseExceptionHandler();

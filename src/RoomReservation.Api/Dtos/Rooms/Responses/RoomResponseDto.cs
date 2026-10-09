@@ -5,8 +5,8 @@ namespace RoomReservation.Api.Dtos.Rooms.Responses
 {
     public class RoomResponseDto
     {
-        public BasicRoomResponseDto RoomInfo { get; init; } = null!;
-        public BasicBuildingResponseDto BuildingInfo { get; init; } = null!;
-        public IReadOnlyList<EquipmentResponseDto> Equipment { get; init; } = [];
+        public required BasicRoomResponseDto RoomInfo { get; init; }
+        public required BasicBuildingResponseDto BuildingInfo { get; init; }
+        public required IReadOnlyList<EquipmentResponseDto> Equipment { get; init; } = [];
     }
 }

@@ -6,9 +6,9 @@ namespace RoomReservation.Api.Dtos.Rooms.Responses
 {
     public class RoomDetailsResponseDto
     {
-        public RoomResponseDto Details { get; init; } = null!;
-        public IReadOnlyList<ReservationResponseDto> Reservations { get; init; } = [];
-        public IReadOnlyList<AvailabilityResponseDto> Availabilities { get; init; } = [];
-        public IReadOnlyList<EventResponseDto> Events { get; init; } = [];
+        public required RoomResponseDto Details { get; init; }
+        public required IReadOnlyList<ReservationResponseDto> Reservations { get; init; } = [];
+        public required IReadOnlyList<AvailabilityResponseDto> Availabilities { get; init; } = [];
+        public required IReadOnlyList<EventResponseDto> Events { get; init; } = [];
     }
 }

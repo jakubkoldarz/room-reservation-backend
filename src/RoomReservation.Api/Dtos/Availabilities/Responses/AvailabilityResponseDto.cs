@@ -2,8 +2,8 @@
 {
     public class AvailabilityResponseDto
     {
-        public DayOfWeek DayOfWeek { get; init; }
-        public TimeOnly StartTime { get; init; }
-        public TimeOnly EndTime { get; init; }
+        public required DayOfWeek DayOfWeek { get; init; }
+        public required TimeOnly StartTime { get; init; }
+        public required TimeOnly EndTime { get; init; }
     }
 }

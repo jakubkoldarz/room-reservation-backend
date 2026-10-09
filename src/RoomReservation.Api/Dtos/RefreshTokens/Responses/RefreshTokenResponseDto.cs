@@ -2,9 +2,9 @@
 {
     public class RefreshTokenResponseDto
     {
-        public Guid Id { get; init; }
-        public DateTime Created { get; init; }
-        public DateTime Expires { get; init; }
+        public required Guid Id { get; init; }
+        public required DateTime Created { get; init; }
+        public required DateTime Expires { get; init; }
         public string? IpAddress { get; init; }
         public string? UserAgent { get; init; }
     }

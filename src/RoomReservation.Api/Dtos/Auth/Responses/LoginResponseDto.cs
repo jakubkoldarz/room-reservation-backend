@@ -2,7 +2,7 @@
 {
     public class LoginResponseDto
     {
-        public bool Requires2FA { get; init; }
+        public required bool Requires2FA { get; init; }
         public Guid? VerificationId { get; init; }
         public string? JwtToken { get; init; }
     }

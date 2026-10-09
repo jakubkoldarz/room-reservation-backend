@@ -2,10 +2,10 @@
 {
     public class BasicRoomResponseDto
     {
-        public Guid Id { get; init; }
-        public string Identifier { get; init; } = string.Empty;
-        public bool RequiresApproval { get; init; }
-        public int Capacity { get; init; }
-        public int Floor { get; init; }
+        public required Guid Id { get; init; }
+        public required string Identifier { get; init; } 
+        public required bool RequiresApproval { get; init; }
+        public required int Capacity { get; init; }
+        public required int Floor { get; init; }
     }
 }

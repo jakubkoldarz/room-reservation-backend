@@ -2,6 +2,6 @@
 {
     public class VerificationIdResponseDto
     {
-        public Guid VerificationId { get; init; }
+        public required Guid VerificationId { get; init; }
     }
 }

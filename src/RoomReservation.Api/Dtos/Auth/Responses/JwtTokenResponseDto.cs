@@ -2,6 +2,6 @@
 {
     public class JwtTokenResponseDto
     {
-        public string JwtToken { get; init; } = string.Empty;
+        public required string JwtToken { get; init; }
     }
 }
