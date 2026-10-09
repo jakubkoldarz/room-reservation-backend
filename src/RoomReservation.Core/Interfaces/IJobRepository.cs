@@ -6,7 +6,6 @@ namespace RoomReservation.Core.Interfaces
     {
         Task<Job?> GetByIdAsync(Guid jobId);
         Task<Job?> TryClaimNextJobAsync();
-        Task UpdateAsync(Job job);
-        Task AddAsync(Job job);
+        void Add(Job job);
     }
 }

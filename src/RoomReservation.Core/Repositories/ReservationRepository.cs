@@ -2,26 +2,38 @@
 using RoomReservation.Core.Data;
 using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
+using RoomReservation.Core.Extensions;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
+using RoomReservation.Core.Models;
 
 namespace RoomReservation.Core.Repositories
 {
-    public class ReservationRepository(AppDbContext _db) : IReservationRepository
+    public class ReservationRepository(AppDbContext db, TimeProvider timeProvider) : IReservationRepository
     {
-        public async Task AddAsync(Reservation reservation)
+        public void Add(Reservation reservation)
+            => db.Reservations.Add(reservation);
+
+        public void Remove(Reservation reservation)
+            => db.Reservations.Remove(reservation);
+
+        public async Task LockRoomAsync(Guid roomId)
+            => await db.Database.ExecuteSqlInterpolatedAsync(
+                $@"SELECT 1 FROM ""Rooms"" WHERE ""Id"" = {roomId} FOR UPDATE");
+
+        public async Task<IReadOnlyList<Reservation>> GetByIdsAsync(IReadOnlyList<Guid> reservationIds)
         {
-            _db.Reservations.Add(reservation);
-            await _db.SaveChangesAsync();
+            return await db.Reservations
+                .Include(r => r.Room)
+                    .ThenInclude(rm => rm.Building)
+                .Include(r => r.CreatedBy)
+                .Where(r => reservationIds.Contains(r.Id))
+                .ToListAsync();
         }
-        public async Task DeleteAsync(Reservation reservation)
-        {
-            _db.Reservations.Remove(reservation);
-            await _db.SaveChangesAsync();
-        }
+
         public async Task<Reservation?> GetByIdAsync(Guid reservationId)
         {
-            var reservation = await _db.Reservations
+            var reservation = await db.Reservations
                 .Include(r => r.Room)
                     .ThenInclude(rm => rm.Building)
                 .Include(r => r.CreatedBy)
@@ -34,7 +46,7 @@ namespace RoomReservation.Core.Repositories
         }
         public async Task<IReadOnlyList<Reservation>> GetActiveByRoomAndDateAsync(Guid roomId, DateOnly date)
         {
-            var reservation = await _db.Reservations
+            var reservation = await db.Reservations
                 .Where(r => 
                     r.RoomId == roomId && 
                     r.Date == date && 
@@ -44,9 +56,10 @@ namespace RoomReservation.Core.Repositories
             return reservation;
         }
 
-        public async Task<(IReadOnlyList<Reservation> Reservations, int TotalCount)> GetFilteredAsync(ReservationFilter filters)
+        public async Task<PagedList<Reservation>> GetFilteredAsync(ReservationFilter filters)
         {
-            var reservationsQuery = _db.Reservations
+            var reservationsQuery = db.Reservations
+                .AsNoTracking()
                 .Include(r => r.Room)
                     .ThenInclude(rm => rm.Building)
                 .Include(r => r.CreatedBy)
@@ -76,25 +89,17 @@ namespace RoomReservation.Core.Repositories
             if (filters.Status.HasValue)
                 reservationsQuery = reservationsQuery.Where(r => r.Status == filters.Status);
 
-            var totalCount = await reservationsQuery.CountAsync(); 
-            var reservations = await reservationsQuery
-                .Skip((filters.Page - 1) * filters.PageSize)
-                .Take(filters.PageSize)
-                .ToListAsync();
-
-            return (reservations, totalCount);
-        }
-
-        public async Task UpdateAsync(Reservation reservation)
-        {
-            _db.Reservations.Update(reservation);
-            await _db.SaveChangesAsync();
+            return await reservationsQuery
+                .OrderByDescending(r => r.Date)
+                .ThenByDescending(r => r.StartTime)
+                .ThenBy(r => r.Id)
+                .ToPagedListAsync(filters);
         }
 
         public async Task<IReadOnlyList<Reservation>> GetActiveFutureByRoomAsync(Guid roomId)
         {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
-            var reservations = await _db.Reservations
+            var today = timeProvider.WarsawToday();
+            var reservations = await db.Reservations
                 .Where(r => r.RoomId == roomId &&
                             r.Date >= today &&
                             (r.Status == ReservationStatus.Approved || r.Status == ReservationStatus.Pending))
@@ -105,8 +110,8 @@ namespace RoomReservation.Core.Repositories
 
         public async Task<IReadOnlyList<Reservation>> GetActiveFutureByBuildingAsync(Guid buildingId)
         {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
-            var reservations = await _db.Reservations
+            var today = timeProvider.WarsawToday();
+            var reservations = await db.Reservations
                 .Where(r => r.Room.BuildingId == buildingId &&
                             r.Date >= today &&
                             (r.Status == ReservationStatus.Approved || r.Status == ReservationStatus.Pending))
@@ -117,8 +122,8 @@ namespace RoomReservation.Core.Repositories
 
         public async Task<IReadOnlyList<Reservation>> GetActiveFutureByRoomIdsAsync(IReadOnlyList<Guid> roomIds)
         {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
-            var reservations = await _db.Reservations
+            var today = timeProvider.WarsawToday();
+            var reservations = await db.Reservations
                 .Where(r => roomIds.Contains(r.RoomId) &&
                             r.Date >= today &&
                             (r.Status == ReservationStatus.Approved || r.Status == ReservationStatus.Pending))

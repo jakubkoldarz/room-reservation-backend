@@ -1,16 +1,12 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RoomReservation.Core.Constants;
 using RoomReservation.Core.Data;
 using RoomReservation.Core.Entities;
 using RoomReservation.Core.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace RoomReservation.Core.Seeders
 {
-    public class UserSeeder(AppDbContext _db) : ISeeder
+    public class UserSeeder(AppDbContext db) : ISeeder
     {
         public async Task SeedAsync()
         {
@@ -49,7 +45,7 @@ namespace RoomReservation.Core.Seeders
                 new() { Firstname = "Weronika", Lastname = "Sikora", Email = "weronika.sikora@gmail.com", PasswordHash = "password" },
             };
 
-            var defaultRole = await _db.Roles.Where(r => r.IsDefault).Select(r => r.Id).FirstOrDefaultAsync();
+            var defaultRole = await db.Roles.Where(r => r.IsDefault).Select(r => r.Id).FirstOrDefaultAsync();
 
             foreach (var user in users)
             {
@@ -57,10 +53,10 @@ namespace RoomReservation.Core.Seeders
                 {
                     user.RoleId = defaultRole;
                 }
-                _db.Users.Add(user);
+                db.Users.Add(user);
             }
 
-            await _db.SaveChangesAsync();
+            await db.SaveChangesAsync();
         }
     }
 }

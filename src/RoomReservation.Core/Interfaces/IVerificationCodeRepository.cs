@@ -1,8 +1,5 @@
 ﻿using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace RoomReservation.Core.Interfaces
 {
@@ -10,8 +7,7 @@ namespace RoomReservation.Core.Interfaces
     {
         Task<VerificationCode?> GetByIdAsync(Guid verificationId);
         Task<VerificationCode?> GetByUserIdAsync(Guid userId, VerificationCodeType type);
-        Task AddAsync(VerificationCode code);
-        Task MarkAsUsedAsync(VerificationCode code);
+        void Add(VerificationCode code);
         Task InvalidateActiveCodesAsync(Guid userId, VerificationCodeType type);
     }
 }

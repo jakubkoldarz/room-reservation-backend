@@ -5,9 +5,9 @@ namespace RoomReservation.Api.Dtos.Users.Responses
 {
     public class UserDetailsResponseDto
     {
-        public BasicUserResponseDto UserInfo { get; init; } = null!;
-        public UserAccountStatusResponseDto AccountStatus { get; init; } = null!;
-        public RoleWithPermissionsResponseDto RoleInfo { get; init; } = null!;
-        public IEnumerable<RefreshTokenResponseDto> RefreshTokens { get; init; } = [];
+        public required BasicUserResponseDto UserInfo { get; init; } 
+        public required UserAccountStatusResponseDto AccountStatus { get; init; }
+        public required RoleWithPermissionsResponseDto RoleInfo { get; init; } 
+        public required IEnumerable<RefreshTokenResponseDto> RefreshTokens { get; init; } = [];
     }
 }

@@ -12,6 +12,7 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+COPY ["Directory.Build.props", "./"]
 COPY ["src/RoomReservation.Api/RoomReservation.Api.csproj", "src/RoomReservation.Api/"]
 COPY ["src/RoomReservation.Core/RoomReservation.Core.csproj", "src/RoomReservation.Core/"]
 RUN dotnet restore "./src/RoomReservation.Api/RoomReservation.Api.csproj"

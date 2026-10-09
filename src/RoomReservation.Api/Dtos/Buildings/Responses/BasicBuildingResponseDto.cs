@@ -2,12 +2,12 @@
 {
     public class BasicBuildingResponseDto
     {
-        public Guid Id { get; init; }
-        public string Name { get; init; } = string.Empty;
+        public required Guid Id { get; init; }
+        public required string Name { get; init; }
         public string? Identifier { get; init; }
-        public string Street { get; init; } = string.Empty;
-        public string City { get; init; } = string.Empty;
-        public string PostalCode { get; init; } = string.Empty;
-        public int FloorsCount { get; init; }
+        public required string Street { get; init; }
+        public required string City { get; init; }
+        public required string PostalCode { get; init; }
+        public required int FloorsCount { get; init; }
     };
 }

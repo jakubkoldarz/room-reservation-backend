@@ -7,7 +7,7 @@ namespace RoomReservation.Core.Entities
         public Guid Id { get; set; } = Guid.CreateVersion7();
 
         public Guid? CreatedById { get; set; }
-        public User? CreatedBy { get; set; } = null!;
+        public User? CreatedBy { get; set; }
 
         public Guid? ApprovedById { get; set; }
         public User? ApprovedBy { get; set; }

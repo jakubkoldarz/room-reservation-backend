@@ -1,8 +1,9 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using RoomReservation.Core.Entities;
+using RoomReservation.Core.Extensions;
 using RoomReservation.Core.Interfaces;
+using RoomReservation.Core.Options;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -10,27 +11,21 @@ using System.Text;
 
 namespace RoomReservation.Core.Providers
 {
-    public class TokenProvider(IConfiguration config) : ITokenProvider
+    public class TokenProvider(IOptions<JwtOptions> jwtOptions, TimeProvider timeProvider) : ITokenProvider
     {
+        private static readonly TimeSpan JwtLifetime = TimeSpan.FromMinutes(10);
+
         public string GenerateJwtToken(User user)
         {
-            var jwtSecret = config["Jwt:Secret"] ?? throw new InvalidOperationException("Missing config: Jwt:Secret");
-            var issuer = config["Jwt:Issuer"] ?? throw new InvalidOperationException("Missing config: Jwt:Issuer");
-            var audience = config["Jwt:Audience"] ?? throw new InvalidOperationException("Missing config: Jwt:Audience");
-
-            var jwtKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
-
-            var claims = new List<Claim>
-            {
-                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new(JwtRegisteredClaimNames.Iss, issuer!),
-                new(JwtRegisteredClaimNames.Aud, audience!),
-            };
+            var jwt = jwtOptions.Value;
+            var jwtKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Secret));
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(10),
+                Subject = new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()) }),
+                Issuer = jwt.Issuer,
+                Audience = jwt.Audience,
+                Expires = timeProvider.UtcNow().Add(JwtLifetime),
                 SigningCredentials = new SigningCredentials(jwtKey, SecurityAlgorithms.HmacSha256Signature)
             };
 
@@ -48,10 +43,7 @@ namespace RoomReservation.Core.Providers
 
         public (string token, string hash) GenerateRefreshToken()
         {
-            var randomNumber = new byte[64];
-            using var rng = RandomNumberGenerator.Create();
-            rng.GetBytes(randomNumber);
-            var refreshToken = Convert.ToBase64String(randomNumber);
+            var refreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
             var hash = HashRefreshToken(refreshToken);
 
             return (refreshToken, hash);

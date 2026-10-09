@@ -1,38 +1,37 @@
-﻿using RoomReservation.Core.Entities;
+using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
+using RoomReservation.Core.Models;
 using RoomReservation.Core.Results.Common;
 
 namespace RoomReservation.Core.Services
 {
-    public class PermissionService(IUserRepository _users, IPermissionRepository _permissions) : IPermissionService
+    public class PermissionService(IUserRepository users, IPermissionRepository permissions) : IPermissionService
     {
-        async Task<ResultT<IReadOnlyList<string>>> IPermissionService.GetUserPermissionsAsync(Guid userId)
+        public async Task<ResultT<IReadOnlyList<string>>> GetUserPermissionsAsync(Guid userId)
         {
-            var user = await _users.GetByIdAsync(userId);
+            var user = await users.GetByIdAsync(userId);
             if (user is null)
                 return new Error("User not found", ErrorType.NotFound);
 
             if (user.Role.IsSuperAdmin)
             {
-                var allPermissions = await _permissions.GetAllAsync();
+                var allPermissions = await permissions.GetAllAsync();
                 return ResultT<IReadOnlyList<string>>.Success(allPermissions);
             }
 
-            var permissions = await _permissions.GetUserPermissionsAsync(userId);
-            return ResultT<IReadOnlyList<string>>.Success(permissions);
+            var userPermissions = await permissions.GetUserPermissionsAsync(userId);
+            return ResultT<IReadOnlyList<string>>.Success(userPermissions);
         }
 
-        async Task<bool> IPermissionService.UserHasPermissionAsync(Guid userId, string permission)
-        {
-            return await _permissions.UserHasPermissionAsync(userId, permission);
-        }
+        public async Task<UserAccessModel?> GetUserAccessAsync(Guid userId)
+            => await permissions.GetUserAccessAsync(userId);
 
-        public async Task<PagedResult<Permission>> GetAllPermissionsAsync(PermissionFilter filters)
+        public async Task<ResultT<PagedList<Permission>>> GetAllPermissionsAsync(PermissionFilter filters)
         {
-            var (Permissions, TotalCount) = await _permissions.GetFilteredAsync(filters);
-            return PagedResult<Permission>.Success(Permissions, TotalCount, filters.Page, filters.PageSize);
+            var page = await permissions.GetFilteredAsync(filters);
+            return ResultT<PagedList<Permission>>.Success(page);
         }
     }
 }

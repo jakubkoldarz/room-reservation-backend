@@ -18,7 +18,7 @@ namespace RoomReservation.Core.Interfaces
                                                                                    string? ipAddress = null,
                                                                                    string? userAgent = null);
         Task<Result> Enable2faAsync(Guid userId);
-        Task<Result> Disable2faAsync(Guid userId);
+        Task<Result> Disable2faAsync(Guid userId, string password);
         Task<ResultT<VerificationCode>> IssueChangeEmailAsync(Guid userId, string newEmail);
         Task<Result> ConfirmEmailChangeAsync(Guid verificationId, string code);
         Task<Result> ChangePasswordAsync(Guid userId, string oldPassword, string newPassword);

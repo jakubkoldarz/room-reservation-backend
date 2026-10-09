@@ -2,7 +2,7 @@
 {
     public class RoleWithPermissionsResponseDto
     {
-        public string Role { get; init; } = string.Empty;
-        public string[] Permissions { get; init; } = [];
+        public required string Role { get; init; }
+        public required string[] Permissions { get; init; } = [];
     }
 }

@@ -1,4 +1,4 @@
-﻿using RoomReservation.Core.Enums;
+using RoomReservation.Core.Entities;
 
 namespace RoomReservation.Core.Models.Reservations
 {
@@ -10,5 +10,9 @@ namespace RoomReservation.Core.Models.Reservations
         TimeOnly EndTime,
         Guid RoomId,
         string Status
-    );
+    )
+    {
+        public static ConflictingReservationModel From(Reservation reservation)
+            => new(reservation.Id, reservation.Date, reservation.StartTime, reservation.EndTime, reservation.RoomId, reservation.Status.ToString().ToUpper());
+    }
 }

@@ -7,8 +7,7 @@ namespace RoomReservation.Core.Interfaces
         Task<Event?> GetByIdAsync(Guid id);
         Task<IReadOnlyList<Event>> GetActiveByRoomAsync(Guid roomId);
         Task<IReadOnlyList<Event>> GetActiveByRoomIdsAsync(IReadOnlyList<Guid> roomIds);
-        Task AddAsync(Event ev);
-        Task UpdateAsync(Event ev);
-        Task DeleteAsync(Event ev);
+        void Add(Event ev);
+        void Remove(Event ev);
     }
 }

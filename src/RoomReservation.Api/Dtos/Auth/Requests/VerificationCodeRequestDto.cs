@@ -2,7 +2,7 @@
 
 namespace RoomReservation.Api.Dtos.Auth.Requests
 {
-    public class VerificationCodedRequestDto
+    public class VerificationCodeRequestDto
     {
         [Required] public required string VerificationCode { get; init; }
     }

@@ -1,34 +1,36 @@
 ﻿using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
+using RoomReservation.Core.Extensions;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Results.Common;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Security.Cryptography;
 
 namespace RoomReservation.Core.Services
 {
     public class VerificationCodeService(
-        IVerificationCodeRepository _verificationCodes) : IVerificationCodeService
+        IVerificationCodeRepository verificationCodeRepository,
+        TimeProvider timeProvider) : IVerificationCodeService
     {
         public async Task<ResultT<VerificationCode>> GenerateCodeAsync(Guid userId, VerificationCodeType type)
         {
-            await _verificationCodes.InvalidateActiveCodesAsync(userId, type);
+            await verificationCodeRepository.InvalidateActiveCodesAsync(userId, type);
 
+            var now = timeProvider.UtcNow();
             var codeToCreate = new VerificationCode()
             {
                 Type = type,
                 UserId = userId,
                 Code = GenerateCodeValue(),
-                ExpiresAt = DateTime.UtcNow.AddMinutes(GetExpirationMinutes(type))
+                CreatedAt = now,
+                ExpiresAt = now.AddMinutes(GetExpirationMinutes(type))
             };
-            await _verificationCodes.AddAsync(codeToCreate);
+            verificationCodeRepository.Add(codeToCreate);
 
             return ResultT<VerificationCode>.Success(codeToCreate);
         }
         public async Task<ResultT<VerificationCode>> GetByIdAsync(Guid verificationId)
         {
-            var verificationCode = await _verificationCodes.GetByIdAsync(verificationId);
+            var verificationCode = await verificationCodeRepository.GetByIdAsync(verificationId);
             if (verificationCode is null)
                 return new Error("Invalid verification id", ErrorType.NotFound);
 
@@ -36,7 +38,7 @@ namespace RoomReservation.Core.Services
         }
         public async Task<ResultT<VerificationCode>> GetActiveByUserIdAsync(Guid userId, VerificationCodeType type)
         {
-            var code = await _verificationCodes.GetByUserIdAsync(userId, type);
+            var code = await verificationCodeRepository.GetByUserIdAsync(userId, type);
             if (code is null)
                 return new Error("Verification failed", ErrorType.BadRequest);
 
@@ -50,18 +52,19 @@ namespace RoomReservation.Core.Services
 
             var verificationCode = codeResult.Value;
             if (verificationCode.IsUsed
-                || DateTime.UtcNow >= verificationCode.ExpiresAt
+                || timeProvider.UtcNow() >= verificationCode.ExpiresAt
                 || verificationCode.Code != code
                 || verificationCode.Type != type)
                 return new Error("Invalid code provided", ErrorType.BadRequest);
 
+            verificationCode.IsUsed = true;
             return ResultT<VerificationCode>.Success(verificationCode);
         }
 
 
         private string GenerateCodeValue()
         {
-            return Random.Shared.Next(100000, 999999).ToString();
+            return RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
         }
         private double GetExpirationMinutes(VerificationCodeType type)
         {

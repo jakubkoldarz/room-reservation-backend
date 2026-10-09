@@ -2,10 +2,7 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using RoomReservation.Core.Constants;
 using RoomReservation.Core.Entities;
-using System;
-using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 
 namespace RoomReservation.Core.Data.Configuration
 {

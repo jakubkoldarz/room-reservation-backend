@@ -27,11 +27,11 @@ namespace RoomReservation.Api.Extensions.Mappers
 
         private static ReservationActorResponseDto? ToActorDto(this User? user, DateTime? at)
         {
-            if (user == null || at == null) return null;
+            if (user is null || at is null) return null;
 
             return new ReservationActorResponseDto
             {
-                At = (DateTime)at,
+                At = at.Value,
                 By = user.ToBasicDto()
             };
         }

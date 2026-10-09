@@ -2,8 +2,8 @@
 {
     public class UserAccountStatusResponseDto
     {
-        public bool HasProfileCompleted { get; init; }
-        public bool HasEmailVerified { get; init; }
-        public bool Has2faEnabled { get; init; }
+        public required bool HasProfileCompleted { get; init; }
+        public required bool HasEmailVerified { get; init; }
+        public required bool Has2faEnabled { get; init; }
     }
 }

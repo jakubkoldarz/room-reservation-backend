@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
-using RoomReservation.Core.Authorization.Requirements;
+using RoomReservation.Api.Authorization.Requirements;
 using System.Collections.Concurrent;
 
 namespace RoomReservation.Api.Authorization

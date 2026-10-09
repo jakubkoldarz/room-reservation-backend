@@ -1,71 +1,74 @@
-﻿using RoomReservation.Core.Data;
 using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
+using RoomReservation.Core.Extensions;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Providers;
 using RoomReservation.Core.Results.Common;
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Text;
 
 namespace RoomReservation.Core.Services
 {
-    public class RefreshTokenService(ITokenProvider _tokenProvider, IRefreshTokenRepository _refreshTokens) : IRefreshTokenService
+    public class RefreshTokenService(
+        ITokenProvider tokenProvider,
+        IRefreshTokenRepository refreshTokenRepository,
+        IUnitOfWork unitOfWork,
+        TimeProvider timeProvider) : IRefreshTokenService
     {
-        public async Task<ResultT<string>> CreateTokenAsync(
+        private static readonly TimeSpan TokenLifetime = TimeSpan.FromDays(7);
+
+        public string CreateToken(
             Guid userId,
             string? ipAddress = null,
             string? userAgent = null)
         {
-            (string tokenValue, string hash) = _tokenProvider.GenerateRefreshToken();
+            (string tokenValue, string hash) = tokenProvider.GenerateRefreshToken();
+            var now = timeProvider.UtcNow();
 
             var tokenToCreate = new RefreshToken()
             {
                 UserId = userId,
-                CreatedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddDays(7),
+                CreatedAt = now,
+                ExpiresAt = now.Add(TokenLifetime),
                 TokenHash = hash,
                 IpAddress = ipAddress,
                 UserAgent = userAgent
             };
 
-            await _refreshTokens.CreateAsync(tokenToCreate);
-            return ResultT<string>.Success(tokenValue);
+            refreshTokenRepository.Add(tokenToCreate);
+            return tokenValue;
         }
 
         public async Task<Result> DeleteExpiredAsync(Guid userId)
         {
-            await _refreshTokens.DeleteExpiredForUserAsync(userId);
+            await refreshTokenRepository.DeleteExpiredForUserAsync(userId);
             return Result.Success();
         }
 
         public async Task<Result> RevokeAllAsync(Guid userId)
         {
-            await _refreshTokens.RevokeAllForUserAsync(userId);
+            await refreshTokenRepository.RevokeAllForUserAsync(userId);
             return Result.Success();
         }
 
         public async Task<Result> RevokeAsync(Guid userId, string refreshToken)
         {
-            var token = await _refreshTokens.GetByHashAsync(TokenProvider.HashRefreshToken(refreshToken));
-            if (token == null || token.UserId != userId)
-                return Result.Failure("Refresh token was not found", ErrorType.NotFound);
+            var token = await refreshTokenRepository.GetByHashAsync(TokenProvider.HashRefreshToken(refreshToken));
+            if (token is null || token.UserId != userId)
+                return new Error("Refresh token was not found", ErrorType.NotFound);
 
-            token.RevokedAt = DateTime.UtcNow;
-            await _refreshTokens.UpdateAsync(token);
-            
+            token.RevokedAt = timeProvider.UtcNow();
+            await unitOfWork.SaveChangesAsync();
+
             return Result.Success();
         }
 
         public async Task<Result> RevokeAsync(Guid userId, Guid refreshTokenId)
         {
-            var token = await _refreshTokens.GetById(refreshTokenId);
-            if (token == null || token.UserId != userId)
-                return Result.Failure("Refresh token was not found", ErrorType.NotFound);
+            var token = await refreshTokenRepository.GetById(refreshTokenId);
+            if (token is null || token.UserId != userId)
+                return new Error("Refresh token was not found", ErrorType.NotFound);
 
-            token.RevokedAt = DateTime.UtcNow;
-            await _refreshTokens.UpdateAsync(token);
+            token.RevokedAt = timeProvider.UtcNow();
+            await unitOfWork.SaveChangesAsync();
 
             return Result.Success();
         }
@@ -75,36 +78,37 @@ namespace RoomReservation.Core.Services
             string? ipAddress = null,
             string? userAgent = null)
         {
-            var existingToken = await _refreshTokens.GetByHashAsync(TokenProvider.HashRefreshToken(refreshToken));
-            if (existingToken == null)
-                return ResultT<(string, string)>.Failure("Refresh token was not found", ErrorType.Unauthorized);
+            var existingToken = await refreshTokenRepository.GetByHashAsync(TokenProvider.HashRefreshToken(refreshToken));
+            if (existingToken is null)
+                return new Error("Refresh token was not found", ErrorType.Unauthorized);
 
-            if(existingToken.IsRevoked)
+            if (existingToken.IsRevoked)
             {
-                await _refreshTokens.RevokeAllForUserAsync(existingToken.UserId);
-                return ResultT<(string, string)>.Failure("Refresh token reuse detected, please login again", ErrorType.Unauthorized);
+                await refreshTokenRepository.RevokeAllForUserAsync(existingToken.UserId);
+                return new Error("Refresh token reuse detected, please login again", ErrorType.Unauthorized);
             }
 
-            if (existingToken.ExpiresAt < DateTime.UtcNow)
-                return ResultT<(string, string)>.Failure("Refresh token expired", ErrorType.Unauthorized);
+            var now = timeProvider.UtcNow();
+            if (existingToken.ExpiresAt < now)
+                return new Error("Refresh token expired", ErrorType.Unauthorized);
 
-            (var newToken, var newHash) = _tokenProvider.GenerateRefreshToken();
+            (var newToken, var newHash) = tokenProvider.GenerateRefreshToken();
             var tokenToCreate = new RefreshToken()
             {
                 UserId = existingToken.UserId,
-                CreatedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddDays(7),
+                CreatedAt = now,
+                ExpiresAt = now.Add(TokenLifetime),
                 TokenHash = newHash,
                 IpAddress = ipAddress,
                 UserAgent = userAgent,
             };
 
-            var createdToken = await _refreshTokens.CreateAsync(tokenToCreate);
-            existingToken.RevokedAt = DateTime.UtcNow;
-            existingToken.ReplacedByTokenId = createdToken.Id;
-            await _refreshTokens.UpdateAsync(existingToken);
+            refreshTokenRepository.Add(tokenToCreate);
+            existingToken.RevokedAt = now;
+            existingToken.ReplacedByTokenId = tokenToCreate.Id;
+            await unitOfWork.SaveChangesAsync();
 
-            var jwtToken = _tokenProvider.GenerateJwtToken(existingToken.User);
+            var jwtToken = tokenProvider.GenerateJwtToken(existingToken.User);
 
             return ResultT<(string, string)>.Success((jwtToken, newToken));
         }

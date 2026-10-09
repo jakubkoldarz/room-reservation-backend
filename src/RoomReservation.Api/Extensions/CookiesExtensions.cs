@@ -1,10 +1,12 @@
-﻿namespace RoomReservation.Api.Extensions
+namespace RoomReservation.Api.Extensions
 {
     public static class CookiesExtensions
     {
+        public const string RefreshTokenCookieName = "refreshToken";
+
         public static void AppendRefreshToken(this IResponseCookies cookies, string refreshToken, bool isDevelopment = false)
         {
-            cookies.Append("refreshToken", refreshToken, new CookieOptions
+            cookies.Append(RefreshTokenCookieName, refreshToken, new CookieOptions
             {
                 Expires = DateTime.UtcNow.AddDays(7),
                 HttpOnly = true,
@@ -16,7 +18,7 @@
 
         public static void DeleteRefreshToken(this IResponseCookies cookies, bool isDevelopment = false)
         {
-            cookies.Delete("refreshToken", new CookieOptions
+            cookies.Delete(RefreshTokenCookieName, new CookieOptions
             {
                 HttpOnly = true,
                 Secure = isDevelopment ? false : true,
