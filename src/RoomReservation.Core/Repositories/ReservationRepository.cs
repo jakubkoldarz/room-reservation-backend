@@ -86,6 +86,12 @@ namespace RoomReservation.Core.Repositories
             if (filters.Date.HasValue)
                 reservationsQuery = reservationsQuery.Where(r => r.Date == filters.Date);
 
+            if (filters.DateFrom.HasValue)
+                reservationsQuery = reservationsQuery.Where(r => r.Date >= filters.DateFrom);
+
+            if (filters.DateTo.HasValue)
+                reservationsQuery = reservationsQuery.Where(r => r.Date <= filters.DateTo);
+
             if (filters.Status.HasValue)
                 reservationsQuery = reservationsQuery.Where(r => r.Status == filters.Status);
 

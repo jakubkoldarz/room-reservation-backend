@@ -23,10 +23,10 @@ namespace RoomReservation.Api.Controllers
     {
         [RequirePermission(Permissions.RoomList)]
         [HttpGet]
-        public async Task<ActionResult<PagedResponseDto<BasicRoomResponseDto>>> GetAll([FromQuery] RoomFilter filters)
+        public async Task<ActionResult<PagedResponseDto<RoomListItemResponseDto>>> GetAll([FromQuery] RoomFilter filters)
         {
             var result = await roomService.GetAllAsync(filters);
-            return result.ToActionResult(page => Ok(page.ToPagedDto(r => r.ToBasicDto())));
+            return result.ToActionResult(page => Ok(page.ToPagedDto(r => r.ToListItemDto())));
         }
 
         [RequirePermission(Permissions.RoomView)]

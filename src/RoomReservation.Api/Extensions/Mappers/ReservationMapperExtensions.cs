@@ -25,6 +25,13 @@ namespace RoomReservation.Api.Extensions.Mappers
             };
         }
 
+        public static ReservationListItemResponseDto ToListItemDto(this Reservation reservation) => new()
+        {
+            ReservationInfo = reservation.ToBasicDto(),
+            RoomInfo = reservation.Room.ToBasicDto(),
+            BuildingInfo = reservation.Room.Building.ToBasicDto(),
+        };
+
         private static ReservationActorResponseDto? ToActorDto(this User? user, DateTime? at)
         {
             if (user is null || at is null) return null;

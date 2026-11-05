@@ -29,19 +29,19 @@ namespace RoomReservation.Api.Controllers
 
         [HttpGet]
         [RequirePermission(Permissions.ReservationList)]
-        public async Task<ActionResult<PagedResponseDto<ReservationResponseDto>>> GetAll([FromQuery] ReservationFilter filters)
+        public async Task<ActionResult<PagedResponseDto<ReservationListItemResponseDto>>> GetAll([FromQuery] ReservationFilter filters)
         {
             var result = await reservationService.GetAllAsync(filters);
-            return result.ToActionResult(page => Ok(page.ToPagedDto(r => r.ToBasicDto())));
+            return result.ToActionResult(page => Ok(page.ToPagedDto(r => r.ToListItemDto())));
         }
 
         [HttpGet("mine")]
         [RequireCompletedProfile]
-        public async Task<ActionResult<PagedResponseDto<ReservationResponseDto>>> GetMyReservations([FromQuery] ReservationFilter filters, [UserId] Guid userId)
+        public async Task<ActionResult<PagedResponseDto<ReservationListItemResponseDto>>> GetMyReservations([FromQuery] ReservationFilter filters, [UserId] Guid userId)
         {
             filters.CreatedById = userId;
             var result = await reservationService.GetAllAsync(filters);
-            return result.ToActionResult(page => Ok(page.ToPagedDto(r => r.ToBasicDto())));
+            return result.ToActionResult(page => Ok(page.ToPagedDto(r => r.ToListItemDto())));
         }
 
         [HttpPost]

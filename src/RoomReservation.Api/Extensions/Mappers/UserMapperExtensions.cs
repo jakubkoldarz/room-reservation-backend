@@ -32,6 +32,8 @@ namespace RoomReservation.Api.Extensions.Mappers
             return new UserDetailsResponseDto
             {
                 UserInfo= user.ToBasicDto(),
+                Email = user.Email,
+                PendingEmail = user.PendingEmail,
                 AccountStatus= user.ToAccountStatusDto(),
                 RoleInfo = new RoleWithPermissionsResponseDto { Role = user.Role.Name, Permissions = [.. permissions] },
                 RefreshTokens= user.RefreshTokens.Select(rf => rf.ToDto())

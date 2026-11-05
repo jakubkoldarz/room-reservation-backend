@@ -7,6 +7,7 @@ using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Providers;
 using RoomReservation.Core.Repositories;
 using RoomReservation.Core.Services;
+using System.Text.Json.Serialization;
 
 namespace RoomReservation.Api.Extensions
 {
@@ -72,7 +73,12 @@ namespace RoomReservation.Api.Extensions
             });
 
             services.AddJwtConfiguration();
-            services.AddControllers();
+
+            services.ConfigureHttpJsonOptions(options =>
+            {
+                options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+            });
+            services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.Strict);
 
             return services;
         }
