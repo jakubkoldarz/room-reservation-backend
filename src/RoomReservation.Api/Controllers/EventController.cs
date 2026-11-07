@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RoomReservation.Api.Attributes;
+using RoomReservation.Api.Dtos;
 using RoomReservation.Api.Dtos.Events.Requests;
 using RoomReservation.Api.Dtos.Events.Responses;
 using RoomReservation.Api.Extensions;
 using RoomReservation.Api.Extensions.Mappers;
 using RoomReservation.Core.Constants;
+using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models.Events;
 
@@ -18,6 +20,14 @@ namespace RoomReservation.Api.Controllers
     [ApiController]
     public class EventsController(IEventService eventService) : ControllerBase
     {
+        [RequirePermission(Permissions.EventList)]
+        [HttpGet]
+        public async Task<ActionResult<PagedResponseDto<EventResponseDto>>> GetAll([FromQuery] EventFilter filters)
+        {
+            var result = await eventService.GetAllAsync(filters);
+            return result.ToActionResult(page => Ok(page.ToPagedDto(e => e.ToDto())));
+        }
+
         [RequirePermission(Permissions.EventView)]
         [HttpGet("{eventId:guid}")]
         public async Task<ActionResult<EventResponseDto>> GetSingle([FromRoute] Guid eventId)

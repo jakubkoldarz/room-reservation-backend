@@ -1,7 +1,9 @@
 using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Extensions;
+using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
+using RoomReservation.Core.Models;
 using RoomReservation.Core.Models.Events;
 using RoomReservation.Core.Models.Reservations;
 using RoomReservation.Core.Results.Common;
@@ -102,6 +104,12 @@ namespace RoomReservation.Core.Services
         {
             var activeEvents = await eventRepository.GetActiveByRoomAsync(roomId);
             return activeEvents;
+        }
+
+        public async Task<ResultT<PagedList<Event>>> GetAllAsync(EventFilter filters)
+        {
+            var events = await eventRepository.GetFilteredAsync(filters);
+            return ResultT<PagedList<Event>>.Success(events);
         }
 
         public async Task<ResultT<Event>> GetByIdAsync(Guid eventId)
