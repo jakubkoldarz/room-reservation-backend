@@ -131,7 +131,7 @@ namespace RoomReservation.Core.Services
             if (rooms.Count != roomIds.Count)
                 return new Error("One or more rooms not found", ErrorType.NotFound);
 
-            var validationResult = IsEventValid(request);
+            var validationResult = IsEventValid(request, unchangedStartDate: toUpdate.StartDate);
             if (!validationResult.IsSuccess)
                 return validationResult.Error;
 
@@ -152,7 +152,15 @@ namespace RoomReservation.Core.Services
                 Rooms = [.. rooms],
             };
 
-            var conflictingReservations = await reservationService.GetConflictingWithEventAsync(candidate);
+            var affectedRoomIds = toUpdate.Rooms.Select(r => r.Id).Union(roomIds).ToList();
+            var remainingEvents = (await eventRepository.GetActiveByRoomIdsAsync(affectedRoomIds))
+                .Where(e => e.Id != eventId);
+            var availabilities = await availabilityRepository.GetByRoomIdsAsync(affectedRoomIds);
+
+            var conflictingReservations = await availabilityService.GetConflictingReservationsForRoomsAsync(
+                affectedRoomIds,
+                availabilities,
+                [.. remainingEvents, candidate]);
             if (!force && conflictingReservations.Any())
                 return ReservationConflict(conflictingReservations);
 
@@ -170,7 +178,7 @@ namespace RoomReservation.Core.Services
             return ResultT<Event>.Success(toUpdate);
         }
 
-        private Result IsEventValid(EventModel request)
+        private Result IsEventValid(EventModel request, DateOnly? unchangedStartDate = null)
         {
             if (request.IsClosed && (request.StartTime is not null || request.EndTime is not null))
                 return new Error("Cannot specify start or end times for closed event", ErrorType.BadRequest);
@@ -181,8 +189,12 @@ namespace RoomReservation.Core.Services
             if (request.StartDate > request.EndDate)
                 return new Error("Start date is after end date", ErrorType.BadRequest);
 
-            if (request.StartDate < timeProvider.WarsawToday())
+            var keepsStartDate = unchangedStartDate is not null && request.StartDate == unchangedStartDate;
+            if (request.StartDate < timeProvider.WarsawToday() && !keepsStartDate)
                 return new Error("Start date is in the past", ErrorType.BadRequest);
+
+            if (request.EndDate < timeProvider.WarsawToday())
+                return new Error("End date is in the past", ErrorType.BadRequest);
 
             return Result.Success();
         }
