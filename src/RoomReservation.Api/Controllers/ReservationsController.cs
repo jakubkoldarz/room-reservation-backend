@@ -19,12 +19,12 @@ namespace RoomReservation.Api.Controllers
     [Authorize]
     public class ReservationsController(IReservationService reservationService) : ControllerBase
     {
-        [HttpGet("{reservationId}")]
+        [HttpGet("{reservationId:guid}")]
         [RequirePermission(Permissions.ReservationView)]
-        public async Task<ActionResult<ReservationResponseDto>> GetSingle(Guid reservationId)
+        public async Task<ActionResult<ReservationListItemResponseDto>> GetSingle(Guid reservationId)
         {
             var result = await reservationService.GetByIdAsync(reservationId);
-            return result.ToActionResult(reservation => Ok(reservation.ToBasicDto()));
+            return result.ToActionResult(reservation => Ok(reservation.ToListItemDto()));
         }
 
         [HttpGet]
