@@ -10,6 +10,9 @@ namespace RoomReservation.Core.Repositories
 {
     public class PermissionRepository(AppDbContext db) : IPermissionRepository
     {
+        private static readonly SortMap<Permission> Sorts = new SortMap<Permission>("name")
+            .Add("name", p => p.Name);
+
         public async Task<UserAccessModel?> GetUserAccessAsync(Guid userId)
         {
             var access = await db.Users
@@ -43,8 +46,7 @@ namespace RoomReservation.Core.Repositories
                 query = query.Where(p => EF.Functions.ILike(p.Name, $"%{filters.Name}%"));
             }
 
-            return await query
-                .OrderBy(p => p.Name)
+            return await Sorts.Apply(query, filters)
                 .ThenBy(p => p.Id)
                 .ToPagedListAsync(filters);
         }

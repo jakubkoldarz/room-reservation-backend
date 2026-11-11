@@ -10,6 +10,10 @@ namespace RoomReservation.Core.Repositories
 {
     public class EventRepository(AppDbContext db, TimeProvider timeProvider) : IEventRepository
     {
+        private static readonly SortMap<Event> Sorts = new SortMap<Event>("startDate")
+            .Add("startDate", e => e.StartDate, e => e.Name)
+            .Add("name", e => e.Name, e => e.StartDate);
+
         public void Add(Event ev)
             => db.Events.Add(ev);
 
@@ -61,9 +65,7 @@ namespace RoomReservation.Core.Repositories
             if (filters.DateTo.HasValue)
                 events = events.Where(e => e.StartDate <= filters.DateTo);
 
-            return await events
-                .OrderBy(e => e.StartDate)
-                .ThenBy(e => e.Name)
+            return await Sorts.Apply(events, filters)
                 .ThenBy(e => e.Id)
                 .ToPagedListAsync(filters);
         }

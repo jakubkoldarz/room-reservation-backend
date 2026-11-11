@@ -11,6 +11,12 @@ namespace RoomReservation.Core.Repositories
 {
     public class ReservationRepository(AppDbContext db, TimeProvider timeProvider) : IReservationRepository
     {
+        private static readonly SortMap<Reservation> Sorts = new SortMap<Reservation>("date", defaultDescending: true)
+            .Add("date", r => r.Date, r => r.StartTime)
+            .Add("room", r => r.Room.Identifier, r => r.Date)
+            .Add("createdBy", r => r.CreatedBy!.Lastname, r => r.CreatedBy!.Firstname)
+            .Add("status", r => r.Status, r => r.Date);
+
         public void Add(Reservation reservation)
             => db.Reservations.Add(reservation);
 
@@ -95,9 +101,7 @@ namespace RoomReservation.Core.Repositories
             if (filters.Status.HasValue)
                 reservationsQuery = reservationsQuery.Where(r => r.Status == filters.Status);
 
-            return await reservationsQuery
-                .OrderByDescending(r => r.Date)
-                .ThenByDescending(r => r.StartTime)
+            return await Sorts.Apply(reservationsQuery, filters)
                 .ThenBy(r => r.Id)
                 .ToPagedListAsync(filters);
         }

@@ -10,6 +10,9 @@ namespace RoomReservation.Core.Repositories
 {
     public class RoleRepository(AppDbContext db) : IRoleRepository
     {
+        private static readonly SortMap<Role> Sorts = new SortMap<Role>("name")
+            .Add("name", r => r.Name);
+
         public void Add(Role role)
             => db.Roles.Add(role);
 
@@ -23,8 +26,7 @@ namespace RoomReservation.Core.Repositories
             if(!string.IsNullOrEmpty(filters.Name))
                 query = query.Where(r => r.Name.Contains(filters.Name));
 
-            return await query
-                .OrderBy(r => r.Name)
+            return await Sorts.Apply(query, filters)
                 .ThenBy(r => r.Id)
                 .ToPagedListAsync(filters);
         }

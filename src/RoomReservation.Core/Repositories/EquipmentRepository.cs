@@ -10,6 +10,9 @@ namespace RoomReservation.Core.Repositories
 {
     public class EquipmentRepository(AppDbContext db) : IEquipmentRepository
     {
+        private static readonly SortMap<Equipment> Sorts = new SortMap<Equipment>("name")
+            .Add("name", e => e.Name);
+
         public void Add(Equipment equipment)
             => db.Equipment.Add(equipment);
 
@@ -37,8 +40,7 @@ namespace RoomReservation.Core.Repositories
                 equipmentQuery = equipmentQuery.Where(e => EF.Functions.ILike(e.Name, $"%{filters.Name}%"));
             }
 
-            return await equipmentQuery
-                .OrderBy(e => e.Name)
+            return await Sorts.Apply(equipmentQuery, filters)
                 .ThenBy(e => e.Id)
                 .ToPagedListAsync(filters);
         }

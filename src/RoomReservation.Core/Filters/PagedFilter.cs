@@ -8,5 +8,9 @@ namespace RoomReservation.Core.Filters
         public int Page { get; set; } = 1;
         [Range(1, 100, ErrorMessage = "PageSize must be between 1 and 100.")]
         public int PageSize { get; set; } = 10;
+        [MaxLength(50, ErrorMessage = "SortBy can have at most 50 characters.")]
+        public string? SortBy { get; set; }
+        [RegularExpression("^(asc|desc)$", ErrorMessage = "SortDirection must be 'asc' or 'desc'.")]
+        public string? SortDirection { get; set; }
     }
 }

@@ -11,6 +11,12 @@ namespace RoomReservation.Core.Repositories
 {
     public class RoomRepository(AppDbContext db, TimeProvider timeProvider) : IRoomRepository
     {
+        private static readonly SortMap<Room> Sorts = new SortMap<Room>("identifier")
+            .Add("identifier", r => r.Identifier)
+            .Add("building", r => r.Building.Name, r => r.Identifier)
+            .Add("floor", r => r.Floor, r => r.Identifier)
+            .Add("capacity", r => r.Capacity, r => r.Identifier);
+
         public void Add(Room room)
             => db.Rooms.Add(room);
 
@@ -81,8 +87,7 @@ namespace RoomReservation.Core.Repositories
                 rooms = rooms.Where(r => filters.EquipmentIds.All(eid => r.RoomEquipment.Any(re => re.EquipmentId == eid)));
             }
 
-            return await rooms
-                .OrderBy(r => r.Identifier)
+            return await Sorts.Apply(rooms, filters)
                 .ThenBy(r => r.Id)
                 .ToPagedListAsync(filters);
         }

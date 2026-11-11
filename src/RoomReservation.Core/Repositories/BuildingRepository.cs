@@ -10,6 +10,11 @@ namespace RoomReservation.Core.Repositories
 {
     public class BuildingRepository(AppDbContext db) : IBuildingRepository
     {
+        private static readonly SortMap<Building> Sorts = new SortMap<Building>("name")
+            .Add("name", b => b.Name)
+            .Add("city", b => b.City, b => b.Street)
+            .Add("floors", b => b.FloorsCount);
+
         public void Add(Building building)
             => db.Buildings.Add(building);
 
@@ -54,8 +59,7 @@ namespace RoomReservation.Core.Repositories
             if (!string.IsNullOrWhiteSpace(filters.PostalCode))
                 buildings = buildings.Where(b => EF.Functions.ILike(b.PostalCode, $"%{filters.PostalCode.Trim()}%"));
 
-            return await buildings
-                .OrderBy(b => b.Name)
+            return await Sorts.Apply(buildings, filters)
                 .ThenBy(b => b.Id)
                 .ToPagedListAsync(filters);
         }
