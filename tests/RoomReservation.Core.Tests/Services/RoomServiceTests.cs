@@ -5,6 +5,7 @@ using RoomReservation.Core.Enums;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models.Availability;
+using RoomReservation.Core.Models.Reservations;
 using RoomReservation.Core.Models.Rooms;
 using RoomReservation.Core.Results.Common;
 using RoomReservation.Core.Services;
@@ -153,6 +154,8 @@ namespace RoomReservation.Core.Tests.Services
             var result = await _sut.DeleteAsync(room.Id);
 
             result.Error!.ErrorType.Should().Be(ErrorType.Conflict);
+            result.Error.Should().BeOfType<ConflictError<ConflictingReservationModel>>()
+                .Which.Items.Should().ContainSingle().Which.ReservationId.Should().Be(reservations[0].Id);
             _roomsMock.Verify(x => x.Remove(It.IsAny<Room>()), Times.Never);
         }
 

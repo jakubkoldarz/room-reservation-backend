@@ -3,6 +3,7 @@ using RoomReservation.Core.Enums;
 using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models;
+using RoomReservation.Core.Models.Reservations;
 using RoomReservation.Core.Models.Rooms;
 using RoomReservation.Core.Results.Common;
 
@@ -68,7 +69,9 @@ namespace RoomReservation.Core.Services
             var activeReservations = await reservationRepository.GetActiveFutureByRoomAsync(roomId);
 
             if (!force && activeReservations.Any())
-                return new Error("Room has active reservations and cannot be deleted", ErrorType.Conflict);
+                return new ConflictError<ConflictingReservationModel>(
+                    "Room has active reservations and cannot be deleted",
+                    [.. activeReservations.Select(ConflictingReservationModel.From)]);
 
             await reservationService.BulkForceCancelAsync(activeReservations, "Sala została usunięta");
             roomRepository.Remove(existingRoom);
