@@ -170,6 +170,32 @@ namespace RoomReservation.Core.Tests.Services
         }
 
         [Fact]
+        public async Task DeleteAsync_WhenEventHasEnded_ReturnsBadRequestAndDoesNotRemove()
+        {
+            var ev = ExistingEvent(Today.AddDays(-3), Today.AddDays(-1));
+            _eventsMock.Setup(x => x.GetByIdAsync(ev.Id)).ReturnsAsync(ev);
+
+            var result = await _sut.DeleteAsync(ev.Id, force: true);
+
+            result.Error!.ErrorType.Should().Be(ErrorType.BadRequest);
+            _eventsMock.Verify(x => x.Remove(It.IsAny<Event>()), Times.Never);
+            _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_WhenEventIsOngoing_RemovesEvent()
+        {
+            var ev = ExistingEvent(Today.AddDays(-1), Today);
+            _eventsMock.Setup(x => x.GetByIdAsync(ev.Id)).ReturnsAsync(ev);
+            _availabilitiesMock.Setup(x => x.GetByRoomIdsAsync(It.IsAny<IReadOnlyList<Guid>>())).ReturnsAsync([]);
+
+            var result = await _sut.DeleteAsync(ev.Id);
+
+            result.IsSuccess.Should().BeTrue();
+            _eventsMock.Verify(x => x.Remove(ev), Times.Once);
+        }
+
+        [Fact]
         public async Task DeleteAsync_WhenReservationsWouldConflictAndNoForce_ReturnsConflictError()
         {
             var ev = ExistingEvent(Today.AddDays(1), Today.AddDays(1));

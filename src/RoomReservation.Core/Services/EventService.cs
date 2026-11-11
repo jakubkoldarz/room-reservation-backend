@@ -82,6 +82,9 @@ namespace RoomReservation.Core.Services
             if (existingEvent is null)
                 return new Error("Event not found", ErrorType.NotFound);
 
+            if (existingEvent.EndDate < timeProvider.WarsawToday())
+                return new Error("Past events cannot be deleted", ErrorType.BadRequest);
+
             var roomIds = existingEvent.Rooms.Select(r => r.Id).ToList();
 
             var otherEvents = await eventRepository.GetActiveByRoomIdsAsync(roomIds);
@@ -98,12 +101,6 @@ namespace RoomReservation.Core.Services
             await unitOfWork.SaveChangesAsync();
 
             return Result.Success();
-        }
-
-        public async Task<IReadOnlyList<Event>> GetActiveForRoomAsync(Guid roomId)
-        {
-            var activeEvents = await eventRepository.GetActiveByRoomAsync(roomId);
-            return activeEvents;
         }
 
         public async Task<ResultT<PagedList<Event>>> GetAllAsync(EventFilter filters)

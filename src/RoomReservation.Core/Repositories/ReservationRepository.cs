@@ -104,11 +104,9 @@ namespace RoomReservation.Core.Repositories
 
         public async Task<IReadOnlyList<Reservation>> GetActiveFutureByRoomAsync(Guid roomId)
         {
-            var today = timeProvider.WarsawToday();
             var reservations = await db.Reservations
-                .Where(r => r.RoomId == roomId &&
-                            r.Date >= today &&
-                            (r.Status == ReservationStatus.Approved || r.Status == ReservationStatus.Pending))
+                .Where(r => r.RoomId == roomId)
+                .WhereActiveNotStarted(timeProvider.WarsawNow())
                 .ToListAsync();
 
             return reservations;
@@ -116,11 +114,9 @@ namespace RoomReservation.Core.Repositories
 
         public async Task<IReadOnlyList<Reservation>> GetActiveFutureByBuildingAsync(Guid buildingId)
         {
-            var today = timeProvider.WarsawToday();
             var reservations = await db.Reservations
-                .Where(r => r.Room.BuildingId == buildingId &&
-                            r.Date >= today &&
-                            (r.Status == ReservationStatus.Approved || r.Status == ReservationStatus.Pending))
+                .Where(r => r.Room.BuildingId == buildingId)
+                .WhereActiveNotStarted(timeProvider.WarsawNow())
                 .ToListAsync();
 
             return reservations;
@@ -128,11 +124,9 @@ namespace RoomReservation.Core.Repositories
 
         public async Task<IReadOnlyList<Reservation>> GetActiveFutureByRoomIdsAsync(IReadOnlyList<Guid> roomIds)
         {
-            var today = timeProvider.WarsawToday();
             var reservations = await db.Reservations
-                .Where(r => roomIds.Contains(r.RoomId) &&
-                            r.Date >= today &&
-                            (r.Status == ReservationStatus.Approved || r.Status == ReservationStatus.Pending))
+                .Where(r => roomIds.Contains(r.RoomId))
+                .WhereActiveNotStarted(timeProvider.WarsawNow())
                 .ToListAsync();
 
             return reservations;

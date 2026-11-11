@@ -36,14 +36,6 @@ namespace RoomReservation.Api.Controllers
             return result.ToActionResult(ev => Ok(ev.ToDto()));
         }
 
-        [RequirePermission(Permissions.EventView)]
-        [HttpGet("rooms/{roomId:guid}")]
-        public async Task<ActionResult<IReadOnlyList<EventResponseDto>>> GetActiveForRoom([FromRoute] Guid roomId)
-        {
-            var events = await eventService.GetActiveForRoomAsync(roomId);
-            return Ok(events.Select(e => e.ToDto()).ToList());
-        }
-
         [RequirePermission(Permissions.EventAdd)]
         [HttpPost]
         public async Task<ActionResult<EventResponseDto>> Create([FromBody] EventRequestDto request, [FromQuery] bool force = false)
