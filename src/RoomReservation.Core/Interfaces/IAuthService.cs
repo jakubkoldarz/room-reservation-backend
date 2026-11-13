@@ -22,5 +22,8 @@ namespace RoomReservation.Core.Interfaces
         Task<ResultT<VerificationCode>> IssueChangeEmailAsync(Guid userId, string newEmail);
         Task<Result> ConfirmEmailChangeAsync(Guid verificationId, string code);
         Task<Result> ChangePasswordAsync(Guid userId, string oldPassword, string newPassword);
+        Task<Result> CancelEmailChangeAsync(Guid userId);
+        Task<Result> IssuePasswordResetAsync(string email);
+        Task<Result> ResetPasswordAsync(string email, string code, string newPassword);
     }
 }

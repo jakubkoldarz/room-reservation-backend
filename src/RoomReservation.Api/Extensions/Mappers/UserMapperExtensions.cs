@@ -27,6 +27,16 @@ namespace RoomReservation.Api.Extensions.Mappers
             };
         }
 
+        public static UserListItemResponseDto ToListItemDto(this User user)
+        {
+            return new UserListItemResponseDto
+            {
+                UserInfo = user.ToBasicDto(),
+                Email = user.Email,
+                RoleInfo = new UserRoleResponseDto { Id = user.Role.Id, Name = user.Role.Name }
+            };
+        }
+
         public static UserDetailsResponseDto ToDetailsDto(this User user, IReadOnlyList<string> permissions)
         {
             return new UserDetailsResponseDto

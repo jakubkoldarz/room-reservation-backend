@@ -13,7 +13,8 @@ namespace RoomReservation.Core.Repositories
         private static readonly SortMap<User> Sorts = new SortMap<User>("lastname")
             .Add("lastname", u => u.Lastname, u => u.Firstname)
             .Add("firstname", u => u.Firstname, u => u.Lastname)
-            .Add("email", u => u.Email);
+            .Add("email", u => u.Email)
+            .Add("role", u => u.Role.Name, u => u.Lastname);
 
         public void Add(User user)
             => db.Users.Add(user);
@@ -33,7 +34,10 @@ namespace RoomReservation.Core.Repositories
         }
         public async Task<PagedList<User>> GetFilteredAsync(UserFilter filters)
         {
-            var users = db.Users.AsNoTracking();
+            var users = db.Users
+                .AsNoTracking()
+                .Include(u => u.Role)
+                .AsQueryable();
 
             if (!string.IsNullOrEmpty(filters.Firstname))
                 users = users.Where(u => !string.IsNullOrEmpty(u.Firstname) && EF.Functions.ILike(u.Firstname, $"%{filters.Firstname.Trim()}%"));

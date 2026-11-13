@@ -200,6 +200,136 @@ namespace RoomReservation.Core.Tests.Services
             _refreshTokenServiceMock.Verify(x => x.RevokeAllAsync(It.IsAny<Guid>()), Times.Never);
         }
         #endregion
+        #region IssuePasswordResetAsync
+
+        [Fact]
+        public async Task IssuePasswordResetAsync_WhenUserDoesNotExist_ReturnsSuccessWithoutSendingCode()
+        {
+            _usersMock.Setup(x => x.GetByEmailAsync("fake@test.com"))
+                      .ReturnsAsync((User?)null);
+
+            var result = await _sut.IssuePasswordResetAsync("fake@test.com");
+
+            result.IsSuccess.Should().BeTrue();
+            _verificationCodeServiceMock.Verify(x => x.GenerateCodeAsync(It.IsAny<Guid>(), It.IsAny<VerificationCodeType>()), Times.Never);
+            _emailQueueMock.Verify(x => x.Enqueue(It.IsAny<EmailMessage>()), Times.Never);
+            _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task IssuePasswordResetAsync_WhenUserExists_SendsPasswordResetCode()
+        {
+            var testUser = UserFaker.Create(email: "jan@test.com");
+            var code = CreateCode(testUser.Id, VerificationCodeType.PasswordReset);
+
+            _usersMock.Setup(x => x.GetByEmailAsync("jan@test.com"))
+                      .ReturnsAsync(testUser);
+            _verificationCodeServiceMock.Setup(x => x.GenerateCodeAsync(testUser.Id, VerificationCodeType.PasswordReset))
+                                        .ReturnsAsync(ResultT<VerificationCode>.Success(code));
+
+            var result = await _sut.IssuePasswordResetAsync("jan@test.com");
+
+            result.IsSuccess.Should().BeTrue();
+            _emailQueueMock.Verify(x => x.Enqueue(It.Is<VerificationCodeEmail>(m => m.To == "jan@test.com" && m.Code == code.Code)), Times.Once);
+            _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+        }
+
+        #endregion
+        #region ResetPasswordAsync
+
+        [Fact]
+        public async Task ResetPasswordAsync_WhenCodeIsValid_ChangesPasswordAndRevokesSessions()
+        {
+            var testUser = UserFaker.Create(email: "jan@test.com", password: "old_password");
+            var code = CreateCode(testUser.Id, VerificationCodeType.PasswordReset);
+
+            _usersMock.Setup(x => x.GetByEmailAsync("jan@test.com"))
+                      .ReturnsAsync(testUser);
+            _verificationCodeServiceMock.Setup(x => x.GetActiveByUserIdAsync(testUser.Id, VerificationCodeType.PasswordReset))
+                                        .ReturnsAsync(ResultT<VerificationCode>.Success(code));
+            _verificationCodeServiceMock.Setup(x => x.ValidateCodeAsync(code.Id, "123456", VerificationCodeType.PasswordReset))
+                                        .ReturnsAsync(ResultT<VerificationCode>.Success(code));
+            _refreshTokenServiceMock.Setup(x => x.RevokeAllAsync(testUser.Id))
+                                    .ReturnsAsync(Result.Success());
+
+            var result = await _sut.ResetPasswordAsync("jan@test.com", "123456", "new_password");
+
+            result.IsSuccess.Should().BeTrue();
+            BCrypt.Net.BCrypt.Verify("new_password", testUser.PasswordHash).Should().BeTrue();
+            _emailQueueMock.Verify(x => x.Enqueue(It.IsAny<PasswordChangeEmail>()), Times.Once);
+            _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+            _refreshTokenServiceMock.Verify(x => x.RevokeAllAsync(testUser.Id), Times.Once);
+        }
+
+        [Fact]
+        public async Task ResetPasswordAsync_WhenCodeIsWrong_DoesNotChangePassword()
+        {
+            var testUser = UserFaker.Create(email: "jan@test.com", password: "old_password");
+            var originalHash = testUser.PasswordHash;
+            var code = CreateCode(testUser.Id, VerificationCodeType.PasswordReset);
+
+            _usersMock.Setup(x => x.GetByEmailAsync("jan@test.com"))
+                      .ReturnsAsync(testUser);
+            _verificationCodeServiceMock.Setup(x => x.GetActiveByUserIdAsync(testUser.Id, VerificationCodeType.PasswordReset))
+                                        .ReturnsAsync(ResultT<VerificationCode>.Success(code));
+            _verificationCodeServiceMock.Setup(x => x.ValidateCodeAsync(code.Id, "000000", VerificationCodeType.PasswordReset))
+                                        .ReturnsAsync(new Error("Invalid code provided", ErrorType.BadRequest));
+
+            var result = await _sut.ResetPasswordAsync("jan@test.com", "000000", "new_password");
+
+            result.Error!.ErrorType.Should().Be(ErrorType.BadRequest);
+            testUser.PasswordHash.Should().Be(originalHash);
+            _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Never);
+            _refreshTokenServiceMock.Verify(x => x.RevokeAllAsync(It.IsAny<Guid>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ResetPasswordAsync_WhenUserDoesNotExist_ReturnsSameErrorAsWrongCode()
+        {
+            _usersMock.Setup(x => x.GetByEmailAsync("fake@test.com"))
+                      .ReturnsAsync((User?)null);
+
+            var result = await _sut.ResetPasswordAsync("fake@test.com", "123456", "new_password");
+
+            result.Error!.ErrorType.Should().Be(ErrorType.BadRequest);
+            result.Error.ErrorMessage.Should().Be("Invalid code provided");
+        }
+
+        #endregion
+        #region CancelEmailChangeAsync
+
+        [Fact]
+        public async Task CancelEmailChangeAsync_WhenChangeIsPending_ClearsPendingEmailAndInvalidatesCodes()
+        {
+            var testUser = UserFaker.Create();
+            testUser.PendingEmail = "new@test.com";
+
+            _usersMock.Setup(x => x.GetByIdAsync(testUser.Id))
+                      .ReturnsAsync(testUser);
+
+            var result = await _sut.CancelEmailChangeAsync(testUser.Id);
+
+            result.IsSuccess.Should().BeTrue();
+            testUser.PendingEmail.Should().BeNull();
+            _verificationCodeServiceMock.Verify(x => x.InvalidateActiveCodesAsync(testUser.Id, VerificationCodeType.ChangeEmail), Times.Once);
+            _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task CancelEmailChangeAsync_WhenNothingIsPending_DoesNothing()
+        {
+            var testUser = UserFaker.Create();
+
+            _usersMock.Setup(x => x.GetByIdAsync(testUser.Id))
+                      .ReturnsAsync(testUser);
+
+            var result = await _sut.CancelEmailChangeAsync(testUser.Id);
+
+            result.IsSuccess.Should().BeTrue();
+            _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Never);
+        }
+
+        #endregion
         #region Disable2faAsync
 
         [Fact]

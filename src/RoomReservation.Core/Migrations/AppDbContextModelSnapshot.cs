@@ -601,16 +601,6 @@ namespace RoomReservation.Core.Migrations
                         new
                         {
                             RoleId = new Guid("10000000-0000-0000-0000-000000000000"),
-                            PermissionId = new Guid("20000000-0000-0000-0000-000000000000")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("10000000-0000-0000-0000-000000000000"),
-                            PermissionId = new Guid("20000000-0000-0000-0000-000000000001")
-                        },
-                        new
-                        {
-                            RoleId = new Guid("10000000-0000-0000-0000-000000000000"),
                             PermissionId = new Guid("30000000-0000-0000-0000-000000000000")
                         },
                         new

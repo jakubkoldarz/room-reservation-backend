@@ -151,6 +151,31 @@ namespace RoomReservation.Api.Controllers
             return result.ToActionResult(NoContent);
         }
 
+        [EnableRateLimiting("strict")]
+        [HttpPost("password/forgot")]
+        public async Task<IActionResult> ForgotPassword(EmailRequestDto request)
+        {
+            var result = await authService.IssuePasswordResetAsync(request.EmailAddress);
+            return result.ToActionResult(NoContent);
+        }
+
+        [EnableRateLimiting("strict")]
+        [HttpPost("password/reset")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordRequestDto request)
+        {
+            var result = await authService.ResetPasswordAsync(request.EmailAddress, request.VerificationCode, request.NewPassword);
+            return result.ToActionResult(NoContent);
+        }
+
+        [Authorize]
+        [EnableRateLimiting("strict")]
+        [HttpDelete("email/pending")]
+        public async Task<IActionResult> CancelEmailChange([UserId] Guid userId)
+        {
+            var result = await authService.CancelEmailChangeAsync(userId);
+            return result.ToActionResult(NoContent);
+        }
+
         [Authorize]
         [RequireCompletedProfile]
         [EnableRateLimiting("strict")]

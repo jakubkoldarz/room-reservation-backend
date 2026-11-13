@@ -40,6 +40,7 @@ namespace RoomReservation.Core.Tests.Services
         [InlineData(VerificationCodeType.EmailActivation, 15)]
         [InlineData(VerificationCodeType.TwoFactorLogin, 5)]
         [InlineData(VerificationCodeType.ChangeEmail, 10)]
+        [InlineData(VerificationCodeType.PasswordReset, 15)]
         public async Task GenerateCodeAsync_CreatesSixDigitCodeWithTypeSpecificExpiry(VerificationCodeType type, int expectedMinutes)
         {
             var userId = Guid.NewGuid();

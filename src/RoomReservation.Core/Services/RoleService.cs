@@ -30,6 +30,10 @@ namespace RoomReservation.Core.Services
 
         public async Task<ResultT<Role>> CreateAsync(RoleModel request, bool force = false)
         {
+            var roleWithSameName = await roleRepository.GetByNameAsync(request.Name);
+            if (roleWithSameName is not null)
+                return new Error("A role with this name already exists.", ErrorType.Conflict);
+
             var result = await EnsureOnlyOneDefault(request, force);
             if (!result.IsSuccess)
                 return result.Error;
@@ -48,6 +52,7 @@ namespace RoomReservation.Core.Services
 
             roleRepository.Add(toCreate);
             await unitOfWork.SaveChangesAsync();
+            await roleRepository.LoadPermissionsAsync(toCreate);
 
             return ResultT<Role>.Success(toCreate);
         }
@@ -57,6 +62,9 @@ namespace RoomReservation.Core.Services
             var toDelete = await roleRepository.GetByIdAsync(roleId);
             if (toDelete is null)
                 return new Error("Role not found.", ErrorType.NotFound);
+
+            if (toDelete.IsDefault)
+                return new Error("Cannot delete the default role. Set another role as default first.", ErrorType.Conflict);
 
             var usersWithRole = await userRepository.GetFilteredAsync(new UserFilter { RoleId = roleId, Page = 1, PageSize = 1 });
             if(usersWithRole.TotalCount > 0)
@@ -87,6 +95,13 @@ namespace RoomReservation.Core.Services
             if (toUpdate is null)
                 return new Error("Role not found.", ErrorType.NotFound);
 
+            var roleWithSameName = await roleRepository.GetByNameAsync(request.Name);
+            if (roleWithSameName is not null && roleWithSameName.Id != roleId)
+                return new Error("A role with this name already exists.", ErrorType.Conflict);
+
+            if (toUpdate.IsDefault && !request.IsDefault)
+                return new Error("This role is the default one. Set another role as default instead.", ErrorType.Conflict);
+
             var result = await EnsureOnlyOneDefault(request, force, toUpdate.Id);
             if (!result.IsSuccess)
                 return result.Error;
@@ -97,6 +112,7 @@ namespace RoomReservation.Core.Services
             ReplacePermissions(toUpdate, request.PermissionIds);
 
             await unitOfWork.SaveChangesAsync();
+            await roleRepository.LoadPermissionsAsync(toUpdate);
             return ResultT<Role>.Success(toUpdate);
         }
 

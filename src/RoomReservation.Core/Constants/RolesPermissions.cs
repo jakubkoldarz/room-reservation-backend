@@ -6,7 +6,6 @@
         {
             [Roles.User] = [
                 Permissions.RoomView, Permissions.RoomList, 
-                Permissions.UserView, Permissions.UserList,
                 Permissions.BuildingView, Permissions.BuildingList,
                 Permissions.ReservationView, Permissions.ReservationCreate
             ],

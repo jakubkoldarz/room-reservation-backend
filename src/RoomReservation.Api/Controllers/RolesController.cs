@@ -76,7 +76,6 @@ namespace RoomReservation.Api.Controllers
         {
             return new RoleModel(
                 Name: request.Name,
-                Description: request.Description ?? string.Empty,
                 IsDefault: request.IsDefault,
                 IsSuperAdmin: request.IsSuperAdmin,
                 PermissionIds: request.PermissionIds

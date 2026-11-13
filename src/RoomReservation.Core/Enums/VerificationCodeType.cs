@@ -4,6 +4,7 @@
     {
         EmailActivation,
         TwoFactorLogin,
-        ChangeEmail
+        ChangeEmail,
+        PasswordReset
     }
 }
