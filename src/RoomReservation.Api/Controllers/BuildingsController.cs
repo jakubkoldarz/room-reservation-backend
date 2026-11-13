@@ -30,14 +30,6 @@ namespace RoomReservation.Api.Controllers
             return result.ToActionResult(page => Ok(page.ToPagedDto(b => b.ToBasicDto())));
         }
 
-        [HttpGet("lookup")]
-        [RequirePermission(Permissions.BuildingList)]
-        public async Task<ActionResult<IReadOnlyList<BasicBuildingResponseDto>>> GetAll()
-        {
-            var result = await buildingService.GetAllAsync();
-            return result.ToActionResult(buildings => Ok(buildings.Select(b => b.ToBasicDto()).ToList()));
-        }
-
         [HttpGet("{buildingId:guid}")]
         [RequirePermission(Permissions.BuildingView)]
         public async Task<ActionResult<BuildingDetailsResponseDto>> GetSingle([FromRoute] Guid buildingId)

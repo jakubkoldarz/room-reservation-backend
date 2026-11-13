@@ -1,7 +1,9 @@
 using RoomReservation.Core.Entities;
 using RoomReservation.Core.Enums;
 using RoomReservation.Core.Extensions;
+using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
+using RoomReservation.Core.Models;
 using RoomReservation.Core.Models.Events;
 using RoomReservation.Core.Models.Reservations;
 using RoomReservation.Core.Results.Common;
@@ -80,6 +82,9 @@ namespace RoomReservation.Core.Services
             if (existingEvent is null)
                 return new Error("Event not found", ErrorType.NotFound);
 
+            if (existingEvent.EndDate < timeProvider.WarsawToday())
+                return new Error("Past events cannot be deleted", ErrorType.BadRequest);
+
             var roomIds = existingEvent.Rooms.Select(r => r.Id).ToList();
 
             var otherEvents = await eventRepository.GetActiveByRoomIdsAsync(roomIds);
@@ -98,10 +103,10 @@ namespace RoomReservation.Core.Services
             return Result.Success();
         }
 
-        public async Task<IReadOnlyList<Event>> GetActiveForRoomAsync(Guid roomId)
+        public async Task<ResultT<PagedList<Event>>> GetAllAsync(EventFilter filters)
         {
-            var activeEvents = await eventRepository.GetActiveByRoomAsync(roomId);
-            return activeEvents;
+            var events = await eventRepository.GetFilteredAsync(filters);
+            return ResultT<PagedList<Event>>.Success(events);
         }
 
         public async Task<ResultT<Event>> GetByIdAsync(Guid eventId)
@@ -123,7 +128,7 @@ namespace RoomReservation.Core.Services
             if (rooms.Count != roomIds.Count)
                 return new Error("One or more rooms not found", ErrorType.NotFound);
 
-            var validationResult = IsEventValid(request);
+            var validationResult = IsEventValid(request, unchangedStartDate: toUpdate.StartDate);
             if (!validationResult.IsSuccess)
                 return validationResult.Error;
 
@@ -144,7 +149,15 @@ namespace RoomReservation.Core.Services
                 Rooms = [.. rooms],
             };
 
-            var conflictingReservations = await reservationService.GetConflictingWithEventAsync(candidate);
+            var affectedRoomIds = toUpdate.Rooms.Select(r => r.Id).Union(roomIds).ToList();
+            var remainingEvents = (await eventRepository.GetActiveByRoomIdsAsync(affectedRoomIds))
+                .Where(e => e.Id != eventId);
+            var availabilities = await availabilityRepository.GetByRoomIdsAsync(affectedRoomIds);
+
+            var conflictingReservations = await availabilityService.GetConflictingReservationsForRoomsAsync(
+                affectedRoomIds,
+                availabilities,
+                [.. remainingEvents, candidate]);
             if (!force && conflictingReservations.Any())
                 return ReservationConflict(conflictingReservations);
 
@@ -162,7 +175,7 @@ namespace RoomReservation.Core.Services
             return ResultT<Event>.Success(toUpdate);
         }
 
-        private Result IsEventValid(EventModel request)
+        private Result IsEventValid(EventModel request, DateOnly? unchangedStartDate = null)
         {
             if (request.IsClosed && (request.StartTime is not null || request.EndTime is not null))
                 return new Error("Cannot specify start or end times for closed event", ErrorType.BadRequest);
@@ -173,8 +186,12 @@ namespace RoomReservation.Core.Services
             if (request.StartDate > request.EndDate)
                 return new Error("Start date is after end date", ErrorType.BadRequest);
 
-            if (request.StartDate < timeProvider.WarsawToday())
+            var keepsStartDate = unchangedStartDate is not null && request.StartDate == unchangedStartDate;
+            if (request.StartDate < timeProvider.WarsawToday() && !keepsStartDate)
                 return new Error("Start date is in the past", ErrorType.BadRequest);
+
+            if (request.EndDate < timeProvider.WarsawToday())
+                return new Error("End date is in the past", ErrorType.BadRequest);
 
             return Result.Success();
         }

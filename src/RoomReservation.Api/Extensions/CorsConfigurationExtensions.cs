@@ -13,7 +13,7 @@
                 options.AddPolicy("CorsPolicy", builder =>
                 {
                     builder.WithOrigins(allowedOrigins)
-                           .WithMethods("GET", "POST", "PUT", "DELETE")
+                           .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH")
                            .WithHeaders("Authorization", "Content-Type", "Accept")
                            .AllowCredentials();
                 });

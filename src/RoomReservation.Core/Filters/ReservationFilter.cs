@@ -10,6 +10,8 @@ namespace RoomReservation.Core.Filters
         public Guid? RoomId { get; set; }
         public Guid? BuildingId { get; set; }
         public DateOnly? Date { get; set; }
+        public DateOnly? DateFrom { get; set; }
+        public DateOnly? DateTo { get; set; }
         public ReservationStatus? Status { get; set; }
     }
 }

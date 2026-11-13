@@ -37,5 +37,17 @@ namespace RoomReservation.Api.Extensions.Mappers
                 Equipment = [.. room.RoomEquipment.Select(re => re.Equipment.ToBasicDto())]
             };
         }
+
+        public static RoomListItemResponseDto ToListItemDto(this Room room) => new()
+        {
+            RoomInfo = room.ToBasicDto(),
+            BuildingInfo = room.Building.ToBasicDto(),
+            Equipment = [.. room.RoomEquipment.Select(re => re.Equipment.ToBasicDto())],
+            Availabilities = [.. room.Availabilities
+                .OrderBy(a => a.DayOfWeek)
+                .ThenBy(a => a.StartTime)
+                .Select(a => a.ToDto())],
+        };
+
     }
 }

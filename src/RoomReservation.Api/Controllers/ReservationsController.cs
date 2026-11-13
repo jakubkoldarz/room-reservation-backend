@@ -19,29 +19,29 @@ namespace RoomReservation.Api.Controllers
     [Authorize]
     public class ReservationsController(IReservationService reservationService) : ControllerBase
     {
-        [HttpGet("{reservationId}")]
+        [HttpGet("{reservationId:guid}")]
         [RequirePermission(Permissions.ReservationView)]
-        public async Task<ActionResult<ReservationResponseDto>> GetSingle(Guid reservationId)
+        public async Task<ActionResult<ReservationListItemResponseDto>> GetSingle(Guid reservationId)
         {
             var result = await reservationService.GetByIdAsync(reservationId);
-            return result.ToActionResult(reservation => Ok(reservation.ToBasicDto()));
+            return result.ToActionResult(reservation => Ok(reservation.ToListItemDto()));
         }
 
         [HttpGet]
         [RequirePermission(Permissions.ReservationList)]
-        public async Task<ActionResult<PagedResponseDto<ReservationResponseDto>>> GetAll([FromQuery] ReservationFilter filters)
+        public async Task<ActionResult<PagedResponseDto<ReservationListItemResponseDto>>> GetAll([FromQuery] ReservationFilter filters)
         {
             var result = await reservationService.GetAllAsync(filters);
-            return result.ToActionResult(page => Ok(page.ToPagedDto(r => r.ToBasicDto())));
+            return result.ToActionResult(page => Ok(page.ToPagedDto(r => r.ToListItemDto())));
         }
 
         [HttpGet("mine")]
         [RequireCompletedProfile]
-        public async Task<ActionResult<PagedResponseDto<ReservationResponseDto>>> GetMyReservations([FromQuery] ReservationFilter filters, [UserId] Guid userId)
+        public async Task<ActionResult<PagedResponseDto<ReservationListItemResponseDto>>> GetMyReservations([FromQuery] ReservationFilter filters, [UserId] Guid userId)
         {
             filters.CreatedById = userId;
             var result = await reservationService.GetAllAsync(filters);
-            return result.ToActionResult(page => Ok(page.ToPagedDto(r => r.ToBasicDto())));
+            return result.ToActionResult(page => Ok(page.ToPagedDto(r => r.ToListItemDto())));
         }
 
         [HttpPost]

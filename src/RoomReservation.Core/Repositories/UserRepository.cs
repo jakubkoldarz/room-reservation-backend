@@ -10,6 +10,11 @@ namespace RoomReservation.Core.Repositories
 {
     public class UserRepository(AppDbContext db, TimeProvider timeProvider) : IUserRepository
     {
+        private static readonly SortMap<User> Sorts = new SortMap<User>("lastname")
+            .Add("lastname", u => u.Lastname, u => u.Firstname)
+            .Add("firstname", u => u.Firstname, u => u.Lastname)
+            .Add("email", u => u.Email);
+
         public void Add(User user)
             => db.Users.Add(user);
         public async Task<User?> GetByEmailAsync(string email)
@@ -42,9 +47,7 @@ namespace RoomReservation.Core.Repositories
             if(filters.RoleId.HasValue)
                 users = users.Where(u => u.RoleId == filters.RoleId.Value);
 
-            return await users
-                .OrderBy(u => u.Lastname)
-                .ThenBy(u => u.Firstname)
+            return await Sorts.Apply(users, filters)
                 .ThenBy(u => u.Id)
                 .ToPagedListAsync(filters);
         }

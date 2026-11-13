@@ -11,6 +11,12 @@ namespace RoomReservation.Core.Repositories
 {
     public class ReservationRepository(AppDbContext db, TimeProvider timeProvider) : IReservationRepository
     {
+        private static readonly SortMap<Reservation> Sorts = new SortMap<Reservation>("date", defaultDescending: true)
+            .Add("date", r => r.Date, r => r.StartTime)
+            .Add("room", r => r.Room.Identifier, r => r.Date)
+            .Add("createdBy", r => r.CreatedBy!.Lastname, r => r.CreatedBy!.Firstname)
+            .Add("status", r => r.Status, r => r.Date);
+
         public void Add(Reservation reservation)
             => db.Reservations.Add(reservation);
 
@@ -86,23 +92,25 @@ namespace RoomReservation.Core.Repositories
             if (filters.Date.HasValue)
                 reservationsQuery = reservationsQuery.Where(r => r.Date == filters.Date);
 
+            if (filters.DateFrom.HasValue)
+                reservationsQuery = reservationsQuery.Where(r => r.Date >= filters.DateFrom);
+
+            if (filters.DateTo.HasValue)
+                reservationsQuery = reservationsQuery.Where(r => r.Date <= filters.DateTo);
+
             if (filters.Status.HasValue)
                 reservationsQuery = reservationsQuery.Where(r => r.Status == filters.Status);
 
-            return await reservationsQuery
-                .OrderByDescending(r => r.Date)
-                .ThenByDescending(r => r.StartTime)
+            return await Sorts.Apply(reservationsQuery, filters)
                 .ThenBy(r => r.Id)
                 .ToPagedListAsync(filters);
         }
 
         public async Task<IReadOnlyList<Reservation>> GetActiveFutureByRoomAsync(Guid roomId)
         {
-            var today = timeProvider.WarsawToday();
             var reservations = await db.Reservations
-                .Where(r => r.RoomId == roomId &&
-                            r.Date >= today &&
-                            (r.Status == ReservationStatus.Approved || r.Status == ReservationStatus.Pending))
+                .Where(r => r.RoomId == roomId)
+                .WhereActiveNotStarted(timeProvider.WarsawNow())
                 .ToListAsync();
 
             return reservations;
@@ -110,11 +118,9 @@ namespace RoomReservation.Core.Repositories
 
         public async Task<IReadOnlyList<Reservation>> GetActiveFutureByBuildingAsync(Guid buildingId)
         {
-            var today = timeProvider.WarsawToday();
             var reservations = await db.Reservations
-                .Where(r => r.Room.BuildingId == buildingId &&
-                            r.Date >= today &&
-                            (r.Status == ReservationStatus.Approved || r.Status == ReservationStatus.Pending))
+                .Where(r => r.Room.BuildingId == buildingId)
+                .WhereActiveNotStarted(timeProvider.WarsawNow())
                 .ToListAsync();
 
             return reservations;
@@ -122,11 +128,9 @@ namespace RoomReservation.Core.Repositories
 
         public async Task<IReadOnlyList<Reservation>> GetActiveFutureByRoomIdsAsync(IReadOnlyList<Guid> roomIds)
         {
-            var today = timeProvider.WarsawToday();
             var reservations = await db.Reservations
-                .Where(r => roomIds.Contains(r.RoomId) &&
-                            r.Date >= today &&
-                            (r.Status == ReservationStatus.Approved || r.Status == ReservationStatus.Pending))
+                .Where(r => roomIds.Contains(r.RoomId))
+                .WhereActiveNotStarted(timeProvider.WarsawNow())
                 .ToListAsync();
 
             return reservations;
