@@ -6,6 +6,7 @@
         public string? Identifier { get; set; }
         public int? MinCapacity { get; set; }
         public int? Floor { get; set; }
+        public bool? RequiresApproval { get; set; }
 
         public DayOfWeek? DayOfWeek { get; set; }
         public TimeOnly? StartTime { get; set; }

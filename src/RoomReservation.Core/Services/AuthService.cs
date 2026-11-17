@@ -35,6 +35,61 @@ namespace RoomReservation.Core.Services
             await refreshTokenService.RevokeAllAsync(userId);
             return Result.Success();
         }
+        public async Task<Result> IssuePasswordResetAsync(string email)
+        {
+            var user = await userRepository.GetByEmailAsync(email);
+            if (user is null)
+                return Result.Success();
+
+            var codeResult = await verificationCodeService.GenerateCodeAsync(user.Id, VerificationCodeType.PasswordReset);
+            if (!codeResult.IsSuccess)
+                return codeResult.Error;
+
+            EnqueueVerificationCode(codeResult.Value, user.Email);
+            await unitOfWork.SaveChangesAsync();
+
+            return Result.Success();
+        }
+        public async Task<Result> ResetPasswordAsync(string email, string code, string newPassword)
+        {
+            var user = await userRepository.GetByEmailAsync(email);
+            if (user is null)
+                return new Error("Invalid code provided", ErrorType.BadRequest);
+
+            var activeCodeResult = await verificationCodeService.GetActiveByUserIdAsync(user.Id, VerificationCodeType.PasswordReset);
+            if (!activeCodeResult.IsSuccess)
+                return new Error("Invalid code provided", ErrorType.BadRequest);
+
+            var validationResult = await verificationCodeService.ValidateCodeAsync(
+                activeCodeResult.Value.Id,
+                code,
+                VerificationCodeType.PasswordReset);
+
+            if (!validationResult.IsSuccess)
+                return new Error("Invalid code provided", ErrorType.BadRequest);
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            EnqueuePasswordNotification(user);
+            await unitOfWork.SaveChangesAsync();
+
+            await refreshTokenService.RevokeAllAsync(user.Id);
+            return Result.Success();
+        }
+        public async Task<Result> CancelEmailChangeAsync(Guid userId)
+        {
+            var user = await userRepository.GetByIdAsync(userId);
+            if (user is null)
+                return new Error("User not found", ErrorType.NotFound);
+
+            if (user.PendingEmail is null)
+                return Result.Success();
+
+            await verificationCodeService.InvalidateActiveCodesAsync(userId, VerificationCodeType.ChangeEmail);
+            user.PendingEmail = null;
+            await unitOfWork.SaveChangesAsync();
+
+            return Result.Success();
+        }
         public async Task<Result> Disable2faAsync(Guid userId, string password)
         {
             var user = await userRepository.GetByIdAsync(userId);
@@ -267,6 +322,7 @@ namespace RoomReservation.Core.Services
                 VerificationCodeType.EmailActivation => ("Aktywacja konta RoomReservation", "Potwierdzenie rejestracji", "Aby zakończyć rejestrację, potwierdź swój adres email"),
                 VerificationCodeType.TwoFactorLogin => ("Kod logowania RoomReservation", "Logowanie", "Wpisz poniższy kod, aby dokończyć logowanie"),
                 VerificationCodeType.ChangeEmail => ("Zmiana adresu email", "Potwierdzenie zmiany adresu email", "Wpisz poniższy kod, aby dokończyć zmianę adresu email"),
+                VerificationCodeType.PasswordReset => ("Reset hasła RoomReservation", "Reset hasła", "Wpisz poniższy kod, aby ustawić nowe hasło. Jeśli to nie Ty prosisz o reset, zignoruj tę wiadomość"),
                 _ => throw new ArgumentOutOfRangeException(nameof(verificationCode.Type))
             };
 

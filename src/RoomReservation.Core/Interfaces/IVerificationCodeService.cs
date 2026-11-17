@@ -10,5 +10,6 @@ namespace RoomReservation.Core.Interfaces
         Task<ResultT<VerificationCode>> ValidateCodeAsync(Guid verificationId, string code, VerificationCodeType type);
         Task<ResultT<VerificationCode>> GetByIdAsync(Guid verificationId);
         Task<ResultT<VerificationCode>> GetActiveByUserIdAsync(Guid userId, VerificationCodeType type);
+        Task InvalidateActiveCodesAsync(Guid userId, VerificationCodeType type);
     }
 }

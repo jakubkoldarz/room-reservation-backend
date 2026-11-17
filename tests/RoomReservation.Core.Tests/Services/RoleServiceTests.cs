@@ -24,7 +24,7 @@ namespace RoomReservation.Core.Tests.Services
         }
 
         private static RoleModel CreateModel(bool isDefault = false, params Guid[] permissionIds)
-            => new("Pracownik", "opis", isDefault, false, permissionIds);
+            => new("Pracownik", isDefault, false, permissionIds);
 
         #region AssignRoleAsync
 
@@ -108,6 +108,17 @@ namespace RoomReservation.Core.Tests.Services
             _rolesMock.Verify(x => x.Add(result.Value), Times.Once);
         }
 
+        [Fact]
+        public async Task CreateAsync_WhenNameIsTaken_ReturnsConflict()
+        {
+            _rolesMock.Setup(x => x.GetByNameAsync("Pracownik")).ReturnsAsync(new Role { Name = "Pracownik" });
+
+            var result = await _sut.CreateAsync(CreateModel());
+
+            result.Error!.ErrorType.Should().Be(ErrorType.Conflict);
+            _rolesMock.Verify(x => x.Add(It.IsAny<Role>()), Times.Never);
+        }
+
         #endregion
         #region DeleteAsync
 
@@ -123,6 +134,19 @@ namespace RoomReservation.Core.Tests.Services
 
             result.Error!.ErrorType.Should().Be(ErrorType.Conflict);
             _rolesMock.Verify(x => x.Remove(It.IsAny<Role>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_WhenRoleIsDefault_ReturnsConflict()
+        {
+            var role = new Role { Name = "User", IsDefault = true };
+            _rolesMock.Setup(x => x.GetByIdAsync(role.Id)).ReturnsAsync(role);
+
+            var result = await _sut.DeleteAsync(role.Id);
+
+            result.Error!.ErrorType.Should().Be(ErrorType.Conflict);
+            _rolesMock.Verify(x => x.Remove(It.IsAny<Role>()), Times.Never);
+            _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Never);
         }
 
         [Fact]
@@ -151,6 +175,32 @@ namespace RoomReservation.Core.Tests.Services
             var result = await _sut.UpdateAsync(Guid.NewGuid(), CreateModel());
 
             result.Error!.ErrorType.Should().Be(ErrorType.NotFound);
+        }
+
+        [Fact]
+        public async Task UpdateAsync_WhenNameBelongsToAnotherRole_ReturnsConflict()
+        {
+            var role = new Role { Name = "Stara" };
+            _rolesMock.Setup(x => x.GetByIdAsync(role.Id)).ReturnsAsync(role);
+            _rolesMock.Setup(x => x.GetByNameAsync("Pracownik")).ReturnsAsync(new Role { Name = "Pracownik" });
+
+            var result = await _sut.UpdateAsync(role.Id, CreateModel());
+
+            result.Error!.ErrorType.Should().Be(ErrorType.Conflict);
+            _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task UpdateAsync_WhenDefaultRoleLosesDefault_ReturnsConflict()
+        {
+            var role = new Role { Name = "User", IsDefault = true };
+            _rolesMock.Setup(x => x.GetByIdAsync(role.Id)).ReturnsAsync(role);
+
+            var result = await _sut.UpdateAsync(role.Id, CreateModel(isDefault: false));
+
+            result.Error!.ErrorType.Should().Be(ErrorType.Conflict);
+            role.IsDefault.Should().BeTrue();
+            _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Never);
         }
 
         [Fact]

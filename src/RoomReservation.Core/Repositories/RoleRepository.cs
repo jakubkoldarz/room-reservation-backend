@@ -21,7 +21,11 @@ namespace RoomReservation.Core.Repositories
 
         public async Task<PagedList<Role>> GetFilteredAsync(RoleFilter filters)
         {
-            var query = db.Roles.AsNoTracking();
+            var query = db.Roles
+                .AsNoTracking()
+                .Include(r => r.RolePermissions)
+                    .ThenInclude(rp => rp.Permission)
+                .AsQueryable();
 
             if(!string.IsNullOrEmpty(filters.Name))
                 query = query.Where(r => r.Name.Contains(filters.Name));
@@ -38,6 +42,21 @@ namespace RoomReservation.Core.Repositories
                     .ThenInclude(rp => rp.Permission)
                 .FirstOrDefaultAsync(r => r.Id == roleId);
             return role;
+        }
+
+        public async Task<Role?> GetByNameAsync(string name)
+        {
+            var role = await db.Roles.FirstOrDefaultAsync(r => r.Name == name);
+            return role;
+        }
+
+        public async Task LoadPermissionsAsync(Role role)
+        {
+            await db.Entry(role)
+                .Collection(r => r.RolePermissions)
+                .Query()
+                .Include(rp => rp.Permission)
+                .LoadAsync();
         }
 
         public async Task<Role?> GetDefaultRoleAsync()

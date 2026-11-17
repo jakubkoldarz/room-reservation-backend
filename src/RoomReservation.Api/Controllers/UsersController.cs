@@ -21,18 +21,18 @@ namespace RoomReservation.Api.Controllers
     {
         [HttpGet("{userId:guid}")]
         [RequirePermission(Permissions.UserView)]
-        public async Task<ActionResult<BasicUserResponseDto>> GetSingle(Guid userId)
+        public async Task<ActionResult<UserListItemResponseDto>> GetSingle(Guid userId)
         {
             var result = await userService.GetUserDetailsAsync(userId);
-            return result.ToActionResult(user => Ok(user.ToBasicDto()));
+            return result.ToActionResult(user => Ok(user.ToListItemDto()));
         }
 
         [HttpGet]
         [RequirePermission(Permissions.UserList)]
-        public async Task<ActionResult<PagedResponseDto<BasicUserResponseDto>>> GetAll([FromQuery] UserFilter filters)
+        public async Task<ActionResult<PagedResponseDto<UserListItemResponseDto>>> GetAll([FromQuery] UserFilter filters)
         {
             var result = await userService.GetAllAsync(filters);
-            return result.ToActionResult(page => Ok(page.ToPagedDto(u => u.ToBasicDto())));
+            return result.ToActionResult(page => Ok(page.ToPagedDto(u => u.ToListItemDto())));
         }
 
         [HttpPut("profile")]

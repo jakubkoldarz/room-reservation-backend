@@ -44,6 +44,10 @@ namespace RoomReservation.Core.Services
 
             return ResultT<VerificationCode>.Success(code);
         }
+        public async Task InvalidateActiveCodesAsync(Guid userId, VerificationCodeType type)
+        {
+            await verificationCodeRepository.InvalidateActiveCodesAsync(userId, type);
+        }
         public async Task<ResultT<VerificationCode>> ValidateCodeAsync(Guid verificationId, string code, VerificationCodeType type)
         {
             var codeResult = await GetByIdAsync(verificationId);
@@ -73,6 +77,7 @@ namespace RoomReservation.Core.Services
                 VerificationCodeType.EmailActivation => 15,
                 VerificationCodeType.TwoFactorLogin => 5,
                 VerificationCodeType.ChangeEmail => 10,
+                VerificationCodeType.PasswordReset => 15,
                 _ => throw new ArgumentOutOfRangeException(nameof(type))
             };
         }

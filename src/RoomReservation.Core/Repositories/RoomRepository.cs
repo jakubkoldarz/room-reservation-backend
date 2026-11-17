@@ -73,6 +73,8 @@ namespace RoomReservation.Core.Repositories
                 rooms = rooms.Where(r => r.Capacity >= filters.MinCapacity.Value);
             if (filters.Floor.HasValue)
                 rooms = rooms.Where(r => r.Floor == filters.Floor.Value);
+            if (filters.RequiresApproval.HasValue)
+                rooms = rooms.Where(r => r.RequiresApproval == filters.RequiresApproval.Value);
 
             if (filters.DayOfWeek.HasValue || filters.StartTime.HasValue || filters.EndTime.HasValue)
             {
