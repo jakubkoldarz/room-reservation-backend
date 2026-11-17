@@ -46,9 +46,12 @@ Migrations run automatically when the API starts. They also create the default r
 
 Seeding **deletes the whole database**, creates it again and adds test users.
 
-1. Set `SEED_DATABASE=true` in `.env`.
-2. Start the API: `docker compose up --build`. Wait for the log `Database was recreated and seeded`.
-3. Set `SEED_DATABASE=false` in `.env` and run `docker compose up -d`. Otherwise the database is wiped on every start.
+1. Stop the containers: `docker compose stop`.
+2. Set `SEED_DATABASE=true` in `.env`.
+3. Start only the database and the API: `docker compose up --build roomreservation.api`.
+   Wait for the log `Database was recreated and seeded`, then stop it with `Ctrl+C`.
+4. Set `SEED_DATABASE=false` in `.env` and start everything: `docker compose up`.
+   Without this step the database is wiped on every start.
 
 Seeded accounts:
 
