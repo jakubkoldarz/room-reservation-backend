@@ -18,6 +18,8 @@ namespace RoomReservation.Core.Services
         IUnitOfWork unitOfWork,
         TimeProvider timeProvider) : IReservationService
     {
+        private const string AlreadyStartedMessage = "Reservation has already started";
+
         public async Task<Result> ApproveAsync(Guid reservationId, Guid approvedById)
         {
             var reservationToUpdate = await reservationRepository.GetByIdAsync(reservationId);
@@ -26,6 +28,9 @@ namespace RoomReservation.Core.Services
 
             if (reservationToUpdate.Status is not ReservationStatus.Pending)
                 return new Error("Reservation has invalid status", ErrorType.BadRequest);
+
+            if (HasStarted(reservationToUpdate))
+                return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
 
             reservationToUpdate.ApprovedById = approvedById;
             reservationToUpdate.ApprovedAt = timeProvider.UtcNow();
@@ -49,6 +54,9 @@ namespace RoomReservation.Core.Services
 
             if (reservationToUpdate.Status is not (ReservationStatus.Approved))
                 return new Error("Reservation has invalid status", ErrorType.BadRequest);
+
+            if (HasStarted(reservationToUpdate))
+                return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
 
             reservationToUpdate.CanceledById = reservationToUpdate.CreatedById;
             reservationToUpdate.CanceledAt = timeProvider.UtcNow();
@@ -117,6 +125,9 @@ namespace RoomReservation.Core.Services
             if (reservationToDelete.Status is not ReservationStatus.Pending)
                 return new Error("Only Pending reservations can be deleted", ErrorType.BadRequest);
 
+            if (HasStarted(reservationToDelete))
+                return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
+
             reservationRepository.Remove(reservationToDelete);
             await unitOfWork.SaveChangesAsync();
             return Result.Success();
@@ -146,6 +157,9 @@ namespace RoomReservation.Core.Services
             if (reservationToUpdate.Status is not ReservationStatus.Pending)
                 return new Error("Reservation has invalid status", ErrorType.BadRequest);
 
+            if (HasStarted(reservationToUpdate))
+                return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
+
             reservationToUpdate.RejectedById = rejectedById;
             reservationToUpdate.RejectedAt = timeProvider.UtcNow();
             reservationToUpdate.Reason = reason;
@@ -169,6 +183,9 @@ namespace RoomReservation.Core.Services
 
             if (reservationToUpdate.Status is not (ReservationStatus.Pending or ReservationStatus.Approved))
                 return new Error("Reservation cannot be updated after being rejected or cancelled", ErrorType.BadRequest);
+
+            if (HasStarted(reservationToUpdate))
+                return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
 
             if (startTime >= endTime)
                 return new Error("Invalid timeframe provided", ErrorType.BadRequest);
@@ -212,6 +229,9 @@ namespace RoomReservation.Core.Services
 
             if (reservationToUpdate.Status is not (ReservationStatus.Pending or ReservationStatus.Approved))
                 return new Error("Reservation has invalid status", ErrorType.BadRequest);
+
+            if (HasStarted(reservationToUpdate))
+                return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
 
             var cancelledByName = await GetActorNameAsync(cancelledById);
             CancelWithNotification(reservationToUpdate, reason, cancelledById, cancelledByName);
@@ -350,5 +370,8 @@ namespace RoomReservation.Core.Services
 
         private bool IsInThePast(DateOnly date, TimeOnly startTime)
             => date.ToDateTime(startTime) < timeProvider.WarsawNow();
+
+        private bool HasStarted(Reservation reservation)
+            => IsInThePast(reservation.Date, reservation.StartTime);
     }
 }

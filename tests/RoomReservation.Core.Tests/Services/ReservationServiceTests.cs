@@ -82,6 +82,13 @@ namespace RoomReservation.Core.Tests.Services
             return reservation;
         }
 
+        private Reservation SetupStartedReservation(ReservationStatus status)
+        {
+            var reservation = CreateReservation(new TimeOnly(10, 0), new TimeOnly(12, 0), status: status, date: Today);
+            _reservationsMock.Setup(x => x.GetByIdAsync(reservation.Id)).ReturnsAsync(reservation);
+            return reservation;
+        }
+
         #region CreateAsync
 
         [Fact]
@@ -316,6 +323,93 @@ namespace RoomReservation.Core.Tests.Services
             result.IsSuccess.Should().BeTrue();
             _reservationsMock.Verify(x => x.Remove(reservation), Times.Once);
             _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+        }
+
+        #endregion
+        #region Started reservations
+
+        [Fact]
+        public async Task ApproveAsync_WhenReservationHasStarted_ReturnsBadRequestAndKeepsPending()
+        {
+            var reservation = SetupStartedReservation(ReservationStatus.Pending);
+
+            var result = await _sut.ApproveAsync(reservation.Id, Guid.NewGuid());
+
+            result.Error!.ErrorType.Should().Be(ErrorType.BadRequest);
+            reservation.Status.Should().Be(ReservationStatus.Pending);
+            _emailQueueMock.Verify(x => x.Enqueue(It.IsAny<EmailMessage>()), Times.Never);
+            _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task ApproveAsync_WhenReservationStartsLaterToday_Succeeds()
+        {
+            var reservation = CreateReservation(new TimeOnly(12, 0), new TimeOnly(13, 0), status: ReservationStatus.Pending, date: Today);
+            _reservationsMock.Setup(x => x.GetByIdAsync(reservation.Id)).ReturnsAsync(reservation);
+
+            var result = await _sut.ApproveAsync(reservation.Id, Guid.NewGuid());
+
+            result.IsSuccess.Should().BeTrue();
+            reservation.Status.Should().Be(ReservationStatus.Approved);
+        }
+
+        [Fact]
+        public async Task RejectAsync_WhenReservationHasStarted_ReturnsBadRequestAndKeepsPending()
+        {
+            var reservation = SetupStartedReservation(ReservationStatus.Pending);
+
+            var result = await _sut.RejectAsync(reservation.Id, null, Guid.NewGuid());
+
+            result.Error!.ErrorType.Should().Be(ErrorType.BadRequest);
+            reservation.Status.Should().Be(ReservationStatus.Pending);
+            _emailQueueMock.Verify(x => x.Enqueue(It.IsAny<EmailMessage>()), Times.Never);
+        }
+
+        [Theory]
+        [InlineData(ReservationStatus.Pending)]
+        [InlineData(ReservationStatus.Approved)]
+        public async Task ForceCancelAsync_WhenReservationHasStarted_ReturnsBadRequest(ReservationStatus status)
+        {
+            var reservation = SetupStartedReservation(status);
+
+            var result = await _sut.ForceCancelAsync(reservation.Id, null, Guid.NewGuid());
+
+            result.Error!.ErrorType.Should().Be(ErrorType.BadRequest);
+            reservation.Status.Should().Be(status);
+        }
+
+        [Fact]
+        public async Task SelfCancelAsync_WhenReservationHasStarted_ReturnsBadRequest()
+        {
+            var reservation = SetupStartedReservation(ReservationStatus.Approved);
+
+            var result = await _sut.SelfCancelAsync(reservation.Id, null, _owner.Id);
+
+            result.Error!.ErrorType.Should().Be(ErrorType.BadRequest);
+            reservation.Status.Should().Be(ReservationStatus.Approved);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_WhenReservationHasStarted_ReturnsBadRequest()
+        {
+            var reservation = SetupStartedReservation(ReservationStatus.Pending);
+
+            var result = await _sut.DeleteAsync(reservation.Id, _owner.Id);
+
+            result.Error!.ErrorType.Should().Be(ErrorType.BadRequest);
+            _reservationsMock.Verify(x => x.Remove(It.IsAny<Reservation>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task UpdateAsync_WhenReservationHasStarted_ReturnsBadRequestEvenIfStartIsUnchanged()
+        {
+            var reservation = SetupStartedReservation(ReservationStatus.Approved);
+
+            var result = await _sut.UpdateAsync(_owner.Id, reservation.Id, new TimeOnly(10, 0), new TimeOnly(13, 0), "Nowy cel");
+
+            result.Error!.ErrorType.Should().Be(ErrorType.BadRequest);
+            reservation.EndTime.Should().Be(new TimeOnly(12, 0));
+            reservation.Purpose.Should().BeNull();
         }
 
         #endregion
