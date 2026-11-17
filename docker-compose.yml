@@ -10,6 +10,7 @@ services:
       - Jwt__Issuer=${JWT_ISSUER}
       - Jwt__Audience=${JWT_AUDIENCE}
       - CORS__ALLOWED_ORIGINS__0=${CORS__ALLOWED_ORIGINS__0}
+      - SEED_DATABASE=${SEED_DATABASE:-false}
       - ASPNETCORE_ENVIRONMENT=Development
     ports:
       - "5000:8080"

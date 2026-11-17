@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using RoomReservation.Api;
 using RoomReservation.Api.Extensions;
 using RoomReservation.Core.Data;
+using RoomReservation.Core.Seeders;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,8 +23,18 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await context.Database.MigrateAsync();
-        logger.LogInformation("Database migrations applied successfully");
+        var shouldSeed = app.Configuration.GetValue<bool>("SEED_DATABASE");
+
+        if (shouldSeed)
+        {
+            await new DatabaseSeeder(context).SeedAsync();
+            logger.LogWarning("Database was recreated and seeded. Set SEED_DATABASE=false before the next start");
+        }
+        else
+        {
+            await context.Database.MigrateAsync();
+            logger.LogInformation("Database migrations applied successfully");
+        }
     }
     catch (Exception ex)
     {
