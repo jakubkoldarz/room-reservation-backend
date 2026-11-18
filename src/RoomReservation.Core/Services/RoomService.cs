@@ -73,7 +73,7 @@ namespace RoomReservation.Core.Services
                     "Room has active reservations and cannot be deleted",
                     [.. activeReservations.Select(ConflictingReservationModel.From)]);
 
-            await reservationService.BulkForceCancelAsync(activeReservations, "Sala została usunięta");
+            await reservationService.BulkForceCancelAsync(activeReservations, "The room was deleted");
             roomRepository.Remove(existingRoom);
             await unitOfWork.SaveChangesAsync();
 
@@ -129,7 +129,7 @@ namespace RoomReservation.Core.Services
             if (!replacementResult.IsSuccess)
                 return replacementResult.Error;
 
-            await reservationService.BulkForceCancelAsync(replacementResult.Value, "Zmiany administracyjne w godzinach dostępności sal");
+            await reservationService.BulkForceCancelAsync(replacementResult.Value, "Administrative changes to room opening hours");
             await unitOfWork.SaveChangesAsync();
 
             return ResultT<Room>.Success(toUpdate);

@@ -10,7 +10,7 @@ namespace RoomReservation.Worker.Jobs
         public async Task DispatchAsync(Job job, CancellationToken ct)
         {
             if (!_handlers.TryGetValue(job.JobType, out var handler))
-                throw new InvalidOperationException($"Brak handlera dla typu joba: {job.JobType}");
+                throw new InvalidOperationException($"No handler for job type: {job.JobType}");
 
             await handler.HandleAsync(job.Payload, ct);
         }

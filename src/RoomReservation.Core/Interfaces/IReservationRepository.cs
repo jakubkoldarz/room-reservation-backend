@@ -11,6 +11,10 @@ namespace RoomReservation.Core.Interfaces
         Task<PagedList<Reservation>> GetFilteredAsync(ReservationFilter filters);
         Task<IReadOnlyList<Reservation>> GetActiveByRoomAndDateAsync(Guid roomId, DateOnly date);
         Task LockRoomAsync(Guid roomId);
+        Task LockReservationAsync(Guid reservationId);
+        Task LockPendingByRoomAndDateAsync(Guid roomId, DateOnly date);
+        Task<IReadOnlyList<Reservation>> LockStartedPendingAsync(DateTime warsawNow);
+        Task<Guid?> GetRoomIdAsync(Guid reservationId);
         void Add(Reservation reservation);
         void Remove(Reservation reservation);
 

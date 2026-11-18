@@ -7,7 +7,7 @@
         public required string Code { get; init;  }
         public required int ExpirationMinutes { get; init; }
 
-        internal override string Subject => "Twój kod weryfikacyjny";
+        internal override string Subject => "Your verification code";
 
         internal override Dictionary<string, string> GetReplacements() => new()
         {

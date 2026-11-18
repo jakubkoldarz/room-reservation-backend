@@ -17,13 +17,13 @@ namespace RoomReservation.Api.Extensions.Mappers
             };
         }
 
-        public static RoomDetailsResponseDto ToDetailsDto(this Room room)
+        public static RoomDetailsResponseDto ToDetailsDto(this Room room, IEnumerable<Reservation> visibleReservations)
         {
             return new RoomDetailsResponseDto
             {
                 Details = room.ToDto(),
                 Availabilities = [.. room.Availabilities.Select(a => a.ToDto())],
-                Reservations = [.. room.Reservations.Select(r => r.ToBasicDto())],
+                Reservations = [.. visibleReservations.Select(r => r.ToBasicDto())],
                 Events = [.. room.Events.Select(e => e.ToDto())]
             };
         }

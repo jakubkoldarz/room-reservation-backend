@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RoomReservation.Api.Attributes;
+using RoomReservation.Api.Authorization;
 using RoomReservation.Api.Dtos;
 using RoomReservation.Api.Dtos.Rooms.Requests;
 using RoomReservation.Api.Dtos.Rooms.Responses;
@@ -12,6 +13,7 @@ using RoomReservation.Core.Filters;
 using RoomReservation.Core.Interfaces;
 using RoomReservation.Core.Models.Availability;
 using RoomReservation.Core.Models.Rooms;
+using RoomReservation.Core.Services;
 
 namespace RoomReservation.Api.Controllers
 {
@@ -19,7 +21,7 @@ namespace RoomReservation.Api.Controllers
     [EnableRateLimiting("default")]
     [Route("[controller]")]
     [ApiController]
-    public class RoomsController(IRoomService roomService) : ControllerBase
+    public class RoomsController(IRoomService roomService, UserAccessProvider userAccessProvider) : ControllerBase
     {
         [RequirePermission(Permissions.RoomList)]
         [HttpGet]
@@ -31,10 +33,27 @@ namespace RoomReservation.Api.Controllers
 
         [RequirePermission(Permissions.RoomView)]
         [HttpGet("{roomId:guid}")]
-        public async Task<ActionResult<RoomDetailsResponseDto>> GetSingle([FromRoute] Guid roomId)
+        public async Task<ActionResult<RoomDetailsResponseDto>> GetSingle([FromRoute] Guid roomId, [UserId] Guid userId)
         {
             var result = await roomService.GetByIdAsync(roomId);
-            return result.ToActionResult(room => Ok(room.ToDetailsDto()));
+            var canSeeAllRequests = await CanModerateReservationsAsync(userId);
+
+            return result.ToActionResult(room =>
+            {
+                var visibleReservations = ReservationVisibility.VisibleInRoomCalendar(room.Reservations, userId, canSeeAllRequests);
+                return Ok(room.ToDetailsDto(visibleReservations));
+            });
+        }
+
+        private async Task<bool> CanModerateReservationsAsync(Guid userId)
+        {
+            var access = await userAccessProvider.GetAsync(userId);
+            if (access is null)
+                return false;
+
+            return access.HasPermission(Permissions.ReservationApprove)
+                || access.HasPermission(Permissions.ReservationReject)
+                || access.HasPermission(Permissions.ReservationForceCancel);
         }
 
         [RequirePermission(Permissions.RoomAdd)]

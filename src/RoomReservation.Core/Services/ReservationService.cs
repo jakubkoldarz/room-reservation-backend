@@ -19,52 +19,77 @@ namespace RoomReservation.Core.Services
         TimeProvider timeProvider) : IReservationService
     {
         private const string AlreadyStartedMessage = "Reservation has already started";
+        private const string NotFoundMessage = "Reservation not found";
+        private const string InvalidStatusMessage = "Reservation has invalid status";
+        private const string OverlapMessage = "Reservation is in conflict with existing ones";
+        private const string ReplacedByApprovalReason = "Another request for this time was approved";
 
         public async Task<Result> ApproveAsync(Guid reservationId, Guid approvedById)
         {
-            var reservationToUpdate = await reservationRepository.GetByIdAsync(reservationId);
-            if (reservationToUpdate is null)
-                return new Error("Reservation not found", ErrorType.NotFound);
-
-            if (reservationToUpdate.Status is not ReservationStatus.Pending)
-                return new Error("Reservation has invalid status", ErrorType.BadRequest);
-
-            if (HasStarted(reservationToUpdate))
-                return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
-
-            reservationToUpdate.ApprovedById = approvedById;
-            reservationToUpdate.ApprovedAt = timeProvider.UtcNow();
-            reservationToUpdate.Status = ReservationStatus.Approved;
-
-            if (reservationToUpdate.CreatedBy is not null)
+            return await unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                var approvedByName = await GetActorNameAsync(approvedById);
-                EnqueueApproveNotification(reservationToUpdate.CreatedBy, approvedByName, reservationToUpdate);
-            }
+                var roomId = await reservationRepository.GetRoomIdAsync(reservationId);
+                if (roomId is null)
+                    return new Error(NotFoundMessage, ErrorType.NotFound);
 
-            await unitOfWork.SaveChangesAsync();
-            return Result.Success();
+                await reservationRepository.LockRoomAsync(roomId.Value);
+
+                var reservationToApprove = await LockAndGetAsync(reservationId);
+                if (reservationToApprove is null)
+                    return new Error(NotFoundMessage, ErrorType.NotFound);
+
+                if (reservationToApprove.Status is not ReservationStatus.Pending)
+                    return new Error(InvalidStatusMessage, ErrorType.BadRequest);
+
+                if (HasStarted(reservationToApprove))
+                    return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
+
+                await reservationRepository.LockPendingByRoomAndDateAsync(reservationToApprove.RoomId, reservationToApprove.Date);
+                var dayReservations = await reservationRepository.GetActiveByRoomAndDateAsync(reservationToApprove.RoomId, reservationToApprove.Date);
+                var overlapping = OverlappingReservations(reservationToApprove.StartTime, reservationToApprove.EndTime, dayReservations, reservationId);
+
+                foreach (var other in overlapping)
+                {
+                    if (other.Status == ReservationStatus.Approved)
+                        return new Error("Room is already booked at this time", ErrorType.Conflict);
+                }
+
+                var approvedByName = await GetActorNameAsync(approvedById);
+
+                reservationToApprove.ApprovedById = approvedById;
+                reservationToApprove.ApprovedAt = timeProvider.UtcNow();
+                reservationToApprove.Status = ReservationStatus.Approved;
+
+                if (reservationToApprove.CreatedBy is not null)
+                    EnqueueApproveNotification(reservationToApprove.CreatedBy, approvedByName, reservationToApprove);
+
+                foreach (var otherRequest in overlapping)
+                    RejectWithNotification(otherRequest, ReplacedByApprovalReason, approvedById, approvedByName);
+
+                return Result.Success();
+            });
         }
 
         public async Task<Result> SelfCancelAsync(Guid reservationId, string? reason, Guid cancelledById)
         {
-            var reservationToUpdate = await reservationRepository.GetByIdAsync(reservationId);
-            if (reservationToUpdate is null || reservationToUpdate.CreatedById != cancelledById)
-                return new Error("Reservation not found", ErrorType.NotFound);
+            return await unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                var reservationToCancel = await LockAndGetAsync(reservationId);
+                if (reservationToCancel is null || reservationToCancel.CreatedById != cancelledById)
+                    return new Error(NotFoundMessage, ErrorType.NotFound);
 
-            if (reservationToUpdate.Status is not (ReservationStatus.Approved))
-                return new Error("Reservation has invalid status", ErrorType.BadRequest);
+                if (reservationToCancel.Status is not ReservationStatus.Approved)
+                    return new Error(InvalidStatusMessage, ErrorType.BadRequest);
 
-            if (HasStarted(reservationToUpdate))
-                return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
+                if (HasStarted(reservationToCancel))
+                    return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
 
-            reservationToUpdate.CanceledById = reservationToUpdate.CreatedById;
-            reservationToUpdate.CanceledAt = timeProvider.UtcNow();
-            reservationToUpdate.Reason = reason;
-            reservationToUpdate.Status = ReservationStatus.Canceled;
-            await unitOfWork.SaveChangesAsync();
-
-            return Result.Success();
+                reservationToCancel.CanceledById = reservationToCancel.CreatedById;
+                reservationToCancel.CanceledAt = timeProvider.UtcNow();
+                reservationToCancel.Reason = reason;
+                reservationToCancel.Status = ReservationStatus.Canceled;
+                return Result.Success();
+            });
         }
 
         public async Task<ResultT<Reservation>> CreateAsync(Guid roomId, DateOnly date, TimeOnly startTime, TimeOnly endTime, Guid createdById, string? purpose = null)
@@ -100,8 +125,8 @@ namespace RoomReservation.Core.Services
                 await reservationRepository.LockRoomAsync(roomId);
 
                 var existingReservations = await reservationRepository.GetActiveByRoomAndDateAsync(roomId, date);
-                if (HasOverlap(startTime, endTime, existingReservations))
-                    return new Error("Reservation is in conflict with existing ones", ErrorType.Conflict);
+                if (HasBlockingOverlap(room.RequiresApproval, createdById, startTime, endTime, existingReservations, excludeReservationId: null))
+                    return new Error(OverlapMessage, ErrorType.Conflict);
 
                 reservationRepository.Add(reservationToAdd);
                 return Result.Success();
@@ -118,19 +143,21 @@ namespace RoomReservation.Core.Services
 
         public async Task<Result> DeleteAsync(Guid reservationId, Guid requestingUserId)
         {
-            var reservationToDelete = await reservationRepository.GetByIdAsync(reservationId);
-            if (reservationToDelete is null || reservationToDelete.CreatedById != requestingUserId)
-                return new Error("Reservation not found", ErrorType.NotFound);
+            return await unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                var reservationToDelete = await LockAndGetAsync(reservationId);
+                if (reservationToDelete is null || reservationToDelete.CreatedById != requestingUserId)
+                    return new Error(NotFoundMessage, ErrorType.NotFound);
 
-            if (reservationToDelete.Status is not ReservationStatus.Pending)
-                return new Error("Only Pending reservations can be deleted", ErrorType.BadRequest);
+                if (reservationToDelete.Status is not ReservationStatus.Pending)
+                    return new Error("Only Pending reservations can be deleted", ErrorType.BadRequest);
 
-            if (HasStarted(reservationToDelete))
-                return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
+                if (HasStarted(reservationToDelete))
+                    return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
 
-            reservationRepository.Remove(reservationToDelete);
-            await unitOfWork.SaveChangesAsync();
-            return Result.Success();
+                reservationRepository.Remove(reservationToDelete);
+                return Result.Success();
+            });
         }
 
         public async Task<ResultT<PagedList<Reservation>>> GetAllAsync(ReservationFilter filters)
@@ -150,94 +177,88 @@ namespace RoomReservation.Core.Services
 
         public async Task<Result> RejectAsync(Guid reservationId, string? reason, Guid rejectedById)
         {
-            var reservationToUpdate = await reservationRepository.GetByIdAsync(reservationId);
-            if (reservationToUpdate is null)
-                return new Error("Reservation not found", ErrorType.NotFound);
-
-            if (reservationToUpdate.Status is not ReservationStatus.Pending)
-                return new Error("Reservation has invalid status", ErrorType.BadRequest);
-
-            if (HasStarted(reservationToUpdate))
-                return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
-
-            reservationToUpdate.RejectedById = rejectedById;
-            reservationToUpdate.RejectedAt = timeProvider.UtcNow();
-            reservationToUpdate.Reason = reason;
-            reservationToUpdate.Status = ReservationStatus.Rejected;
-
-            if (reservationToUpdate.CreatedBy is not null)
+            return await unitOfWork.ExecuteInTransactionAsync(async () =>
             {
-                var rejectedByName = await GetActorNameAsync(rejectedById);
-                EnqueueRejectNotification(reservationToUpdate.CreatedBy, rejectedByName, reservationToUpdate);
-            }
+                var reservationToReject = await LockAndGetAsync(reservationId);
+                if (reservationToReject is null)
+                    return new Error(NotFoundMessage, ErrorType.NotFound);
 
-            await unitOfWork.SaveChangesAsync();
-            return Result.Success();
+                if (reservationToReject.Status is not ReservationStatus.Pending)
+                    return new Error(InvalidStatusMessage, ErrorType.BadRequest);
+
+                if (HasStarted(reservationToReject))
+                    return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
+
+                var rejectedByName = await GetActorNameAsync(rejectedById);
+                RejectWithNotification(reservationToReject, reason, rejectedById, rejectedByName);
+                return Result.Success();
+            });
         }
 
         public async Task<ResultT<Reservation>> UpdateAsync(Guid requestingUserId, Guid reservationId, TimeOnly startTime, TimeOnly endTime, string? purpose = null)
         {
-            var reservationToUpdate = await reservationRepository.GetByIdAsync(reservationId);
-            if (reservationToUpdate is null || reservationToUpdate.CreatedById != requestingUserId)
-                return new Error("Reservation not found", ErrorType.NotFound);
-
-            if (reservationToUpdate.Status is not (ReservationStatus.Pending or ReservationStatus.Approved))
-                return new Error("Reservation cannot be updated after being rejected or cancelled", ErrorType.BadRequest);
-
-            if (HasStarted(reservationToUpdate))
-                return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
-
-            if (startTime >= endTime)
-                return new Error("Invalid timeframe provided", ErrorType.BadRequest);
-
-            if (startTime != reservationToUpdate.StartTime && IsInThePast(reservationToUpdate.Date, startTime))
-                return new Error("Reservation start is in the past", ErrorType.BadRequest);
-
-            var availability = await availabilityService.ResolveAvailabilityAsync(reservationToUpdate.RoomId, reservationToUpdate.Date);
-            if (!availability.Covers(startTime, endTime))
-                return new Error("Selected room is not available at provided time", ErrorType.BadRequest);
-
-            var result = await unitOfWork.ExecuteInTransactionAsync(async () =>
+            return await unitOfWork.ExecuteInTransactionAsync<Reservation>(async () =>
             {
-                await reservationRepository.LockRoomAsync(reservationToUpdate.RoomId);
+                var roomId = await reservationRepository.GetRoomIdAsync(reservationId);
+                if (roomId is null)
+                    return new Error(NotFoundMessage, ErrorType.NotFound);
+
+                await reservationRepository.LockRoomAsync(roomId.Value);
+
+                var reservationToUpdate = await LockAndGetAsync(reservationId);
+                if (reservationToUpdate is null || reservationToUpdate.CreatedById != requestingUserId)
+                    return new Error(NotFoundMessage, ErrorType.NotFound);
+
+                if (reservationToUpdate.Status is not (ReservationStatus.Pending or ReservationStatus.Approved))
+                    return new Error("Reservation cannot be updated after being rejected or cancelled", ErrorType.BadRequest);
+
+                if (HasStarted(reservationToUpdate))
+                    return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
+
+                if (startTime >= endTime)
+                    return new Error("Invalid timeframe provided", ErrorType.BadRequest);
+
+                if (startTime != reservationToUpdate.StartTime && IsInThePast(reservationToUpdate.Date, startTime))
+                    return new Error("Reservation start is in the past", ErrorType.BadRequest);
+
+                var availability = await availabilityService.ResolveAvailabilityAsync(reservationToUpdate.RoomId, reservationToUpdate.Date);
+                if (!availability.Covers(startTime, endTime))
+                    return new Error("Selected room is not available at provided time", ErrorType.BadRequest);
 
                 var existingReservations = await reservationRepository.GetActiveByRoomAndDateAsync(reservationToUpdate.RoomId, reservationToUpdate.Date);
-                if (HasOverlap(startTime, endTime, existingReservations, excludeReservationId: reservationId))
-                    return new Error("Reservation is in conflict with existing ones", ErrorType.Conflict);
+                var requiresApproval = reservationToUpdate.Room.RequiresApproval;
+                if (HasBlockingOverlap(requiresApproval, requestingUserId, startTime, endTime, existingReservations, reservationId))
+                    return new Error(OverlapMessage, ErrorType.Conflict);
 
                 var hasTimeframeChanged = startTime != reservationToUpdate.StartTime || endTime != reservationToUpdate.EndTime;
-                if (hasTimeframeChanged && reservationToUpdate.Room.RequiresApproval)
+                if (hasTimeframeChanged && requiresApproval)
                     reservationToUpdate.Status = ReservationStatus.Pending;
 
                 reservationToUpdate.StartTime = startTime;
                 reservationToUpdate.EndTime = endTime;
                 reservationToUpdate.Purpose = purpose;
-                return Result.Success();
+                return ResultT<Reservation>.Success(reservationToUpdate);
             });
-
-            if (!result.IsSuccess)
-                return result.Error;
-
-            return ResultT<Reservation>.Success(reservationToUpdate);
         }
 
         public async Task<Result> ForceCancelAsync(Guid reservationId, string? reason, Guid? cancelledById = null)
         {
-            var reservationToUpdate = await reservationRepository.GetByIdAsync(reservationId);
-            if (reservationToUpdate is null)
-                return new Error("Reservation not found", ErrorType.NotFound);
+            return await unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                var reservationToCancel = await LockAndGetAsync(reservationId);
+                if (reservationToCancel is null)
+                    return new Error(NotFoundMessage, ErrorType.NotFound);
 
-            if (reservationToUpdate.Status is not (ReservationStatus.Pending or ReservationStatus.Approved))
-                return new Error("Reservation has invalid status", ErrorType.BadRequest);
+                if (reservationToCancel.Status is not (ReservationStatus.Pending or ReservationStatus.Approved))
+                    return new Error(InvalidStatusMessage, ErrorType.BadRequest);
 
-            if (HasStarted(reservationToUpdate))
-                return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
+                if (HasStarted(reservationToCancel))
+                    return new Error(AlreadyStartedMessage, ErrorType.BadRequest);
 
-            var cancelledByName = await GetActorNameAsync(cancelledById);
-            CancelWithNotification(reservationToUpdate, reason, cancelledById, cancelledByName);
-
-            await unitOfWork.SaveChangesAsync();
-            return Result.Success();
+                var cancelledByName = await GetActorNameAsync(cancelledById);
+                CancelWithNotification(reservationToCancel, reason, cancelledById, cancelledByName);
+                return Result.Success();
+            });
         }
 
         public async Task<Result> BulkForceCancelAsync(IReadOnlyList<Reservation> reservations, string? reason, Guid? cancelledById = null)
@@ -293,19 +314,18 @@ namespace RoomReservation.Core.Services
 
         private void EnqueueCancelNotification(User recipient, string cancelledByName, Reservation reservation)
         {
-            var title = "Twoja rezerwacja została anulowana";
+            var title = "Your reservation was canceled";
 
             var messageToSend = new ReservationCancelledEmail
             {
                 To = recipient.Email,
-                ActionUrl = "#",
                 Title = title,
                 RoomName = reservation.Room.Identifier,
                 BuildingName = GetBuildingName(reservation.Room.Building.Name, reservation.Room.Building.Identifier),
                 Date = reservation.Date,
                 StartTime = reservation.StartTime,
                 EndTime = reservation.EndTime,
-                CancelReason = reservation.Reason ?? "Brak powodu podanego przez administratora",
+                CancelReason = reservation.Reason ?? "No reason given",
                 CancelledBy = cancelledByName,
                 CancelledAt = reservation.CanceledAt!.Value
             };
@@ -315,19 +335,18 @@ namespace RoomReservation.Core.Services
 
         private void EnqueueRejectNotification(User recipient, string rejectedByName, Reservation reservation)
         {
-            var title = "Twoja prośba o rezerwacje została odrzucona";
+            var title = "Your reservation request was rejected";
 
             var messageToSend = new ReservationRejectedEmail
             {
                 To = recipient.Email,
-                ActionUrl = "#",
                 Title = title,
                 RoomName = reservation.Room.Identifier,
                 BuildingName = GetBuildingName(reservation.Room.Building.Name, reservation.Room.Building.Identifier),
                 Date = reservation.Date,
                 StartTime = reservation.StartTime,
                 EndTime = reservation.EndTime,
-                RejectReason = reservation.Reason ?? "Brak powodu podanego przez administratora",
+                RejectReason = reservation.Reason ?? "No reason given",
                 RejectedBy = rejectedByName,
                 RejectedAt = reservation.RejectedAt!.Value
             };
@@ -337,12 +356,11 @@ namespace RoomReservation.Core.Services
 
         private void EnqueueApproveNotification(User recipient, string approvedByName, Reservation reservation)
         {
-            var title = "Twoja rezerwacja została potwierdzona";
+            var title = "Your reservation was confirmed";
 
             var messageToSend = new ReservationApprovedEmail
             {
                 To = recipient.Email,
-                ActionUrl = "#",
                 Title = title,
                 RoomName = reservation.Room.Identifier,
                 BuildingName = GetBuildingName(reservation.Room.Building.Name, reservation.Room.Building.Identifier),
@@ -358,14 +376,67 @@ namespace RoomReservation.Core.Services
 
         private static string GetBuildingName(string buildingName, string? buildingIdentifier) => $"{buildingName}" + $"{(buildingIdentifier is not null ? $" ({buildingIdentifier})" : "")}";
 
-        private static bool HasOverlap(
-           TimeOnly start, TimeOnly end,
-           IEnumerable<Reservation> existingReservations,
-           Guid? excludeReservationId = null)
+        private async Task<Reservation?> LockAndGetAsync(Guid reservationId)
         {
-            return existingReservations
-                .Where(r => excludeReservationId is null || r.Id != excludeReservationId)
-                .Any(r => start < r.EndTime && r.StartTime < end);
+            await reservationRepository.LockReservationAsync(reservationId);
+            return await reservationRepository.GetByIdAsync(reservationId);
+        }
+
+        private void RejectWithNotification(Reservation reservation, string? reason, Guid rejectedById, string rejectedByName)
+        {
+            reservation.RejectedById = rejectedById;
+            reservation.RejectedAt = timeProvider.UtcNow();
+            reservation.Reason = reason;
+            reservation.Status = ReservationStatus.Rejected;
+
+            if (reservation.CreatedBy is not null)
+                EnqueueRejectNotification(reservation.CreatedBy, rejectedByName, reservation);
+        }
+
+        private static List<Reservation> OverlappingReservations(
+            TimeOnly start,
+            TimeOnly end,
+            IEnumerable<Reservation> dayReservations,
+            Guid? excludeReservationId)
+        {
+            var overlapping = new List<Reservation>();
+            foreach (var reservation in dayReservations)
+            {
+                if (reservation.Id == excludeReservationId)
+                    continue;
+
+                if (start < reservation.EndTime && reservation.StartTime < end)
+                    overlapping.Add(reservation);
+            }
+            return overlapping;
+        }
+
+        private static bool HasBlockingOverlap(
+            bool requiresApproval,
+            Guid userId,
+            TimeOnly start,
+            TimeOnly end,
+            IEnumerable<Reservation> dayReservations,
+            Guid? excludeReservationId)
+        {
+            var overlapping = OverlappingReservations(start, end, dayReservations, excludeReservationId);
+            foreach (var reservation in overlapping)
+            {
+                if (BlocksSameTime(reservation, requiresApproval, userId))
+                    return true;
+            }
+            return false;
+        }
+
+        private static bool BlocksSameTime(Reservation existing, bool requiresApproval, Guid userId)
+        {
+            if (!requiresApproval)
+                return true;
+
+            if (existing.Status == ReservationStatus.Approved)
+                return true;
+
+            return existing.CreatedById == userId;
         }
 
         private bool IsInThePast(DateOnly date, TimeOnly startTime)

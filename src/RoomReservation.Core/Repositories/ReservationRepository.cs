@@ -27,6 +27,38 @@ namespace RoomReservation.Core.Repositories
             => await db.Database.ExecuteSqlInterpolatedAsync(
                 $@"SELECT 1 FROM ""Rooms"" WHERE ""Id"" = {roomId} FOR UPDATE");
 
+        public async Task LockReservationAsync(Guid reservationId)
+            => await db.Database.ExecuteSqlInterpolatedAsync(
+                $@"SELECT 1 FROM ""Reservations"" WHERE ""Id"" = {reservationId} FOR UPDATE");
+
+        public async Task LockPendingByRoomAndDateAsync(Guid roomId, DateOnly date)
+            => await db.Database.ExecuteSqlInterpolatedAsync(
+                $@"SELECT 1 FROM ""Reservations""
+                   WHERE ""RoomId"" = {roomId} AND ""Date"" = {date} AND ""Status"" = {ReservationStatus.Pending.ToString()}
+                   FOR UPDATE");
+
+        public async Task<IReadOnlyList<Reservation>> LockStartedPendingAsync(DateTime warsawNow)
+        {
+            var today = DateOnly.FromDateTime(warsawNow);
+            var currentTime = TimeOnly.FromDateTime(warsawNow);
+
+            return await db.Reservations
+                .FromSqlInterpolated($@"
+                    SELECT * FROM ""Reservations""
+                    WHERE ""Status"" = {ReservationStatus.Pending.ToString()}
+                      AND (""Date"" < {today} OR (""Date"" = {today} AND ""StartTime"" < {currentTime}))
+                    FOR UPDATE SKIP LOCKED")
+                .ToListAsync();
+        }
+
+        public async Task<Guid?> GetRoomIdAsync(Guid reservationId)
+        {
+            return await db.Reservations
+                .Where(r => r.Id == reservationId)
+                .Select(r => (Guid?)r.RoomId)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<IReadOnlyList<Reservation>> GetByIdsAsync(IReadOnlyList<Guid> reservationIds)
         {
             return await db.Reservations
@@ -53,6 +85,9 @@ namespace RoomReservation.Core.Repositories
         public async Task<IReadOnlyList<Reservation>> GetActiveByRoomAndDateAsync(Guid roomId, DateOnly date)
         {
             var reservation = await db.Reservations
+                .Include(r => r.Room)
+                    .ThenInclude(rm => rm.Building)
+                .Include(r => r.CreatedBy)
                 .Where(r => 
                     r.RoomId == roomId && 
                     r.Date == date && 

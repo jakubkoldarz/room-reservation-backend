@@ -70,7 +70,7 @@ namespace RoomReservation.Core.Services
                 return ReservationConflict(conflictingReservations);
 
             eventRepository.Add(newEvent);
-            await reservationService.BulkForceCancelAsync(conflictingReservations, "Zmiany administracyjne");
+            await reservationService.BulkForceCancelAsync(conflictingReservations, "Administrative changes");
             await unitOfWork.SaveChangesAsync();
 
             return ResultT<Event>.Success(newEvent);
@@ -97,7 +97,7 @@ namespace RoomReservation.Core.Services
                 return ReservationConflict(conflicts);
 
             eventRepository.Remove(existingEvent);
-            await reservationService.BulkForceCancelAsync(conflicts, "Zmiany administracyjne w dostępności sal");
+            await reservationService.BulkForceCancelAsync(conflicts, "Administrative changes to room availability");
             await unitOfWork.SaveChangesAsync();
 
             return Result.Success();
@@ -169,7 +169,7 @@ namespace RoomReservation.Core.Services
             toUpdate.EndTime = request.EndTime;
             toUpdate.Rooms = [.. rooms];
 
-            await reservationService.BulkForceCancelAsync(conflictingReservations, "Zmiany administracyjne");
+            await reservationService.BulkForceCancelAsync(conflictingReservations, "Administrative changes");
             await unitOfWork.SaveChangesAsync();
 
             return ResultT<Event>.Success(toUpdate);

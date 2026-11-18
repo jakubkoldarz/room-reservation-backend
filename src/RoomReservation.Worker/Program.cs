@@ -24,8 +24,11 @@ builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<IJobService, JobService>();
 builder.Services.AddScoped<IJobHandler, SendEmailHandler>();
 builder.Services.AddScoped<JobDispatcher>();
+builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+builder.Services.AddScoped<IReservationExpiryService, ReservationExpiryService>();
 
 builder.Services.AddHostedService<Worker>();
+builder.Services.AddHostedService<ReservationExpiryWorker>();
 
 var host = builder.Build();
 host.Run();

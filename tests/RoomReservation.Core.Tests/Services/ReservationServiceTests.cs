@@ -26,6 +26,7 @@ namespace RoomReservation.Core.Tests.Services
         private static readonly DateOnly Tomorrow = Today.AddDays(1);
 
         private readonly User _owner = UserFaker.Create(email: "owner@test.com");
+        private readonly User _otherUser = UserFaker.Create(email: "other@test.com");
         private readonly Room _room;
 
         public ReservationServiceTests()
@@ -47,6 +48,10 @@ namespace RoomReservation.Core.Tests.Services
                                     .ReturnsAsync(new AvailabilityResolution(false, new TimeOnly(8, 0), new TimeOnly(20, 0)));
             _unitOfWorkMock.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                            .Returns((Func<Task<Result>> action) => action());
+            _unitOfWorkMock.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<ResultT<Reservation>>>>()))
+                           .Returns((Func<Task<ResultT<Reservation>>> action) => action());
+            _reservationsMock.Setup(x => x.GetRoomIdAsync(It.IsAny<Guid>()))
+                             .ReturnsAsync(_room.Id);
             _reservationsMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>()))
                              .ReturnsAsync((Guid id) => CreateReservation(new TimeOnly(0, 0), new TimeOnly(0, 0), id));
             _reservationsMock.Setup(x => x.GetActiveByRoomAndDateAsync(_room.Id, It.IsAny<DateOnly>()))
@@ -81,6 +86,17 @@ namespace RoomReservation.Core.Tests.Services
             _reservationsMock.Setup(x => x.GetByIdAsync(reservation.Id)).ReturnsAsync(reservation);
             return reservation;
         }
+
+        private Reservation CreateRequestOf(User author, TimeOnly start, TimeOnly end, ReservationStatus status)
+        {
+            var reservation = CreateReservation(start, end, status: status);
+            reservation.CreatedById = author.Id;
+            reservation.CreatedBy = author;
+            return reservation;
+        }
+
+        private void VerifySavedInTransaction()
+            => _unitOfWorkMock.Verify(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()), Times.Once);
 
         private Reservation SetupStartedReservation(ReservationStatus status)
         {
@@ -237,7 +253,10 @@ namespace RoomReservation.Core.Tests.Services
             reservation.ApprovedById.Should().Be(approverId);
             reservation.ApprovedAt.Should().Be(FixedTimeProvider.DefaultNow.UtcDateTime);
             _emailQueueMock.Verify(x => x.Enqueue(It.Is<ReservationApprovedEmail>(e => e.To == _owner.Email)), Times.Once);
-            _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+            VerifySavedInTransaction();
+            _reservationsMock.Verify(x => x.LockRoomAsync(_room.Id), Times.Once);
+            _reservationsMock.Verify(x => x.LockReservationAsync(reservation.Id), Times.Once);
+            _reservationsMock.Verify(x => x.LockPendingByRoomAndDateAsync(_room.Id, Tomorrow), Times.Once);
         }
 
         [Fact]
@@ -289,7 +308,8 @@ namespace RoomReservation.Core.Tests.Services
             result.IsSuccess.Should().BeTrue();
             reservation.Status.Should().Be(ReservationStatus.Canceled);
             _emailQueueMock.Verify(x => x.Enqueue(It.IsAny<ReservationCancelledEmail>()), Times.Once);
-            _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+            VerifySavedInTransaction();
+            _reservationsMock.Verify(x => x.LockReservationAsync(reservation.Id), Times.Once);
         }
 
         [Fact]
@@ -322,7 +342,104 @@ namespace RoomReservation.Core.Tests.Services
 
             result.IsSuccess.Should().BeTrue();
             _reservationsMock.Verify(x => x.Remove(reservation), Times.Once);
-            _unitOfWorkMock.Verify(x => x.SaveChangesAsync(), Times.Once);
+            VerifySavedInTransaction();
+            _reservationsMock.Verify(x => x.LockReservationAsync(reservation.Id), Times.Once);
+        }
+
+        #endregion
+        #region Overlapping requests
+
+        [Fact]
+        public async Task CreateAsync_InRoomRequiringApproval_WhenOnlyOtherUsersRequestOverlaps_Succeeds()
+        {
+            _room.RequiresApproval = true;
+            SetupExistingReservations(CreateRequestOf(_otherUser, new TimeOnly(10, 0), new TimeOnly(12, 0), ReservationStatus.Pending));
+
+            var result = await _sut.CreateAsync(_room.Id, Tomorrow, new TimeOnly(11, 0), new TimeOnly(13, 0), _owner.Id);
+
+            result.IsSuccess.Should().BeTrue();
+            _reservationsMock.Verify(x => x.Add(It.Is<Reservation>(r => r.Status == ReservationStatus.Pending)), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateAsync_InRoomRequiringApproval_WhenOwnRequestOverlaps_ReturnsConflict()
+        {
+            _room.RequiresApproval = true;
+            SetupExistingReservations(CreateRequestOf(_owner, new TimeOnly(10, 0), new TimeOnly(12, 0), ReservationStatus.Pending));
+
+            var result = await _sut.CreateAsync(_room.Id, Tomorrow, new TimeOnly(11, 0), new TimeOnly(13, 0), _owner.Id);
+
+            result.Error!.ErrorType.Should().Be(ErrorType.Conflict);
+            _reservationsMock.Verify(x => x.Add(It.IsAny<Reservation>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CreateAsync_InRoomRequiringApproval_WhenApprovedReservationOverlaps_ReturnsConflict()
+        {
+            _room.RequiresApproval = true;
+            SetupExistingReservations(CreateRequestOf(_otherUser, new TimeOnly(10, 0), new TimeOnly(12, 0), ReservationStatus.Approved));
+
+            var result = await _sut.CreateAsync(_room.Id, Tomorrow, new TimeOnly(11, 0), new TimeOnly(13, 0), _owner.Id);
+
+            result.Error!.ErrorType.Should().Be(ErrorType.Conflict);
+        }
+
+        [Fact]
+        public async Task CreateAsync_InRoomWithoutApproval_WhenOtherUsersRequestOverlaps_ReturnsConflict()
+        {
+            _room.RequiresApproval = false;
+            SetupExistingReservations(CreateRequestOf(_otherUser, new TimeOnly(10, 0), new TimeOnly(12, 0), ReservationStatus.Pending));
+
+            var result = await _sut.CreateAsync(_room.Id, Tomorrow, new TimeOnly(11, 0), new TimeOnly(13, 0), _owner.Id);
+
+            result.Error!.ErrorType.Should().Be(ErrorType.Conflict);
+        }
+
+        [Fact]
+        public async Task UpdateAsync_InRoomRequiringApproval_WhenOtherUsersRequestOverlaps_Succeeds()
+        {
+            _room.RequiresApproval = true;
+            var reservation = SetupReservation(ReservationStatus.Pending);
+            SetupExistingReservations(reservation, CreateRequestOf(_otherUser, new TimeOnly(11, 0), new TimeOnly(13, 0), ReservationStatus.Pending));
+
+            var result = await _sut.UpdateAsync(_owner.Id, reservation.Id, new TimeOnly(10, 0), new TimeOnly(12, 0));
+
+            result.IsSuccess.Should().BeTrue();
+            reservation.EndTime.Should().Be(new TimeOnly(12, 0));
+        }
+
+        [Fact]
+        public async Task ApproveAsync_WhenApprovedReservationOverlaps_ReturnsConflictAndKeepsPending()
+        {
+            var reservation = SetupReservation(ReservationStatus.Pending);
+            SetupExistingReservations(reservation, CreateRequestOf(_otherUser, new TimeOnly(10, 30), new TimeOnly(11, 30), ReservationStatus.Approved));
+
+            var result = await _sut.ApproveAsync(reservation.Id, Guid.NewGuid());
+
+            result.Error!.ErrorType.Should().Be(ErrorType.Conflict);
+            reservation.Status.Should().Be(ReservationStatus.Pending);
+            _emailQueueMock.Verify(x => x.Enqueue(It.IsAny<EmailMessage>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ApproveAsync_RejectsOverlappingRequestsAndNotifiesTheirAuthors()
+        {
+            var reservation = SetupReservation(ReservationStatus.Pending);
+            var overlapping = CreateRequestOf(_otherUser, new TimeOnly(10, 30), new TimeOnly(11, 30), ReservationStatus.Pending);
+            var later = CreateRequestOf(_otherUser, new TimeOnly(11, 0), new TimeOnly(12, 0), ReservationStatus.Pending);
+            SetupExistingReservations(reservation, overlapping, later);
+            var approverId = Guid.NewGuid();
+
+            var result = await _sut.ApproveAsync(reservation.Id, approverId);
+
+            result.IsSuccess.Should().BeTrue();
+            reservation.Status.Should().Be(ReservationStatus.Approved);
+            overlapping.Status.Should().Be(ReservationStatus.Rejected);
+            overlapping.RejectedById.Should().Be(approverId);
+            overlapping.Reason.Should().Be("Another request for this time was approved");
+            later.Status.Should().Be(ReservationStatus.Pending);
+            _emailQueueMock.Verify(x => x.Enqueue(It.Is<ReservationApprovedEmail>(e => e.To == _owner.Email)), Times.Once);
+            _emailQueueMock.Verify(x => x.Enqueue(It.Is<ReservationRejectedEmail>(e => e.To == _otherUser.Email)), Times.Once);
         }
 
         #endregion

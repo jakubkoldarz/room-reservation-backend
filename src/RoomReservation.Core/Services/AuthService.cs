@@ -319,10 +319,10 @@ namespace RoomReservation.Core.Services
 
             var (subject, title, purpose) = verificationCode.Type switch
             {
-                VerificationCodeType.EmailActivation => ("Aktywacja konta RoomReservation", "Potwierdzenie rejestracji", "Aby zakończyć rejestrację, potwierdź swój adres email"),
-                VerificationCodeType.TwoFactorLogin => ("Kod logowania RoomReservation", "Logowanie", "Wpisz poniższy kod, aby dokończyć logowanie"),
-                VerificationCodeType.ChangeEmail => ("Zmiana adresu email", "Potwierdzenie zmiany adresu email", "Wpisz poniższy kod, aby dokończyć zmianę adresu email"),
-                VerificationCodeType.PasswordReset => ("Reset hasła RoomReservation", "Reset hasła", "Wpisz poniższy kod, aby ustawić nowe hasło. Jeśli to nie Ty prosisz o reset, zignoruj tę wiadomość"),
+                VerificationCodeType.EmailActivation => ("RoomReservation account activation", "Confirm your registration", "Confirm your email address to finish signing up"),
+                VerificationCodeType.TwoFactorLogin => ("RoomReservation sign-in code", "Sign in", "Enter the code below to finish signing in"),
+                VerificationCodeType.ChangeEmail => ("Email address change", "Confirm your new email address", "Enter the code below to finish changing your email address"),
+                VerificationCodeType.PasswordReset => ("RoomReservation password reset", "Reset your password", "Enter the code below to set a new password. If you did not ask for a reset, ignore this message"),
                 _ => throw new ArgumentOutOfRangeException(nameof(verificationCode.Type))
             };
 
@@ -339,7 +339,7 @@ namespace RoomReservation.Core.Services
         }
         private void EnqueuePasswordNotification(User user)
         {
-            var title = "Alert bezpieczeństwa - Zmiana hasła";
+            var title = "Security alert - password changed";
             var messageToSend = new PasswordChangeEmail { Title = title, To = user.Email };
             emailQueue.Enqueue(messageToSend);
         }

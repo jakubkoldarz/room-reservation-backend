@@ -1,4 +1,5 @@
 using RoomReservation.Core.Providers;
+using System.Globalization;
 
 namespace RoomReservation.Core.Emails
 {
@@ -8,13 +9,13 @@ namespace RoomReservation.Core.Emails
         public required DateTime RejectedAt { get; init; }
         public required string RejectReason { get; init; }
 
-        internal override string Subject => "Twoja rezerwacja została odrzucona";
+        internal override string Subject => "Your reservation request was rejected";
 
         internal override Dictionary<string, string> GetReplacements()
         {
             var replacements = GetReservationReplacements();
             replacements[nameof(RejectedBy)] = RejectedBy;
-            replacements[nameof(RejectedAt)] = TimeZoneProvider.ToWarsawTime(RejectedAt).ToString("HH:mm dd.MM.yyyy");
+            replacements[nameof(RejectedAt)] = TimeZoneProvider.ToWarsawTime(RejectedAt).ToString("d MMM yyyy, HH:mm", CultureInfo.InvariantCulture);
             replacements[nameof(RejectReason)] = RejectReason;
             return replacements;
         }

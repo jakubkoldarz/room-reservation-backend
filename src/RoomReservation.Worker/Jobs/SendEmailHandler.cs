@@ -27,7 +27,7 @@ namespace RoomReservation.Worker.Jobs
         private static EmailMessage DeserializeMessage(string payload)
         {
             var wrapper = JsonSerializer.Deserialize<EmailJobPayload>(payload)
-                ?? throw new InvalidOperationException("Nieprawidłowy payload joba email.");
+                ?? throw new InvalidOperationException("Invalid email job payload.");
 
             if (!_registry.TryGetValue(wrapper.EmailType, out var type))
                 throw new InvalidOperationException($"Nieznany typ maila: {wrapper.EmailType}");

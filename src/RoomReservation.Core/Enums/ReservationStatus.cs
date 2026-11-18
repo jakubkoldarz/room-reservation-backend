@@ -6,5 +6,6 @@
         Approved = 1,
         Rejected = 2,
         Canceled = 3,
+        Expired = 4,
     }
 }
